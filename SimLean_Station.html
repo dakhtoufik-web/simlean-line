@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimLean Assembly Line — Station</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
+
+:root {
+  --bg:      #0b0e13;
+  --panel:   #111520;
+  --panel2:  #161b26;
+  --border:  #1e2538;
+  --accent:  #f0a500;
+  --cyan:    #00c2a8;
+  --danger:  #e84040;
+  --success: #3de88a;
+  --text:    #dde1ed;
+  --muted:   #ffffff;
+  --wip-color: #f0a500;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Barlow Condensed', sans-serif;
+  min-height: 100vh; display:flex; flex-direction:column;
+  align-items:center; padding:16px;
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
+  background-size:40px 40px;
+}
+
+/* ── TOP BAR ── */
+.top-bar {
+  width:100%; max-width:1000px;
+  display:flex; justify-content:space-between; align-items:center;
+  border-bottom:2px solid var(--accent);
+  padding-bottom:10px; margin-bottom:18px; flex-wrap:wrap; gap:8px;
+}
+.logo { font-size:13px; letter-spacing:4px; color:var(--accent); font-weight:700; }
+.logo span { color:var(--muted); }
+.session-badge {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:20px; padding:4px 14px;
+  font-size:11px; letter-spacing:2px; color:var(--cyan);
+}
+.station-badge {
+  background:var(--accent); color:#000;
+  border-radius:20px; padding:4px 16px;
+  font-size:13px; font-weight:700; letter-spacing:2px;
+}
+
+/* ── FLUX ROW ── */
+.flux-row {
+  width:100%; max-width:1000px;
+  display:flex; align-items:stretch; gap:12px;
+  margin-bottom:16px;
+}
+
+/* WIP BOX */
+.wip-box {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:16px 20px;
+  display:flex; flex-direction:column; align-items:center;
+  gap:6px; min-width:130px; position:relative;
+}
+.wip-box.wip-in  { border-color: var(--cyan); }
+.wip-box.wip-out { border-color: var(--success); }
+.wip-label {
+  font-size:10px; letter-spacing:2px; color:#888; text-transform:uppercase;
+}
+.wip-count {
+  font-family:'Share Tech Mono',monospace;
+  font-size:42px; font-weight:700; line-height:1;
+}
+.wip-in  .wip-count { color:var(--cyan); }
+.wip-out .wip-count { color:var(--success); }
+.wip-sub { font-size:10px; color:#666; }
+
+/* ARROW */
+.flux-arrow {
+  display:flex; align-items:center; justify-content:center;
+  color:var(--accent); font-size:24px; padding:0 4px;
+  align-self:center;
+}
+
+/* STATION AREA */
+.station-area {
+  flex:1; background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:18px;
+}
+.station-title {
+  font-size:13px; letter-spacing:3px; font-weight:700;
+  color:var(--accent); text-transform:uppercase;
+  margin-bottom:14px; padding-bottom:8px;
+  border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+}
+
+/* GAMME */
+.gamme-label { font-size:10px; letter-spacing:2px; color:#888; margin-bottom:6px; }
+.seq-row {
+  display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;
+}
+.seq-slot {
+  width:60px; height:52px; border:2px dashed var(--border);
+  border-radius:6px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:2px;
+  font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--muted);
+  position:relative;
+}
+.seq-slot.done  { border-color:var(--success); background:rgba(61,232,138,.08); color:var(--success); }
+.seq-slot.active{ border-color:var(--accent);  background:rgba(240,165,0,.08);  color:var(--accent); animation:pulse .8s infinite alternate; }
+.seq-slot .si   { font-size:9px; color:#666; position:absolute; top:3px; left:5px; }
+
+@keyframes pulse { from{opacity:.7} to{opacity:1} }
+
+/* GRID */
+.grid-label { font-size:10px; letter-spacing:2px; color:#888; margin-bottom:6px; }
+.comp-grid {
+  display:grid; gap:8px; margin-bottom:14px;
+}
+.comp-grid.g3 { grid-template-columns: repeat(3,1fr); }
+.comp-grid.g4 { grid-template-columns: repeat(4,1fr); }
+.comp-grid.g5 { grid-template-columns: repeat(5,1fr); }
+
+.comp-cell {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:8px; padding:10px 6px;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  cursor:pointer; transition:all .15s; position:relative;
+}
+.comp-cell:hover  { border-color:var(--cyan); transform:translateY(-2px); }
+.comp-cell.picked { border-color:var(--success); background:rgba(61,232,138,.1); opacity:.5; pointer-events:none; }
+.comp-cell.error  { border-color:var(--danger); background:rgba(232,64,64,.12); animation:shake .3s; }
+.cpos  { font-size:9px; color:#555; position:absolute; top:3px; left:5px; }
+.cid   { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--cyan); font-weight:700; }
+.cname { font-size:10px; color:#888; text-align:center; }
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)}
+}
+
+/* CONTROLS */
+.ctrl-row {
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+}
+.btn {
+  border:none; border-radius:6px; padding:10px 20px;
+  font-family:'Barlow Condensed',sans-serif; font-size:13px;
+  font-weight:700; letter-spacing:1px; cursor:pointer; transition:all .15s;
+}
+.btn-primary { background:var(--accent); color:#000; }
+.btn-primary:hover { opacity:.85; }
+.btn-primary:disabled { background:#333; color:#666; cursor:not-allowed; }
+.btn-validate {
+  background:var(--success); color:#000;
+  display:none;
+}
+.btn-validate:hover { opacity:.85; }
+.btn-ghost { background:transparent; border:1px solid var(--border); color:var(--muted); }
+.btn-ghost:hover { border-color:var(--cyan); }
+
+/* TIMER */
+.timer-box {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:14px 18px; text-align:center; min-width:140px;
+}
+.timer-val {
+  font-family:'Share Tech Mono',monospace; font-size:32px;
+  color:var(--accent); line-height:1;
+}
+.timer-sub { font-size:10px; letter-spacing:2px; color:#666; margin-top:4px; }
+
+/* STATUS MSG */
+.status-msg {
+  width:100%; max-width:1000px;
+  padding:8px 14px; border-radius:6px; font-size:12px;
+  letter-spacing:1px; margin-bottom:10px; display:none;
+  border:1px solid var(--border); background:var(--panel);
+}
+.status-msg.show { display:block; }
+.status-msg.ok   { border-color:var(--success); color:var(--success); }
+.status-msg.err  { border-color:var(--danger);  color:var(--danger); }
+.status-msg.info { border-color:var(--cyan);    color:var(--cyan); }
+
+/* VALIDATE BANNER */
+.validate-banner {
+  display:none; width:100%; max-width:1000px;
+  background:rgba(61,232,138,.1); border:2px solid var(--success);
+  border-radius:10px; padding:16px 24px;
+  align-items:center; justify-content:space-between; gap:16px;
+}
+.validate-banner.show { display:flex; }
+.val-text { font-size:14px; font-weight:700; letter-spacing:1px; color:var(--success); }
+.val-sub  { font-size:11px; color:#888; margin-top:2px; }
+
+/* DATA BOX */
+.data-box {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:14px 16px;
+  display:flex; flex-direction:column; gap:0; min-width:160px;
+}
+.db-title {
+  font-size:10px; letter-spacing:3px; color:#888;
+  text-transform:uppercase; margin-bottom:10px;
+  padding-bottom:6px; border-bottom:1px solid var(--border);
+}
+.db-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:4px 0; border-bottom:1px solid rgba(30,37,56,.5);
+}
+.db-row:last-child { border-bottom:none; }
+.db-key { font-size:10px; letter-spacing:1px; color:#888; }
+.db-val { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--muted); }
+.db-val.good   { color:var(--success); }
+.db-val.bad    { color:var(--danger); }
+.db-val.accent { color:var(--accent); }
+.db-divider { height:1px; background:var(--border); margin:6px 0; }
+
+/* DATA BOX */
+.conn-dot {
+  width:8px; height:8px; border-radius:50%; display:inline-block;
+  margin-right:6px; background:#666;
+}
+.conn-dot.online  { background:var(--success); box-shadow:0 0 6px var(--success); }
+.conn-dot.offline { background:var(--danger); }
+.conn-dot.waiting { background:var(--accent); animation:pulse .8s infinite alternate; }
+
+/* BOTTOM BAR */
+.bottom-bar {
+  width:100%; max-width:1000px;
+  display:flex; gap:0; margin-top:14px;
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:8px; overflow:hidden;
+}
+.bb-cell {
+  flex:1; padding:8px 12px; text-align:center;
+  border-right:1px solid var(--border);
+}
+.bb-cell:last-child { border-right:none; }
+.bb-key { font-size:9px; letter-spacing:2px; color:#666; }
+.bb-val { font-size:14px; font-weight:700; color:var(--muted); font-family:'Share Tech Mono',monospace; }
+.bb-val.good { color:var(--success); }
+.bb-val.bad  { color:var(--danger); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line</span></div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span class="session-badge">SESSION : <span id="sessionId">—</span></span>
+    <span class="station-badge" id="stationBadge">STATION —</span>
+    <span style="font-size:11px;color:#888;">
+      <span class="conn-dot waiting" id="connDot"></span>
+      <span id="connLabel">En attente...</span>
+    </span>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div class="status-msg" id="statusMsg"></div>
+
+<!-- FLUX ROW -->
+<div class="flux-row">
+
+  <!-- WIP ENTRANT -->
+  <div class="wip-box wip-in">
+    <div class="wip-label">WIP entrant</div>
+    <div class="wip-count" id="wipIn">0</div>
+    <div class="wip-sub">pièces disponibles</div>
+  </div>
+
+  <div class="flux-arrow">→</div>
+
+  <!-- STATION -->
+  <div class="station-area">
+    <div class="station-title">
+      <span id="stationName">STATION — ASSEMBLAGE</span>
+      <span style="font-size:11px;color:#888;font-weight:400;" id="cycleCount">Cycles : 0</span>
+    </div>
+
+    <!-- GAMME -->
+    <div class="gamme-label">GAMME D'ASSEMBLAGE — SÉQUENCE CIBLE</div>
+    <div class="seq-row" id="targetRow"></div>
+
+    <div class="gamme-label" style="margin-top:2px;">ASSEMBLAGE EN COURS</div>
+    <div class="seq-row" id="progressRow"></div>
+
+    <!-- GRID -->
+    <div class="grid-label">POSTE DE TRAVAIL — COMPOSANTS</div>
+    <div class="comp-grid g3" id="compGrid"></div>
+
+    <!-- CONTROLS -->
+    <div class="ctrl-row">
+      <button class="btn btn-primary" id="btnStart" disabled>▶ Nouveau cycle</button>
+      <button class="btn btn-ghost" style="font-size:11px;" id="btnReset">↺ Reset</button>
+      <div class="timer-box" style="margin-left:auto;">
+        <div class="timer-val" id="timerDisp">00.000</div>
+        <div class="timer-sub">Cycle Time (s)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flux-arrow">→</div>
+
+  <!-- WIP SORTANT -->
+  <div class="wip-box wip-out">
+    <div class="wip-label">WIP sortant</div>
+    <div class="wip-count" id="wipOut">0</div>
+    <div class="wip-sub">pièces produites</div>
+  </div>
+
+  <!-- DATA BOX -->
+  <div class="data-box">
+    <div class="db-title">
+      <span style="color:var(--accent);margin-right:6px;">▌</span> DATA BOX
+    </div>
+    <div class="db-row"><span class="db-key">C/T ACTUEL</span><span class="db-val" id="dbCTact">—</span></div>
+    <div class="db-row"><span class="db-key">C/T MOYEN</span><span class="db-val" id="dbCTmoy">—</span></div>
+    <div class="db-row"><span class="db-key">C/T MIN</span>   <span class="db-val" id="dbCTmin">—</span></div>
+    <div class="db-divider"></div>
+    <div class="db-row"><span class="db-key">TAKT TIME</span><span class="db-val accent" id="dbTakt">—</span></div>
+    <div class="db-row"><span class="db-key">C/O</span>       <span class="db-val accent" id="dbCO">—</span></div>
+    <div class="db-divider"></div>
+    <div class="db-row"><span class="db-key">DISPO %</span>   <span class="db-val good" id="dbDispo">100%</span></div>
+    <div class="db-row"><span class="db-key">OUTPUT</span>    <span class="db-val good" id="dbOutput">0</span></div>
+    <div class="db-row"><span class="db-key">SCRAP</span>     <span class="db-val bad"  id="dbScrap">0</span></div>
+  </div>
+
+</div>
+
+<!-- VALIDATE BANNER -->
+<div class="validate-banner" id="validateBanner">
+  <div>
+    <div class="val-text">✅ Cycle terminé — Pièce prête</div>
+    <div class="val-sub">Validez pour envoyer la pièce à la station suivante</div>
+  </div>
+  <button class="btn btn-validate show" id="btnValidate" style="display:block;">
+    → Envoyer au flux aval
+  </button>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <div class="bb-cell"><div class="bb-key">C/T MOY</div><div class="bb-val" id="bbCT">—</div></div>
+  <div class="bb-cell"><div class="bb-key">TAKT</div><div class="bb-val" id="bbTakt">—</div></div>
+  <div class="bb-cell"><div class="bb-key">C/O</div><div class="bb-val" id="bbCO">—</div></div>
+  <div class="bb-cell"><div class="bb-key">OUTPUT</div><div class="bb-val good" id="bbOutput">0</div></div>
+  <div class="bb-cell"><div class="bb-key">SCRAP</div><div class="bb-val bad" id="bbScrap">0</div></div>
+  <div class="bb-cell"><div class="bb-key">WIP IN</div><div class="bb-val" id="bbWipIn">0</div></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// ?station=1&session=ABC123&cfg=base64...
+// ═══════════════════════════════════════════════════════════
+const params   = new URLSearchParams(window.location.search);
+const STATION  = parseInt(params.get('station') || '1');
+const SESSION  = params.get('session') || 'demo';
+const CFG_B64  = params.get('cfg') || '';
+
+document.getElementById('stationBadge').textContent = `STATION ${STATION}`;
+document.getElementById('sessionId').textContent = SESSION.toUpperCase();
+
+// ═══════════════════════════════════════════════════════════
+// CONFIG PAR DÉFAUT (sera remplacée par le lien ?cfg=)
+// ═══════════════════════════════════════════════════════════
+const DIFFICULTIES = {
+  easy:   { grid:3, seqLen:4 },
+  medium: { grid:4, seqLen:6 },
+  hard:   { grid:5, seqLen:8 },
+};
+
+const COMPONENT_POOL = [
+  {id:'A1',name:'Axe Ø6'},{id:'B2',name:'Bague'},{id:'C3',name:'Carter'},
+  {id:'D4',name:'Douille'},{id:'E5',name:'Ecrou M8'},{id:'F6',name:'Flasque'},
+  {id:'G7',name:'Goupille'},{id:'H8',name:'Hex M10'},{id:'J9',name:'Joint'},
+  {id:'K10',name:'Ressort'},{id:'L11',name:'Levier'},{id:'M12',name:'Manchon'},
+  {id:'N13',name:'Noix'},{id:'P14',name:'Pivot'},{id:'R15',name:'Rondelle'},
+  {id:'S16',name:'Segment'},{id:'T17',name:'Tige Ø4'},{id:'U18',name:'Unité'},
+  {id:'V19',name:'Vis M6'},{id:'W20',name:'Bouchon'},{id:'X21',name:'Support'},
+];
+
+let CFG = {
+  difficulty: 'easy',
+  stationName: `Station ${STATION} — Assemblage`,
+  takt: 15, co: 30,
+  gridComps: [],
+  sequence: [],
+};
+
+// Décoder config depuis URL
+if(CFG_B64){
+  try {
+    const decoded = JSON.parse(decodeURIComponent(escape(atob(CFG_B64))));
+    CFG.difficulty  = decoded.d || CFG.difficulty;
+    CFG.stationName = decoded.name || CFG.stationName;
+    CFG.takt        = decoded.t  || CFG.takt;
+    CFG.co          = decoded.co || CFG.co;
+    CFG.gridComps   = decoded.g.map(c=>({id:c.i,name:c.n}));
+    CFG.sequence    = decoded.s || [];
+  } catch(e){ console.warn('Config URL invalide'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ÉTAT
+// ═══════════════════════════════════════════════════════════
+let S = {
+  wipIn:  0,   // pièces en attente (depuis station précédente)
+  wipOut: 0,   // pièces produites (vers station suivante)
+  cycles: 0,
+  output: 0,
+  scrap:  0,
+  history: [],
+  // Cycle en cours
+  gridComps: [],
+  sessionComps: [],
+  sequence: [],
+  progress: [],
+  running: false,
+  started: false,
+  startTime: null,
+  raf: null,
+  errorCount: 0,
+};
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function shuffle(a){ const r=[...a]; for(let i=r.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]]; } return r; }
+function fmt(ms){ return (ms/1000).toFixed(3).padStart(6,'0'); }
+function setMsg(txt, type='info'){
+  const el=document.getElementById('statusMsg');
+  el.textContent=txt; el.className=`status-msg show ${type}`;
+  if(txt==='') el.classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+function initStation(){
+  document.getElementById('stationName').textContent = CFG.stationName;
+  document.getElementById('bbTakt').textContent  = CFG.takt + 's';
+  document.getElementById('bbCO').textContent    = CFG.co  + 's';
+  document.getElementById('dbTakt').textContent  = CFG.takt + 's';
+  document.getElementById('dbCO').textContent    = CFG.co  + 's';
+
+  const cfg = DIFFICULTIES[CFG.difficulty];
+  if(CFG.gridComps.length){
+    S.sessionComps = CFG.gridComps;
+    S.sequence     = CFG.sequence;
+  } else {
+    const pool = shuffle(COMPONENT_POOL).slice(0, cfg.grid * cfg.grid);
+    S.sessionComps = pool;
+    S.sequence = shuffle(pool).slice(0, cfg.seqLen).map(c=>c.id);
+  }
+  initCycle();
+  updateWIPDisplay();
+  setConn('waiting', 'Connexion Firebase...');
+  initFirebase();
+}
+
+function initCycle(){
+  const cfg = DIFFICULTIES[CFG.difficulty];
+  S.gridComps = shuffle([...S.sessionComps]);
+  S.progress  = [];
+  S.running   = false;
+  S.started   = false;
+  S.startTime = null;
+  S.errorCount= 0;
+  cancelAnimationFrame(S.raf);
+  document.getElementById('timerDisp').textContent = '00.000';
+  document.getElementById('validateBanner').classList.remove('show');
+  renderSeq(); renderGrid(); setMsg('');
+
+  // Bouton Start actif seulement si WIP entrant > 0 (sauf Station 1)
+  const btnStart = document.getElementById('btnStart');
+  if(STATION === 1 || S.wipIn > 0){
+    btnStart.disabled = false;
+    btnStart.textContent = '▶ Nouveau cycle';
+  } else {
+    btnStart.disabled = true;
+    btnStart.textContent = '⏳ En attente WIP';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDU GAMME + GRILLE
+// ═══════════════════════════════════════════════════════════
+function renderSeq(){
+  const tRow = document.getElementById('targetRow');
+  const pRow = document.getElementById('progressRow');
+  tRow.innerHTML = '';
+  pRow.innerHTML = '';
+  S.sequence.forEach((id,i)=>{
+    const t = document.createElement('div');
+    t.className = 'seq-slot';
+    t.innerHTML = `<span class="si">${i+1}</span>${id}`;
+    tRow.appendChild(t);
+    const p = document.createElement('div');
+    const done = i < S.progress.length;
+    const active = i === S.progress.length;
+    p.className = 'seq-slot' + (done?' done':active?' active':'');
+    p.innerHTML = `<span class="si">${i+1}</span>${done ? S.progress[i] : ''}`;
+    pRow.appendChild(p);
+  });
+}
+
+function renderGrid(){
+  const cfg = DIFFICULTIES[CFG.difficulty];
+  const g = document.getElementById('compGrid');
+  g.className = `comp-grid g${cfg.grid}`;
+  g.innerHTML = '';
+  S.gridComps.forEach((comp,idx)=>{
+    const row = Math.floor(idx/cfg.grid);
+    const col = idx % cfg.grid;
+    const posLabel = String.fromCharCode(65+row)+(col+1);
+    const done = S.progress.includes(comp.id);
+    const cell = document.createElement('div');
+    cell.className = 'comp-cell' + (done?' picked':'');
+    cell.dataset.id = comp.id;
+    cell.innerHTML = `<span class="cpos">${posLabel}</span><span class="cid">${comp.id}</span><span class="cname">${comp.name}</span>`;
+    if(!done) cell.addEventListener('click', ()=>pickComp(comp.id, cell));
+    g.appendChild(cell);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CYCLE LOGIC
+// ═══════════════════════════════════════════════════════════
+function startCycle(){
+  if(S.running) return;
+  // Consommer 1 pièce du WIP entrant (sauf Station 1)
+  if(STATION > 1 && S.wipIn <= 0){
+    setMsg('⏳ Pas de pièce en WIP entrant !', 'err'); return;
+  }
+  if(STATION > 1){
+    // Décrémenter WIP entrant dans Firebase
+    if(db){
+      db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).transaction(val => Math.max(0,(val||0)-1));
+    } else {
+      S.wipIn--; updateWIPDisplay();
+    }
+  }
+  S.running = true;
+  S.started = true;
+  S.startTime = performance.now();
+  runTimer();
+  setMsg('▶ Cycle démarré — cliquez les composants dans l\'ordre de la gamme', 'ok');
+  document.getElementById('btnStart').disabled = true;
+}
+
+function runTimer(){
+  const el = document.getElementById('timerDisp');
+  function tick(){
+    if(!S.running){ return; }
+    el.textContent = fmt(performance.now() - S.startTime);
+    S.raf = requestAnimationFrame(tick);
+  }
+  S.raf = requestAnimationFrame(tick);
+}
+
+function pickComp(id, cell){
+  if(!S.running) return;
+  const expected = S.sequence[S.progress.length];
+  if(id === expected){
+    cell.classList.add('picked');
+    S.progress.push(id);
+    renderSeq();
+    if(S.progress.length === S.sequence.length) finishCycle(true);
+  } else {
+    cell.classList.add('error');
+    S.errorCount++;
+    setTimeout(()=>cell.classList.remove('error'), 400);
+    setMsg(`❌ Erreur ! Attendu : ${expected}`, 'err');
+  }
+}
+
+function finishCycle(ok){
+  S.running = false;
+  cancelAnimationFrame(S.raf);
+  const elapsed = performance.now() - S.startTime;
+  S.cycles++;
+  if(ok){
+    S.output++;
+    S.wipOut++;
+    S.history.push(elapsed);
+    setMsg(`✅ Cycle terminé en ${fmt(elapsed)}s`, 'ok');
+    document.getElementById('validateBanner').classList.add('show');
+    document.getElementById('cycleCount').textContent = `Cycles : ${S.cycles}`;
+    updateStats();
+    updateWIPDisplay();
+    pushStats();
+    // TODO: push wipOut vers Firebase
+  } else {
+    S.scrap++;
+    setMsg('🗑 Cycle annulé — rebus', 'err');
+    initCycle();
+  }
+}
+
+function validatePiece(){
+  document.getElementById('validateBanner').classList.remove('show');
+  S.wipOut--;
+  updateWIPDisplay();
+  // Envoyer pièce à la station suivante via Firebase
+  const nextKey = `s${STATION+1}`;
+  const nextRef = db.ref(`assembly_line/${SESSION}/stations/${nextKey}/wip_in`);
+  nextRef.transaction(val => (val||0) + 1);
+  pushStats();
+  setMsg(`📦 Pièce envoyée → Station ${STATION+1}`, 'info');
+  setTimeout(()=>initCycle(), 800);
+}
+
+// ═══════════════════════════════════════════════════════════
+// WIP DISPLAY
+// ═══════════════════════════════════════════════════════════
+function updateWIPDisplay(){
+  document.getElementById('wipIn').textContent  = S.wipIn;
+  document.getElementById('wipOut').textContent = S.wipOut;
+  document.getElementById('bbWipIn').textContent = S.wipIn;
+  document.getElementById('bbOutput').textContent = S.output;
+  document.getElementById('bbScrap').textContent  = S.scrap;
+}
+
+function updateStats(){
+  if(!S.history.length) return;
+  const last = S.history[S.history.length-1];
+  const moy  = S.history.reduce((a,b)=>a+b,0)/S.history.length;
+  const min  = Math.min(...S.history);
+  document.getElementById('dbCTact').textContent  = (last/1000).toFixed(1)+'s';
+  document.getElementById('dbCTmoy').textContent  = (moy/1000).toFixed(1)+'s';
+  document.getElementById('dbCTmin').textContent  = (min/1000).toFixed(1)+'s';
+  document.getElementById('bbCT').textContent     = (moy/1000).toFixed(1)+'s';
+  document.getElementById('dbOutput').textContent = S.output;
+  document.getElementById('dbScrap').textContent  = S.scrap;
+  // Dispo : cycles ok / cycles totaux
+  const dispo = S.cycles > 0 ? Math.round((S.output/S.cycles)*100) : 100;
+  document.getElementById('dbDispo').textContent  = dispo + '%';
+  document.getElementById('dbDispo').className    = 'db-val ' + (dispo>=80?'good':dispo>=60?'accent':'bad');
+}
+
+// ═══════════════════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyDIE-YJ68VQkMj60n1vklQWei9-32Dv-Oo",
+  authDomain: "keeplean-beergame.firebaseapp.com",
+  databaseURL: "https://keeplean-beergame-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "keeplean-beergame",
+  storageBucket: "keeplean-beergame.firebasestorage.app",
+  messagingSenderId: "731779808067",
+  appId: "1:731779808067:web:e4312b55afe16e72b6cdf6"
+};
+
+let db = null;
+const stKey = `s${STATION}`;
+
+function setConn(state, label){
+  const dot = document.getElementById('connDot');
+  const lbl = document.getElementById('connLabel');
+  dot.className = 'conn-dot ' + state;
+  lbl.textContent = label;
+}
+
+function initFirebase(){
+  try {
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    setConn('waiting', 'Connexion Firebase...');
+    listenWipIn();
+    listenSessionConfig();
+    pushStats();
+    setConn('online', `Station ${STATION} connectée`);
+  } catch(e){
+    setConn('offline', 'Firebase indisponible — mode local');
+    console.warn('Firebase error:', e);
+  }
+}
+
+// Écoute WIP entrant en temps réel
+function listenWipIn(){
+  db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).on('value', snap=>{
+    const val = snap.val() || 0;
+    S.wipIn = val;
+    updateWIPDisplay();
+    // Activer/désactiver bouton Start
+    const btn = document.getElementById('btnStart');
+    if(STATION === 1 || S.wipIn > 0){
+      btn.disabled = false;
+      btn.textContent = '▶ Nouveau cycle';
+    } else {
+      btn.disabled = true;
+      btn.textContent = '⏳ En attente WIP';
+    }
+  });
+}
+
+// Écoute config session (takt, statut)
+function listenSessionConfig(){
+  db.ref(`assembly_line/${SESSION}/config`).on('value', snap=>{
+    const cfg = snap.val();
+    if(!cfg) return;
+    if(cfg.takt){
+      CFG.takt = cfg.takt;
+      document.getElementById('dbTakt').textContent = cfg.takt + 's';
+      document.getElementById('bbTakt').textContent = cfg.takt + 's';
+    }
+    if(cfg.status === 'stopped'){
+      setMsg('⏹ Session arrêtée par le formateur', 'err');
+      document.getElementById('btnStart').disabled = true;
+    }
+  });
+}
+
+// Écriture stats station dans Firebase
+function pushStats(){
+  if(!db) return;
+  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({
+    cycles:  S.cycles,
+    output:  S.output,
+    scrap:   S.scrap,
+    wip_out: S.wipOut,
+    ct_moy:  S.history.length ? parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)) : 0,
+    status:  S.running ? 'running' : 'idle',
+    name:    CFG.stationName,
+    last_updated: Date.now()
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════
+document.getElementById('btnStart').addEventListener('click', startCycle);
+document.getElementById('btnValidate').addEventListener('click', validatePiece);
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  S.output=0; S.scrap=0; S.cycles=0; S.wipIn=0; S.wipOut=0; S.history=[];
+  updateWIPDisplay(); initCycle();
+  setMsg('Session réinitialisée', 'info');
+});
+
+// ═══════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════
+initStation();
+</script>
+</body>
+</html>

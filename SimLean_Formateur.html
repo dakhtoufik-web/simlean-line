@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimLean Assembly Line — Formateur</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
+
+:root {
+  --bg:      #0b0e13;
+  --panel:   #111520;
+  --panel2:  #161b26;
+  --border:  #1e2538;
+  --accent:  #f0a500;
+  --cyan:    #00c2a8;
+  --danger:  #e84040;
+  --success: #3de88a;
+  --text:    #dde1ed;
+  --muted:   #ffffff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body {
+  background:var(--bg); color:var(--text);
+  font-family:'Barlow Condensed',sans-serif;
+  min-height:100vh; padding:16px;
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
+  background-size:40px 40px;
+}
+
+/* TOP BAR */
+.top-bar {
+  display:flex; justify-content:space-between; align-items:center;
+  border-bottom:2px solid var(--accent);
+  padding-bottom:10px; margin-bottom:20px; flex-wrap:wrap; gap:8px;
+}
+.logo { font-size:13px; letter-spacing:4px; color:var(--accent); font-weight:700; }
+.logo span { color:var(--muted); }
+.badge-formateur {
+  background:var(--danger); color:#fff;
+  border-radius:20px; padding:4px 16px;
+  font-size:12px; font-weight:700; letter-spacing:3px;
+}
+
+/* SETUP PANEL */
+.setup-panel {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:20px; margin-bottom:20px;
+}
+.panel-title {
+  font-size:11px; letter-spacing:3px; color:var(--accent);
+  text-transform:uppercase; margin-bottom:16px;
+  padding-bottom:8px; border-bottom:1px solid var(--border);
+}
+.setup-row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+.setup-field { display:flex; flex-direction:column; gap:4px; }
+.setup-field label { font-size:10px; letter-spacing:2px; color:#888; }
+.setup-field input, .setup-field select {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:6px; padding:8px 12px; color:var(--text);
+  font-family:'Barlow Condensed',sans-serif; font-size:14px;
+  outline:none; min-width:120px;
+}
+.setup-field input:focus, .setup-field select:focus { border-color:var(--cyan); }
+.btn {
+  border:none; border-radius:6px; padding:10px 20px;
+  font-family:'Barlow Condensed',sans-serif; font-size:13px;
+  font-weight:700; letter-spacing:1px; cursor:pointer;
+}
+.btn-primary { background:var(--accent); color:#000; }
+.btn-primary:hover { opacity:.85; }
+.btn-danger  { background:var(--danger);  color:#fff; }
+.btn-danger:hover  { opacity:.85; }
+.btn-ghost   { background:transparent; border:1px solid var(--border); color:var(--muted); }
+
+/* SESSION INFO */
+.session-info {
+  display:none; background:rgba(0,194,168,.08);
+  border:1px solid var(--cyan); border-radius:8px;
+  padding:12px 18px; margin-bottom:16px;
+  align-items:center; gap:20px; flex-wrap:wrap;
+}
+.session-info.show { display:flex; }
+.si-label { font-size:10px; letter-spacing:2px; color:#888; }
+.si-val   { font-size:15px; font-weight:700; color:var(--cyan);
+            font-family:'Share Tech Mono',monospace; }
+.si-url   { font-size:10px; color:#888; word-break:break-all; }
+
+/* FLUX VISUEL */
+.flux-container {
+  display:flex; align-items:center; gap:0;
+  overflow-x:auto; padding:10px 0; margin-bottom:20px;
+}
+
+.station-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:16px; min-width:160px;
+  display:flex; flex-direction:column; gap:8px; position:relative;
+}
+.station-card.active  { border-color:var(--success); }
+.station-card.idle    { border-color:var(--border); }
+.station-card.waiting { border-color:var(--accent); }
+
+.sc-num {
+  font-size:10px; letter-spacing:2px; color:#888;
+}
+.sc-name {
+  font-size:13px; font-weight:700; color:var(--muted);
+  letter-spacing:1px;
+}
+.sc-status {
+  font-size:10px; padding:3px 8px; border-radius:10px;
+  width:fit-content; letter-spacing:1px;
+}
+.sc-status.running { background:rgba(61,232,138,.15); color:var(--success); }
+.sc-status.waiting { background:rgba(240,165,0,.15); color:var(--accent); }
+.sc-status.idle    { background:rgba(30,37,56,.8); color:#666; }
+.sc-status.offline { background:rgba(232,64,64,.1); color:var(--danger); }
+
+.sc-wip-row {
+  display:flex; justify-content:space-between;
+  font-size:11px; margin-top:4px;
+}
+.sc-wip-in  { color:var(--cyan); }
+.sc-wip-out { color:var(--success); }
+.sc-cycles  { font-size:22px; font-family:'Share Tech Mono',monospace;
+              color:var(--accent); text-align:center; }
+
+/* FLÈCHE FLUX */
+.flux-arrow {
+  display:flex; flex-direction:column; align-items:center;
+  padding:0 8px; position:relative; min-width:80px;
+}
+.arrow-line {
+  width:100%; height:2px; background:var(--border); position:relative;
+}
+.arrow-line::after {
+  content:'▶'; position:absolute; right:-8px; top:-9px;
+  color:var(--border); font-size:18px;
+}
+.arrow-wip {
+  margin-top:6px; background:var(--panel2);
+  border:1px solid var(--border); border-radius:4px;
+  padding:3px 10px; font-size:12px; font-family:'Share Tech Mono',monospace;
+  color:var(--accent); font-weight:700;
+}
+.arrow-label { font-size:9px; color:#555; letter-spacing:1px; margin-top:2px; }
+
+/* KPI ROW */
+.kpi-row {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:12px; margin-bottom:20px;
+}
+.kpi-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:8px; padding:14px; text-align:center;
+}
+.kpi-val {
+  font-family:'Share Tech Mono',monospace; font-size:28px;
+  color:var(--accent); line-height:1;
+}
+.kpi-val.good { color:var(--success); }
+.kpi-val.bad  { color:var(--danger); }
+.kpi-label { font-size:10px; letter-spacing:2px; color:#666; margin-top:4px; }
+
+/* LINKS TABLE */
+.links-panel {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:20px;
+}
+.links-table { width:100%; border-collapse:collapse; margin-top:10px; }
+.links-table th {
+  font-size:10px; letter-spacing:2px; color:#888;
+  text-align:left; padding:6px 10px; border-bottom:1px solid var(--border);
+}
+.links-table td {
+  padding:8px 10px; border-bottom:1px solid var(--border);
+  font-size:12px; vertical-align:middle;
+}
+.links-table tr:last-child td { border-bottom:none; }
+.link-url {
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  color:var(--cyan); word-break:break-all; max-width:400px;
+}
+.btn-copy-link {
+  border:none; background:var(--panel2); border:1px solid var(--border);
+  color:var(--muted); border-radius:4px; padding:4px 10px;
+  font-size:11px; cursor:pointer; font-family:'Barlow Condensed',sans-serif;
+}
+.btn-copy-link:hover { border-color:var(--cyan); }
+.btn-copy-link.ok { background:rgba(61,232,138,.1); border-color:var(--success); color:var(--success); }
+
+/* CONN DOT */
+.conn-dot {
+  width:8px; height:8px; border-radius:50%; display:inline-block;
+  margin-right:4px;
+}
+.conn-dot.online  { background:var(--success); box-shadow:0 0 6px var(--success); }
+.conn-dot.offline { background:var(--danger); }
+.conn-dot.waiting { background:var(--accent); animation:pulse .8s infinite alternate; }
+@keyframes pulse { from{opacity:.6} to{opacity:1} }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Formateur</span></div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="font-size:11px;color:#888;">
+      <span class="conn-dot waiting" id="connDot"></span>
+      <span id="connLabel">Non connecté</span>
+    </span>
+    <span class="badge-formateur">FORMATEUR</span>
+  </div>
+</div>
+
+<!-- SETUP PANEL -->
+<div class="setup-panel">
+  <div class="panel-title">⚙ Configuration de la session</div>
+  <div class="setup-row">
+    <div class="setup-field">
+      <label>CODE SESSION</label>
+      <input id="cfgSession" type="text" value="LEAN01" maxlength="8" placeholder="Ex: LEAN01">
+    </div>
+    <div class="setup-field">
+      <label>NB STATIONS</label>
+      <select id="cfgStations">
+        <option value="2">2 stations</option>
+        <option value="3" selected>3 stations</option>
+        <option value="4">4 stations</option>
+        <option value="5">5 stations</option>
+      </select>
+    </div>
+    <div class="setup-field">
+      <label>TAKT TIME (s)</label>
+      <input id="cfgTakt" type="number" value="15" min="5" max="120">
+    </div>
+    <div class="setup-field">
+      <label>URL BASE NETLIFY</label>
+      <input id="cfgBaseUrl" type="text" placeholder="https://monsite.netlify.app" style="min-width:260px;">
+    </div>
+    <div class="setup-field">
+      <label>&nbsp;</label>
+      <button class="btn btn-primary" id="btnCreate">▶ Créer la session</button>
+    </div>
+    <div class="setup-field">
+      <label>&nbsp;</label>
+      <button class="btn btn-danger" id="btnStop" style="display:none;">⏹ Arrêter</button>
+    </div>
+  </div>
+</div>
+
+<!-- SESSION INFO -->
+<div class="session-info" id="sessionInfo">
+  <div><div class="si-label">SESSION</div><div class="si-val" id="siCode">—</div></div>
+  <div><div class="si-label">STATIONS</div><div class="si-val" id="siStations">—</div></div>
+  <div><div class="si-label">STATUT</div><div class="si-val" id="siStatus">—</div></div>
+  <div><div class="si-label">DURÉE</div><div class="si-val" id="siDuration">00:00:00</div></div>
+</div>
+
+<!-- KPI ROW -->
+<div class="kpi-row" id="kpiRow">
+  <div class="kpi-card"><div class="kpi-val good" id="kpiOutput">0</div><div class="kpi-label">OUTPUT TOTAL</div></div>
+  <div class="kpi-card"><div class="kpi-val bad"  id="kpiScrap">0</div><div class="kpi-label">SCRAP TOTAL</div></div>
+  <div class="kpi-card"><div class="kpi-val"      id="kpiWip">0</div><div class="kpi-label">WIP TOTAL</div></div>
+  <div class="kpi-card"><div class="kpi-val"      id="kpiCycles">0</div><div class="kpi-label">CYCLES TOTAUX</div></div>
+</div>
+
+<!-- FLUX VISUEL -->
+<div class="flux-container" id="fluxContainer">
+  <!-- Généré dynamiquement -->
+</div>
+
+<!-- LIENS PARTICIPANTS -->
+<div class="links-panel" id="linksPanel">
+  <div class="panel-title">🔗 Liens à distribuer aux participants</div>
+  <table class="links-table" id="linksTable">
+    <thead>
+      <tr>
+        <th>STATION</th>
+        <th>RÔLE</th>
+        <th>LIEN</th>
+        <th>ACTION</th>
+      </tr>
+    </thead>
+    <tbody id="linksBody">
+      <tr><td colspan="4" style="color:#555;font-size:12px;padding:16px;">Créez une session pour générer les liens.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+let F = {
+  sessionCode: '',
+  nbStations: 3,
+  takt: 15,
+  baseUrl: '',
+  running: false,
+  startTime: null,
+  timerInterval: null,
+  // Données stations (sera Firebase)
+  stations: [], // [{wipIn, wipOut, cycles, output, scrap, status}]
+};
+
+// ═══════════════════════════════════════════════════════════
+// CRÉER SESSION
+// ═══════════════════════════════════════════════════════════
+document.getElementById('btnCreate').addEventListener('click', ()=>{
+  F.sessionCode = document.getElementById('cfgSession').value.trim().toUpperCase() || 'LEAN01';
+  F.nbStations  = parseInt(document.getElementById('cfgStations').value);
+  F.takt        = parseInt(document.getElementById('cfgTakt').value) || 15;
+  F.baseUrl     = document.getElementById('cfgBaseUrl').value.trim().replace(/\/$/,'');
+
+  // Init stations locales
+  F.stations = Array.from({length: F.nbStations}, (_,i)=>({
+    num: i+1, wipIn:0, wipOut:0, cycles:0, output:0, scrap:0, status:'idle',
+    name: `Station ${i+1}`
+  }));
+
+  F.running = true;
+  F.startTime = Date.now();
+
+  // Afficher session info
+  document.getElementById('siCode').textContent     = F.sessionCode;
+  document.getElementById('siStations').textContent = F.nbStations;
+  document.getElementById('siStatus').textContent   = '▶ EN COURS';
+  document.getElementById('sessionInfo').classList.add('show');
+  document.getElementById('btnCreate').style.display = 'none';
+  document.getElementById('btnStop').style.display   = 'inline-block';
+
+  startDurationTimer();
+  renderFlux();
+  renderLinks();
+  setConn('online', `Session ${F.sessionCode} active`);
+  pushSessionToFirebase();
+});
+
+document.getElementById('btnStop').addEventListener('click', ()=>{
+  F.running = false;
+  clearInterval(F.timerInterval);
+  document.getElementById('siStatus').textContent = '⏹ TERMINÉE';
+  document.getElementById('btnStop').style.display = 'none';
+  document.getElementById('btnCreate').style.display = 'inline-block';
+  setConn('offline', 'Session terminée');
+  stopSessionFirebase();
+});
+
+// ═══════════════════════════════════════════════════════════
+// FLUX VISUEL
+// ═══════════════════════════════════════════════════════════
+function renderFlux(){
+  const container = document.getElementById('fluxContainer');
+  container.innerHTML = '';
+
+  // Fournisseur
+  const supp = document.createElement('div');
+  supp.className = 'station-card';
+  supp.innerHTML = `<div class="sc-num">ENTRÉE</div><div class="sc-name">FOURNISSEUR</div>
+    <div class="sc-status running">∞ pièces</div>`;
+  container.appendChild(supp);
+
+  F.stations.forEach((st, i)=>{
+    // Flèche + WIP entrant
+    const arrow = document.createElement('div');
+    arrow.className = 'flux-arrow';
+    arrow.innerHTML = `
+      <div class="arrow-line"></div>
+      <div class="arrow-wip" id="arrowWip${i}">${st.wipIn}</div>
+      <div class="arrow-label">WIP</div>`;
+    container.appendChild(arrow);
+
+    // Carte station
+    const card = document.createElement('div');
+    card.className = `station-card ${st.status}`;
+    card.id = `stCard${i}`;
+    card.innerHTML = `
+      <div class="sc-num">STATION ${st.num}</div>
+      <div class="sc-name" id="scName${i}">${st.name}</div>
+      <div class="sc-status idle" id="scStatus${i}">Hors ligne</div>
+      <div class="sc-cycles" id="scCycles${i}">0</div>
+      <div class="sc-wip-row">
+        <span class="sc-wip-in">↓ IN: <span id="scWipIn${i}">0</span></span>
+        <span class="sc-wip-out">OUT: <span id="scWipOut${i}">0</span> ↑</span>
+      </div>`;
+    container.appendChild(card);
+  });
+
+  // Flèche finale + Client
+  const arrowFinal = document.createElement('div');
+  arrowFinal.className = 'flux-arrow';
+  arrowFinal.innerHTML = `
+    <div class="arrow-line"></div>
+    <div class="arrow-wip" id="arrowWipFinal">0</div>
+    <div class="arrow-label">EXPÉDIÉ</div>`;
+  container.appendChild(arrowFinal);
+
+  const client = document.createElement('div');
+  client.className = 'station-card';
+  client.innerHTML = `<div class="sc-num">SORTIE</div><div class="sc-name">CLIENT</div>
+    <div class="sc-cycles" id="clientOutput">0</div>
+    <div class="sc-status running">pièces livrées</div>`;
+  container.appendChild(client);
+}
+
+// ═══════════════════════════════════════════════════════════
+// LIENS PARTICIPANTS
+// ═══════════════════════════════════════════════════════════
+function renderLinks(){
+  const tbody = document.getElementById('linksBody');
+  tbody.innerHTML = '';
+
+  const base = F.baseUrl || window.location.origin;
+  const stationFile = 'SimLean_Station.html';
+
+  F.stations.forEach((st, i)=>{
+    const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>Station ${st.num}</strong></td>
+      <td style="color:#888;">Opérateur ${st.num}</td>
+      <td><div class="link-url" id="linkUrl${i}">${url}</div></td>
+      <td>
+        <button class="btn-copy-link" onclick="copyLink(${i}, '${url}')">📋 Copier</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Lien formateur
+  const trF = document.createElement('tr');
+  const urlF = `${window.location.href.split('?')[0]}?session=${F.sessionCode}`;
+  trF.innerHTML = `
+    <td><strong style="color:var(--danger);">Formateur</strong></td>
+    <td style="color:#888;">Vue globale</td>
+    <td><div class="link-url">${urlF}</div></td>
+    <td><button class="btn-copy-link" onclick="copyLink(-1, '${urlF}')">📋 Copier</button></td>`;
+  tbody.appendChild(trF);
+}
+
+function copyLink(idx, url){
+  const btn = event.target;
+  function onOk(){ btn.textContent='✅ Copié !'; btn.classList.add('ok');
+    setTimeout(()=>{ btn.textContent='📋 Copier'; btn.classList.remove('ok'); },2000); }
+
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(url).then(onOk);
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); onOk();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// TIMER SESSION
+// ═══════════════════════════════════════════════════════════
+function startDurationTimer(){
+  F.timerInterval = setInterval(()=>{
+    const elapsed = Date.now() - F.startTime;
+    const h = String(Math.floor(elapsed/3600000)).padStart(2,'0');
+    const m = String(Math.floor((elapsed%3600000)/60000)).padStart(2,'0');
+    const s = String(Math.floor((elapsed%60000)/1000)).padStart(2,'0');
+    document.getElementById('siDuration').textContent = `${h}:${m}:${s}`;
+  }, 1000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONNEXION
+// ═══════════════════════════════════════════════════════════
+function setConn(state, label){
+  document.getElementById('connDot').className = 'conn-dot ' + state;
+  document.getElementById('connLabel').textContent = label;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TODO: Firebase listeners — mise à jour des cartes stations
+// updateStationCard(idx, data) { ... }
+// ═══════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyDIE-YJ68VQkMj60n1vklQWei9-32Dv-Oo",
+  authDomain: "keeplean-beergame.firebaseapp.com",
+  databaseURL: "https://keeplean-beergame-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "keeplean-beergame",
+  storageBucket: "keeplean-beergame.firebasestorage.app",
+  messagingSenderId: "731779808067",
+  appId: "1:731779808067:web:e4312b55afe16e72b6cdf6"
+};
+
+let db = null;
+
+function initFirebase(){
+  try {
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    setConn('online', 'Firebase connecté');
+  } catch(e){
+    setConn('offline', 'Firebase indisponible');
+    console.warn('Firebase:', e);
+  }
+}
+
+// Écrire config session dans Firebase
+function pushSessionToFirebase(){
+  if(!db) return;
+  db.ref(`assembly_line/${F.sessionCode}/config`).set({
+    nb_stations: F.nbStations,
+    takt: F.takt,
+    status: 'running',
+    created_at: Date.now()
+  });
+  // Init WIP entrant de la station 1 à ∞ (on utilise -1 = infini)
+  db.ref(`assembly_line/${F.sessionCode}/stations/s1/wip_in`).set(999);
+  listenAllStations();
+}
+
+// Écoute toutes les stations en temps réel
+function listenAllStations(){
+  db.ref(`assembly_line/${F.sessionCode}/stations`).on('value', snap=>{
+    const data = snap.val() || {};
+    let totalOutput=0, totalScrap=0, totalWip=0, totalCycles=0;
+
+    for(let i=0; i<F.nbStations; i++){
+      const st = data[`s${i+1}`] || {};
+      const wipIn   = st.wip_in  || 0;
+      const wipOut  = st.wip_out || 0;
+      const cycles  = st.cycles  || 0;
+      const output  = st.output  || 0;
+      const scrap   = st.scrap   || 0;
+      const status  = st.status  || 'offline';
+      const ctMoy   = st.ct_moy  || 0;
+
+      totalOutput += output;
+      totalScrap  += scrap;
+      totalWip    += wipIn;
+      totalCycles += cycles;
+
+      // Mettre à jour carte station
+      const card = document.getElementById(`stCard${i}`);
+      if(card){
+        card.className = `station-card ${status==='running'?'active':status==='idle'?'idle':'waiting'}`;
+      }
+      const elStatus = document.getElementById(`scStatus${i}`);
+      if(elStatus){
+        const labels = {running:'▶ En cycle', idle:'⏸ En attente', offline:'⚫ Hors ligne'};
+        elStatus.textContent = labels[status] || '—';
+        elStatus.className = `sc-status ${status}`;
+      }
+      const el = (id) => document.getElementById(id);
+      if(el(`scCycles${i}`))  el(`scCycles${i}`).textContent  = cycles;
+      if(el(`scWipIn${i}`))   el(`scWipIn${i}`).textContent   = wipIn === 999 ? '∞' : wipIn;
+      if(el(`scWipOut${i}`))  el(`scWipOut${i}`).textContent  = wipOut;
+
+      // Mettre à jour flèche WIP entre stations
+      const arrowEl = document.getElementById(`arrowWip${i}`);
+      if(arrowEl) arrowEl.textContent = wipIn === 999 ? '∞' : wipIn;
+    }
+
+    // Dernière station → client
+    const lastSt = data[`s${F.nbStations}`] || {};
+    const clientEl = document.getElementById('clientOutput');
+    if(clientEl) clientEl.textContent = lastSt.output || 0;
+    const arrowFinal = document.getElementById('arrowWipFinal');
+    if(arrowFinal) arrowFinal.textContent = lastSt.output || 0;
+
+    // KPI globaux
+    document.getElementById('kpiOutput').textContent  = totalOutput;
+    document.getElementById('kpiScrap').textContent   = totalScrap;
+    document.getElementById('kpiWip').textContent     = totalWip;
+    document.getElementById('kpiCycles').textContent  = totalCycles;
+  });
+}
+
+// Arrêter session dans Firebase
+function stopSessionFirebase(){
+  if(!db || !F.sessionCode) return;
+  db.ref(`assembly_line/${F.sessionCode}/config/status`).set('stopped');
+}
+
+// Init Firebase au chargement
+initFirebase();
+</script>
+</body>
+</html>
