@@ -240,8 +240,8 @@ body {
       <input id="cfgTakt" type="number" value="15" min="5" max="120">
     </div>
     <div class="setup-field">
-      <label>URL BASE NETLIFY</label>
-      <input id="cfgBaseUrl" type="text" placeholder="https://monsite.netlify.app" style="min-width:260px;">
+      <label>URL BASE GITHUB PAGES</label>
+      <input id="cfgBaseUrl" type="text" placeholder="https://username.github.io/simlean-line" style="min-width:260px;">
     </div>
     <div class="setup-field">
       <label>&nbsp;</label>
@@ -383,7 +383,7 @@ function renderFlux(){
     card.innerHTML = `
       <div class="sc-num">STATION ${st.num}</div>
       <div class="sc-name" id="scName${i}">${st.name}</div>
-      <div class="sc-status idle" id="scStatus${i}">Hors ligne</div>
+      <div class="sc-status waiting" id="scStatus${i}">⏸ En attente</div>
       <div class="sc-cycles" id="scCycles${i}">0</div>
       <div class="sc-wip-row">
         <span class="sc-wip-in">↓ IN: <span id="scWipIn${i}">0</span></span>
@@ -542,7 +542,7 @@ function listenAllStations(){
 
       totalOutput += output;
       totalScrap  += scrap;
-      totalWip    += wipIn;
+      totalWip += (wipIn === 999 ? 0 : wipIn);
       totalCycles += cycles;
 
       // Mettre à jour carte station
@@ -563,7 +563,7 @@ function listenAllStations(){
 
       // Mettre à jour flèche WIP entre stations
       const arrowEl = document.getElementById(`arrowWip${i}`);
-      if(arrowEl) arrowEl.textContent = wipIn === 999 ? '∞' : wipIn;
+      if(arrowEl) arrowEl.textContent = (i === 0 || wipIn === 999) ? '∞' : wipIn;
     }
 
     // Dernière station → client
