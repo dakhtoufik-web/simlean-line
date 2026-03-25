@@ -610,12 +610,18 @@ function validatePiece(){
   document.getElementById('validateBanner').classList.remove('show');
   S.wipOut--;
   updateWIPDisplay();
-  // Envoyer pièce à la station suivante via Firebase
-  const nextKey = `s${STATION+1}`;
-  const nextRef = db.ref(`assembly_line/${SESSION}/stations/${nextKey}/wip_in`);
-  nextRef.transaction(val => (val||0) + 1);
+  if(STATION < NB_STATIONS){
+    // Envoyer pièce à la station suivante via Firebase
+    const nextKey = `s${STATION+1}`;
+    const nextRef = db.ref(`assembly_line/${SESSION}/stations/${nextKey}/wip_in`);
+    nextRef.transaction(val => (val||0) + 1);
+    setMsg(`📦 Pièce envoyée → Station ${STATION+1}`, 'info');
+  } else {
+    // Dernière station → pièce livrée au CLIENT
+    db.ref(`assembly_line/${SESSION}/stations/${stKey}/client_output`).transaction(val => (val||0) + 1);
+    setMsg(`🏁 Pièce livrée au CLIENT ✅`, 'ok');
+  }
   pushStats();
-  setMsg(`📦 Pièce envoyée → Station ${STATION+1}`, 'info');
   setTimeout(()=>initCycle(), 800);
 }
 
@@ -704,6 +710,8 @@ function listenWipIn(){
 }
 
 // Écoute config session (takt, statut)
+let NB_STATIONS = 3; // mis à jour depuis Firebase config
+
 function listenSessionConfig(){
   db.ref(`assembly_line/${SESSION}/config`).on('value', snap=>{
     const cfg = snap.val();
@@ -712,6 +720,9 @@ function listenSessionConfig(){
       CFG.takt = cfg.takt;
       document.getElementById('dbTakt').textContent = cfg.takt + 's';
       document.getElementById('bbTakt').textContent = cfg.takt + 's';
+    }
+    if(cfg.nb_stations){
+      NB_STATIONS = cfg.nb_stations; // ← récupère le nombre réel de stations
     }
     if(cfg.status === 'stopped'){
       setMsg('⏹ Session arrêtée par le formateur', 'err');
