@@ -246,6 +246,22 @@ body {
 .bb-val { font-size:14px; font-weight:700; color:var(--muted); font-family:'Share Tech Mono',monospace; }
 .bb-val.good { color:var(--success); }
 .bb-val.bad  { color:var(--danger); }
+
+/* TAKT TIMER */
+.takt-timer {
+  width:100%; max-width:1000px;
+  display:flex; align-items:center; gap:14px;
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:8px; padding:10px 18px; margin-top:10px;
+}
+.takt-label { font-size:9px; letter-spacing:3px; color:#888; text-transform:uppercase; min-width:80px; }
+.takt-bar-wrap { flex:1; height:10px; background:var(--panel2); border-radius:5px; overflow:hidden; border:1px solid var(--border); }
+.takt-bar { height:100%; width:100%; background:var(--success); border-radius:5px; transition:width .5s linear, background .3s; }
+.takt-bar.warn  { background:var(--accent); }
+.takt-bar.alert { background:var(--danger); }
+.takt-count { font-family:'Share Tech Mono',monospace; font-size:16px; font-weight:700; color:var(--success); min-width:48px; text-align:right; }
+.takt-count.warn  { color:var(--accent); }
+.takt-count.alert { color:var(--danger); animation:pulse .4s infinite alternate; }
 </style>
 </head>
 <body>
@@ -354,6 +370,15 @@ body {
   <div class="bb-cell"><div class="bb-key">OUTPUT</div><div class="bb-val good" id="bbOutput">0</div></div>
   <div class="bb-cell"><div class="bb-key">SCRAP</div><div class="bb-val bad" id="bbScrap">0</div></div>
   <div class="bb-cell"><div class="bb-key">WIP IN</div><div class="bb-val" id="bbWipIn">0</div></div>
+</div>
+
+<!-- TAKT TIMER BAR -->
+<div class="takt-timer" id="taktTimerBox" style="display:none;">
+  <span class="takt-label">⏱ TAKT</span>
+  <div class="takt-bar-wrap">
+    <div class="takt-bar" id="taktBar"></div>
+  </div>
+  <span class="takt-count" id="taktCount">—</span>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -553,8 +578,47 @@ function startCycle(){
   S.started = true;
   S.startTime = performance.now();
   runTimer();
+  startTaktTimer();
   setMsg('▶ Cycle démarré — cliquez les composants dans l\'ordre de la gamme', 'ok');
   document.getElementById('btnStart').disabled = true;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TAKT TIMER
+// ═══════════════════════════════════════════════════════════
+let taktRaf = null;
+let taktStart = null;
+function startTaktTimer(){
+  const takt = CFG.takt * 1000;
+  if(!takt) return;
+  taktStart = performance.now();
+  const box   = document.getElementById('taktTimerBox');
+  const bar   = document.getElementById('taktBar');
+  const count = document.getElementById('taktCount');
+  box.style.display = 'flex';
+  cancelAnimationFrame(taktRaf);
+  function tick(){
+    const elapsed = performance.now() - taktStart;
+    const remaining = Math.max(0, takt - elapsed);
+    const pct = (remaining / takt) * 100;
+    bar.style.width = pct + '%';
+    count.textContent = (remaining / 1000).toFixed(1) + 's';
+    // Color states
+    const cls = pct > 40 ? '' : pct > 15 ? 'warn' : 'alert';
+    bar.className  = 'takt-bar' + (cls ? ' ' + cls : '');
+    count.className = 'takt-count' + (cls ? ' ' + cls : '');
+    if(remaining > 0) taktRaf = requestAnimationFrame(tick);
+    else {
+      bar.style.width = '0%';
+      count.textContent = '⚠ 0.0s';
+      count.className = 'takt-count alert';
+    }
+  }
+  taktRaf = requestAnimationFrame(tick);
+}
+function stopTaktTimer(){
+  cancelAnimationFrame(taktRaf);
+  document.getElementById('taktTimerBox').style.display = 'none';
 }
 
 function runTimer(){
@@ -586,6 +650,7 @@ function pickComp(id, cell){
 function finishCycle(ok){
   S.running = false;
   cancelAnimationFrame(S.raf);
+  stopTaktTimer();
   const elapsed = performance.now() - S.startTime;
   S.cycles++;
   if(ok){
@@ -610,18 +675,12 @@ function validatePiece(){
   document.getElementById('validateBanner').classList.remove('show');
   S.wipOut--;
   updateWIPDisplay();
-  if(STATION < NB_STATIONS){
-    // Envoyer pièce à la station suivante via Firebase
-    const nextKey = `s${STATION+1}`;
-    const nextRef = db.ref(`assembly_line/${SESSION}/stations/${nextKey}/wip_in`);
-    nextRef.transaction(val => (val||0) + 1);
-    setMsg(`📦 Pièce envoyée → Station ${STATION+1}`, 'info');
-  } else {
-    // Dernière station → pièce livrée au CLIENT
-    db.ref(`assembly_line/${SESSION}/stations/${stKey}/client_output`).transaction(val => (val||0) + 1);
-    setMsg(`🏁 Pièce livrée au CLIENT ✅`, 'ok');
-  }
+  // Envoyer pièce à la station suivante via Firebase
+  const nextKey = `s${STATION+1}`;
+  const nextRef = db.ref(`assembly_line/${SESSION}/stations/${nextKey}/wip_in`);
+  nextRef.transaction(val => (val||0) + 1);
   pushStats();
+  setMsg(`📦 Pièce envoyée → Station ${STATION+1}`, 'info');
   setTimeout(()=>initCycle(), 800);
 }
 
@@ -710,8 +769,6 @@ function listenWipIn(){
 }
 
 // Écoute config session (takt, statut)
-let NB_STATIONS = 3; // mis à jour depuis Firebase config
-
 function listenSessionConfig(){
   db.ref(`assembly_line/${SESSION}/config`).on('value', snap=>{
     const cfg = snap.val();
@@ -720,9 +777,6 @@ function listenSessionConfig(){
       CFG.takt = cfg.takt;
       document.getElementById('dbTakt').textContent = cfg.takt + 's';
       document.getElementById('bbTakt').textContent = cfg.takt + 's';
-    }
-    if(cfg.nb_stations){
-      NB_STATIONS = cfg.nb_stations; // ← récupère le nombre réel de stations
     }
     if(cfg.status === 'stopped'){
       setMsg('⏹ Session arrêtée par le formateur', 'err');
