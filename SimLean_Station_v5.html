@@ -79,8 +79,11 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .puzzle-wrap{display:flex;justify-content:flex-start;overflow-x:auto;margin-bottom:14px;}
 .puzzle-board{display:inline-grid;gap:0;}
 .puzzle-board.cols4{grid-template-columns:repeat(4,82px);}
+.puzzle-board.cols5{grid-template-columns:repeat(5,68px);}
 
-.puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;width:82px;height:82px;}
+.puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;}
+.puzzle-board.cols4 .puzzle-cell,.corner-drop.cols4{width:82px;height:82px;}
+.puzzle-board.cols5 .puzzle-cell,.corner-drop.cols5{width:68px;height:68px;}
 .puzzle-cell svg{width:100%;height:100%;overflow:visible;}
 .piece-st-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;z-index:10;text-shadow:0 1px 2px rgba(0,0,0,.6);}
 
@@ -214,27 +217,28 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 // ══════════════════════════════════════════════════════
-// PUZZLE PRODUCT — 4x4 grid, 4 stations × 4 pieces
-// Fixed position layout:
-//  Row 0: S1  S2  S3  S1
-//  Row 1: S2  S4  S4  S3
-//  Row 2: S3  S4  S4  S2
-//  Row 3: S1  S3  S2  S1
+// PUZZLE PRODUCT — dynamic grid, profile from Firebase
 // ══════════════════════════════════════════════════════
-const COLS=4, ROWS=4;
-const PIECE_MAP=[
-  1,2,3,1,
-  2,4,4,3,
-  3,4,4,2,
-  1,3,2,1
-];
-// For each station, which flat indices are theirs
-const STATION_POSITIONS={
-  1:[0,3,12,15],   // 4 corners
-  2:[1,4,11,14],   // edges mid
-  3:[2,7,8,13],    // edges other
-  4:[5,6,9,10],    // center
-};
+let COLS=4, ROWS=4;
+let PIECE_MAP=[];       // built dynamically from profile
+let STATION_POSITIONS={ 1:[0,3,12,15], 2:[1,4,11,14], 3:[2,7,8,13], 4:[5,6,9,10] }; // default
+
+// Default profile (4x4 équilibré) — overridden by Firebase
+const DEFAULT_PROFILE={cols:4,rows:4,1:[0,3,12,15],2:[1,4,11,14],3:[2,7,8,13],4:[5,6,9,10]};
+
+function applyProfile(profileData){
+  const p=profileData||DEFAULT_PROFILE;
+  COLS=p.cols||4; ROWS=p.rows||4;
+  STATION_POSITIONS={1:p[1]||p['1']||[],2:p[2]||p['2']||[],3:p[3]||p['3']||[],4:p[4]||p['4']||[]};
+  // Build PIECE_MAP
+  PIECE_MAP=new Array(COLS*ROWS).fill(0);
+  for(let st=1;st<=4;st++){
+    (STATION_POSITIONS[st]||[]).forEach(idx=>{ PIECE_MAP[idx]=st; });
+  }
+  // Update grid CSS class
+  const board=document.getElementById('puzzleBoard');
+  if(board) board.className=`puzzle-board cols${COLS}`;
+}
 
 // Station colors
 const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8'};
@@ -299,14 +303,15 @@ function generateTopology(){
   for(let r=0;r<ROWS;r++){v[r]=[];for(let c=0;c<COLS-1;c++)v[r][c]=Math.random()>.5?1:-1;}
   return{h,v};
 }
-function getSides(flatIdx,topo){
-  const row=Math.floor(flatIdx/COLS),col=flatIdx%COLS;
+function getSides(flatIdx,topo,cols,rows){
+  cols=cols||COLS;rows=rows||ROWS;
+  const row=Math.floor(flatIdx/cols),col=flatIdx%cols;
   const{h,v}=topo;
   return{
     top:   row===0      ?0:h[row-1][col],
-    bottom:row===ROWS-1 ?0:-h[row][col],
+    bottom:row===rows-1 ?0:-h[row][col],
     left:  col===0      ?0:v[row][col-1],
-    right: col===COLS-1 ?0:-v[row][col],
+    right: col===cols-1 ?0:-v[row][col],
   };
 }
 function piecePath(sides,SZ){
@@ -359,10 +364,11 @@ function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');e
 // INIT
 // ══════════════════════════════════════════════════════
 function initStation(){
+  applyProfile(DEFAULT_PROFILE); // apply default until Firebase responds
   ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
   ['dbCO','bbCO'].forEach(id=>document.getElementById(id).textContent=CFG.co+'s');
   document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLAGE`;
-  // Assign my 4 pieces from pool segment
+  // Assign my pieces from pool segment
   const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
   const segStart=(STATION-1)*4;
   S.myPieces=myPositions.map((pos,i)=>({
@@ -383,7 +389,7 @@ function initCycle(){
     S.cornerSides[pos]=getSides(pos,S.topology);
   });
   // Shuffle display order in buffer
-  S.bufferDisplayOrder=shuffle([0,1,2,3]);
+  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]);
   // Corner comps = my pieces shuffled for display
   S.cornerComps=S.myPieces.map(p=>({...p}));
   S.placedPositions={};
@@ -436,7 +442,7 @@ function renderBuffer(){
 function renderBoard(){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
-  const SZ=82;
+  const SZ=COLS===5?68:82;
   for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
     const sides=getSides(flatIdx,S.topology);
     const ownerStation=PIECE_MAP[flatIdx]; // which station owns this position
@@ -490,19 +496,19 @@ function handleDrop(compIdx,targetPos){
     S.placedPositions[targetPos]=comp;
     renderBuffer();renderBoard();updateBufferProgress();
     setMsg(`✓ ${comp.id} placé (${Object.keys(S.placedPositions).length}/4)`,'ok');
-    if(Object.keys(S.placedPositions).length===4)finishCycle(true);
+    if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
   } else {
     S.errorCount++;
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
     setMsg(`❌ Mauvais emplacement ! ${comp.id} → pos ${comp.targetPos} | Erreurs : ${S.errorCount}`,'err');
-    if(S.errorCount%3===0){S.scrap++;finishCycle(false);}
+    if(S.errorCount>0&&S.errorCount%3===0){S.scrap++;finishCycle(false);}
   }
 }
 
 function updateBufferProgress(){
   const placed=Object.keys(S.placedPositions).length;
-  document.getElementById('bufferProgress').textContent=`${placed} / 4`;
+  document.getElementById('bufferProgress').textContent=`${placed} / ${S.myPieces.length}`;
 }
 
 // Touch drag
@@ -594,7 +600,7 @@ function showCompletePuzzle(){
   // All 16 pieces become their station color
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
-  const SZ=82;
+  const SZ=COLS===5?68:82;
   for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
     const sides=getSides(flatIdx,S.topology);
     const stNum=PIECE_MAP[flatIdx];
@@ -699,6 +705,14 @@ function listenSessionConfig(){
     const cfg=snap.val();if(!cfg)return;
     if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}
     if(cfg.nb_stations)NB_STATIONS=cfg.nb_stations;
+    if(cfg.profile_data){
+      applyProfile(cfg.profile_data);
+      // Re-assign my pieces with new profile
+      const myPos=STATION_POSITIONS[STATION]||[];
+      const segStart=([0,4,8,12,16])[STATION-1]||((STATION-1)*4);
+      S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
+      initCycle();
+    }
     if(cfg.status==='stopped'){setMsg('⏹ Session arrêtée','err');document.getElementById('btnStart').disabled=true;}
     if(cfg.reset_signal&&cfg.reset_signal!==S.lastResetSignal){
       S.lastResetSignal=cfg.reset_signal;
