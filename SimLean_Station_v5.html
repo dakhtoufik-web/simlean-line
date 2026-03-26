@@ -413,7 +413,7 @@ function initCycle(){
 // ══════════════════════════════════════════════════════
 function renderBuffer(){
   const bar=document.getElementById('bufferBar');
-  bar.innerHTML='<div class="buffer-bar-label">BUFFER</div>';
+  bar.innerHTML=`<div class="buffer-bar-label">BUFFER</div>${!S.running?'<div style="font-size:9px;letter-spacing:1px;color:var(--danger);font-weight:700;text-transform:uppercase;align-self:center;margin-left:4px;">🔒 Démarrer le cycle</div>':''}`;
   const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
   displayOrder.forEach(i=>{
     const comp=S.cornerComps[i];
@@ -431,10 +431,16 @@ function renderBuffer(){
     const refEl=document.createElement('span');refEl.className='bp-ref';refEl.textContent=comp.id;refEl.style.color=placed?'var(--success)':ST_TEXT[STATION];div.appendChild(refEl);
     const nameEl=document.createElement('span');nameEl.className='bp-name';nameEl.textContent=comp.name;div.appendChild(nameEl);
     if(!placed){
-      div.draggable=true;
-      div.addEventListener('dragstart',e=>{div.classList.add('dragging');e.dataTransfer.setData('compIdx',i);e.dataTransfer.effectAllowed='move';currentDrag={idx:i,comp};});
-      div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
-      div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
+      div.draggable=S.running;
+      div.style.cursor=S.running?'grab':'not-allowed';
+      div.style.opacity=S.running?'1':'0.6';
+      if(S.running){
+        div.addEventListener('dragstart',e=>{div.classList.add('dragging');e.dataTransfer.setData('compIdx',i);e.dataTransfer.effectAllowed='move';currentDrag={idx:i,comp};});
+        div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
+        div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
+      } else {
+        div.addEventListener('click',()=>setMsg('▶ Cliquez sur "Nouveau cycle" pour commencer','err'));
+      }
     }
     bar.appendChild(div);
   });
@@ -461,9 +467,11 @@ function renderBoard(){
       cell.className='corner-drop'+(S.running?' pulsing':'');
       cell.dataset.pos=flatIdx;
       cell.innerHTML=`<span class="drop-hint" style="font-size:9px;">${comp?comp.id:''}</span>`;
-      cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');cell.classList.remove('pulsing');});
-      cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');if(S.running)cell.classList.add('pulsing');});
-      cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,flatIdx);});
+      if(S.running){
+        cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');cell.classList.remove('pulsing');});
+        cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
+        cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,flatIdx);});
+      }
       board.appendChild(cell);
     } else {
       // Filled cell — show with correct station color
@@ -492,7 +500,7 @@ function renderBoard(){
 let currentDrag=null;
 
 function handleDrop(compIdx,targetPos){
-  if(!S.running){startCycle();}
+  if(!S.running){setMsg('▶ Cliquez sur "Nouveau cycle" pour commencer','err');return;}
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
   if(comp.targetPos===targetPos){
@@ -525,6 +533,7 @@ document.addEventListener('touchmove',e=>{
 },{passive:true});
 document.addEventListener('touchend',e=>{
   if(!currentDrag)return;
+  if(!S.running){currentDrag=null;setMsg('▶ Cliquez sur "Nouveau cycle" pour commencer','err');return;}
   const touch=e.changedTouches[0];
   const el=document.elementFromPoint(touch.clientX,touch.clientY);
   if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.idx,parseInt(cd.dataset.pos));}
