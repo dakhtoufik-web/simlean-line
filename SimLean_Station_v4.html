@@ -439,6 +439,8 @@ function initCycle(){
   const btn=document.getElementById('btnStart');
   if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
   else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
+  // Station 1 toujours active
+  if(STATION===1){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
 }
 
 // ══════════════════════════════════════════════════════
@@ -487,7 +489,7 @@ function renderBuffer(){
     nameEl.textContent=comp.name;
     div.appendChild(nameEl);
 
-    if(!placed&&S.running){
+    if(!placed){
       div.draggable=true;
       div.addEventListener('dragstart',e=>{
         div.classList.add('dragging');
@@ -560,7 +562,7 @@ function renderBoard(){
         cell.innerHTML=`<span class="drop-hint" style="font-size:${cellSize*.1}px;">${cornerKey}<br><span style="font-size:${cellSize*.08}px;color:var(--accent);">${cornerComp?cornerComp.id:''}</span></span>`;
       }
 
-      if(S.running&&!placed){
+      if(!placed){
         cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');cell.classList.remove('pulsing');});
         cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
         cell.addEventListener('drop',e=>{
@@ -594,7 +596,10 @@ function renderBoard(){
 let currentDrag=null;
 
 function handleDrop(pieceId,pieceCornerKey,targetCornerKey){
-  if(!S.running)return;
+  // Auto-démarrer le cycle au premier glissement
+  if(!S.running){
+    startCycle();
+  }
   // The piece must go to its assigned corner
   if(pieceCornerKey===targetCornerKey){
     // Correct corner!
@@ -736,6 +741,8 @@ function refillBuffer(){
   const btn=document.getElementById('btnStart');
   if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
   else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
+  // Station 1 toujours active
+  if(STATION===1){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
 }
 
 function updateWIPDisplay(){
