@@ -286,7 +286,7 @@ let S={
   placedPositions:{}, // posIdx -> comp
   puzzleState:{},     // full puzzle: posIdx -> stationNum (from Firebase)
   running:false,started:false,startTime:null,raf:null,errorCount:0,
-  topology:null,cornerSides:{},bufferDisplayOrder:null,
+  topology:null,cornerSides:{},bufferDisplayOrder:null,lastResetSignal:null,
 };
 let NB_STATIONS=4,sessionStart=null,sessionInterval=null,db=null;
 
@@ -550,12 +550,7 @@ function finishCycle(ok){
   S.cycles++;
   if(ok){
     S.output++;S.wipOut++;S.history.push(elapsed);
-    // Push my placed pieces to Firebase puzzle state
-    if(db){
-      const updates={};
-      Object.keys(S.placedPositions).forEach(pos=>{updates[pos]=STATION;});
-      db.ref(`assembly_line/${SESSION}/puzzle_state`).update(updates);
-    }
+    // NOTE: puzzle state pushed to Firebase only on validatePiece (not before)
     // Check if puzzle is complete (station 4 last)
     const isLast=(STATION===NB_STATIONS);
     if(isLast){
@@ -599,6 +594,12 @@ function showCompletePuzzle(){
 function validatePiece(){
   document.getElementById('validateBanner').classList.remove('show');
   S.wipOut--;updateWIPDisplay();
+  // NOW push puzzle pieces to Firebase — only after operator validates
+  if(db){
+    const updates={};
+    Object.keys(S.placedPositions).forEach(pos=>{updates[pos]=STATION;});
+    db.ref(`assembly_line/${SESSION}/puzzle_state`).update(updates);
+  }
   if(STATION<NB_STATIONS&&db){
     db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);
     setMsg(`📦 Puzzle → ASSY ${STATION+1}`,'info');
@@ -678,6 +679,16 @@ function listenSessionConfig(){
     if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}
     if(cfg.nb_stations)NB_STATIONS=cfg.nb_stations;
     if(cfg.status==='stopped'){setMsg('⏹ Session arrêtée','err');document.getElementById('btnStart').disabled=true;}
+    if(cfg.reset_signal&&cfg.reset_signal!==S.lastResetSignal){
+      S.lastResetSignal=cfg.reset_signal;
+      // Reset local stats
+      S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
+      S.history=[];S.puzzleState={};
+      updateWIPDisplay();updateStats();
+      document.getElementById('cycleCount').textContent='Cycles : 0';
+      initCycle();
+      setMsg('↺ Session réinitialisée par le formateur','info');
+    }
   });
 }
 function pushStats(){
