@@ -244,11 +244,12 @@ body {
     </div>
     <div class="setup-field">
       <label>PROFIL GOULOT</label>
-      <select id="cfgProfile">
+      <select id="cfgProfile" onchange="toggleManual()">
         <option value="Équilibré (4-4-4-4)">Équilibré (4-4-4-4)</option>
         <option value="Goulot S2 (2-8-3-3)">Goulot S2 (2-8-3-3)</option>
         <option value="Goulot S3 (4-2-6-4)">Goulot S3 (4-2-6-4)</option>
         <option value="Goulot S4 (4-4-2-6)">Goulot S4 (4-4-2-6)</option>
+        <option value="Manuel">✏ Manuel</option>
       </select>
     </div>
     <div class="setup-field">
@@ -256,6 +257,28 @@ body {
       <input id="cfgTakt" type="number" value="15" min="5" max="120">
     </div>
 
+    <div id="manualPanel" style="display:none;width:100%;margin-top:10px;background:var(--panel2);border:1px solid var(--cyan);padding:14px 16px;">
+      <div style="font-size:10px;letter-spacing:2px;color:var(--cyan);font-weight:700;margin-bottom:12px;text-transform:uppercase;">✏ Répartition manuelle — nombre de pièces par station</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="setup-field">
+          <label style="color:var(--s1,#e84040);">ASSY 1</label>
+          <input id="m1" type="number" min="1" max="20" value="4" style="width:70px;">
+        </div>
+        <div class="setup-field">
+          <label style="color:var(--s2,#f0a500);">ASSY 2</label>
+          <input id="m2" type="number" min="1" max="20" value="4" style="width:70px;">
+        </div>
+        <div class="setup-field">
+          <label style="color:var(--s3,#3de88a);">ASSY 3</label>
+          <input id="m3" type="number" min="1" max="20" value="4" style="width:70px;">
+        </div>
+        <div class="setup-field">
+          <label style="color:var(--s4,#00c2a8);">ASSY 4</label>
+          <input id="m4" type="number" min="1" max="20" value="4" style="width:70px;">
+        </div>
+        <div id="manualTotal" style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--muted);align-self:flex-end;padding-bottom:10px;">Total : 16 / 16 ✓</div>
+      </div>
+    </div>
     <div class="setup-field">
       <label>&nbsp;</label>
       <button class="btn btn-primary" id="btnCreate">▶ Créer la session</button>
@@ -334,12 +357,66 @@ const PROFILES = {
 function updateProfiles(){
   const gridSize = document.getElementById('cfgGridSize').value;
   const sel = document.getElementById('cfgProfile');
+  const prev = sel.value;
   sel.innerHTML = '';
   Object.keys(PROFILES[gridSize]).forEach(p=>{
     const opt = document.createElement('option');
     opt.value = p; opt.textContent = p;
     sel.appendChild(opt);
   });
+  // Add manual option
+  const mopt = document.createElement('option');
+  mopt.value = 'Manuel'; mopt.textContent = '✏ Manuel';
+  sel.appendChild(mopt);
+  if(prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
+  toggleManual();
+}
+
+function toggleManual(){
+  const isManual = document.getElementById('cfgProfile').value === 'Manuel';
+  document.getElementById('manualPanel').style.display = isManual ? 'block' : 'none';
+  if(isManual) updateManualTotal();
+}
+
+function updateManualTotal(){
+  const gridSize = document.getElementById('cfgGridSize').value;
+  const maxPieces = gridSize==='5x5' ? 25 : 16;
+  const v1=parseInt(document.getElementById('m1').value)||0;
+  const v2=parseInt(document.getElementById('m2').value)||0;
+  const v3=parseInt(document.getElementById('m3').value)||0;
+  const v4=parseInt(document.getElementById('m4').value)||0;
+  const total=v1+v2+v3+v4;
+  const ok = total===maxPieces;
+  const el=document.getElementById('manualTotal');
+  el.textContent=`Total : ${total} / ${maxPieces} ${ok?'✓':'✗'}`;
+  el.style.color=ok?'var(--success)':'var(--danger)';
+}
+
+function buildManualProfile(){
+  const gridSize = document.getElementById('cfgGridSize').value;
+  const cols = gridSize==='5x5' ? 5 : 4;
+  const rows = cols;
+  const counts=[
+    parseInt(document.getElementById('m1').value)||0,
+    parseInt(document.getElementById('m2').value)||0,
+    parseInt(document.getElementById('m3').value)||0,
+    parseInt(document.getElementById('m4').value)||0,
+  ];
+  const total=counts.reduce((a,b)=>a+b,0);
+  const maxPieces=cols*rows;
+  if(total!==maxPieces){ alert(`Total doit être ${maxPieces} pièces (actuellement ${total})`); return null; }
+  // Distribute positions: fill grid row by row, assign to stations in order
+  const positions={1:[],2:[],3:[],4:[]};
+  // Shuffle grid indices then assign blocks
+  const allIdx=[...Array(maxPieces).keys()];
+  // Shuffle for random distribution
+  for(let i=allIdx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[allIdx[i],allIdx[j]]=[allIdx[j],allIdx[i]];}
+  let cursor=0;
+  for(let st=1;st<=4;st++){
+    positions[st]=allIdx.slice(cursor,cursor+counts[st-1]);
+    cursor+=counts[st-1];
+  }
+  return {cols,rows,...positions};
 }
 
 let F = {
@@ -364,6 +441,11 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   F.takt        = parseInt(document.getElementById('cfgTakt').value) || 15;
   F.gridSize    = document.getElementById('cfgGridSize').value;
   F.profile     = document.getElementById('cfgProfile').value;
+  if(F.profile==='Manuel'){
+    const mp=buildManualProfile();
+    if(!mp)return; // validation failed
+    F.manualProfileData=mp;
+  }
   F.baseUrl     = 'https://dakhtoufik-web.github.io/simlean-line';
 
   // Init stations locales
@@ -583,8 +665,10 @@ function initFirebase(){
 // Écrire config session dans Firebase
 function pushSessionToFirebase(){
   if(!db) return;
-  const profileData = PROFILES[F.gridSize] && PROFILES[F.gridSize][F.profile]
-    ? PROFILES[F.gridSize][F.profile] : PROFILES['4x4']['Équilibré (4-4-4-4)'];
+  const profileData = F.profile==='Manuel'
+    ? F.manualProfileData
+    : (PROFILES[F.gridSize] && PROFILES[F.gridSize][F.profile]
+      ? PROFILES[F.gridSize][F.profile] : PROFILES['4x4']['Équilibré (4-4-4-4)']);
   db.ref(`assembly_line/${F.sessionCode}/config`).set({
     nb_stations: 4,
     takt: F.takt,
@@ -662,10 +746,14 @@ function stopSessionFirebase(){
   db.ref(`assembly_line/${F.sessionCode}/config/status`).set('stopped');
 }
 
+// Manual inputs listeners
+['m1','m2','m3','m4'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('input',updateManualTotal);
+});
+
 // Init Firebase au chargement
 initFirebase();
 </script>
 </body>
 </html>
-
-
