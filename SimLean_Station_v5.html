@@ -135,48 +135,48 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <div class="top-bar">
   <div class="logo">KEEPLEAN <span>— SimLean Assembly Line</span></div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <span class="session-badge">SESSION : <span id="sessionId">—</span></span>
+    <span class="session-badge">SESSION: <span id="sessionId">—</span></span>
     <span class="station-badge" id="stationBadge">ASSY —</span>
     <span style="font-size:11px;color:var(--muted);font-weight:700;">
       <span class="conn-dot waiting" id="connDot"></span>
-      <span id="connLabel">En attente...</span>
+      <span id="connLabel">Waiting...</span>
     </span>
   </div>
 </div>
 
 <div class="chrono-bar">
-  <div class="chrono-cell"><div class="chrono-label">⏰ Heure</div><div class="chrono-val cv-clock" id="clockDisp">--:--:--</div></div>
-  <div class="chrono-cell"><div class="chrono-label">⏱ Temps sur poste</div><div class="chrono-val cv-time" id="sessionTimerDisp">00:00:00</div></div>
-  <div class="chrono-cell"><div class="chrono-label">📊 Taux occupation</div><div class="chrono-val cv-occ" id="occDisp">—</div><div class="occ-bar-wrap"><div class="occ-bar-fill" id="occBar" style="width:0%"></div></div></div>
+  <div class="chrono-cell"><div class="chrono-label">⏰ Clock</div><div class="chrono-val cv-clock" id="clockDisp">--:--:--</div></div>
+  <div class="chrono-cell"><div class="chrono-label">⏱ Time on Station</div><div class="chrono-val cv-time" id="sessionTimerDisp">00:00:00</div></div>
+  <div class="chrono-cell"><div class="chrono-label">📊 Utilization Rate</div><div class="chrono-val cv-occ" id="occDisp">—</div><div class="occ-bar-wrap"><div class="occ-bar-fill" id="occBar" style="width:0%"></div></div></div>
   <div class="chrono-cell"><div class="chrono-label">⏱ Takt Time</div><div class="chrono-val" style="color:var(--text);" id="taktDisp">—</div></div>
 </div>
 
 <div class="status-msg" id="statusMsg"></div>
 <div class="validate-banner" id="validateBanner">
-  <div><div class="val-text" id="valText">✅ Assemblage terminé !</div><div class="val-sub">Validez pour envoyer au flux aval</div></div>
-  <button class="btn" style="background:var(--success);color:#000;" id="btnValidate">→ Envoyer au flux aval</button>
+  <div><div class="val-text" id="valText">✅ Assembly completed !</div><div class="val-sub">Validate to send downstream</div></div>
+  <button class="btn" style="background:var(--success);color:#000;" id="btnValidate">→ Send Downstream</button>
 </div>
 
 <div class="flux-row">
-  <div class="wip-box wip-in"><div class="wip-label">WIP entrant</div><div class="wip-count" id="wipIn">0</div><div class="wip-sub">pièces dispo</div></div>
+  <div class="wip-box wip-in"><div class="wip-label">Incoming WIP</div><div class="wip-count" id="wipIn">0</div><div class="wip-sub">parts available</div></div>
   <div class="flux-arrow">→</div>
 
   <div class="station-area">
     <div class="station-title">
-      <span id="stationName">ASSY — ASSEMBLAGE</span>
-      <span style="font-size:11px;color:var(--muted);font-weight:700;" id="cycleCount">Cycles : 0</span>
+      <span id="stationName">ASSY — ASSEMBLY</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:700;" id="cycleCount">Cycles: 0</span>
     </div>
 
-    <div class="section-label">BUFFER — GLISSEZ VOS PIÈCES VERS LEUR EMPLACEMENT ↓
+    <div class="section-label">BUFFER — DRAG YOUR PARTS TO THEIR POSITION ↓
       <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--success);margin-left:8px;" id="bufferProgress">0 / 4</span>
     </div>
     <div class="buffer-bar" id="bufferBar"><div class="buffer-bar-label">BUFFER</div></div>
 
-    <div class="section-label">PUZZLE PRODUIT — <span id="puzzleLegend"></span></div>
+    <div class="section-label">PRODUCT PUZZLE — <span id="puzzleLegend"></span></div>
     <div class="puzzle-wrap"><div class="puzzle-board cols4" id="puzzleBoard"></div></div>
 
     <div class="ctrl-row" style="margin-top:12px;">
-      <button class="btn btn-primary" id="btnStart" disabled>▶ Nouveau cycle</button>
+      <button class="btn btn-primary" id="btnStart" disabled>▶ Start Cycle</button>
       <button class="btn btn-ghost" style="font-size:11px;" id="btnReset">↺ Reset</button>
       <div class="timer-box" style="margin-left:auto;">
         <div class="timer-val" id="timerDisp">00.000</div>
@@ -186,29 +186,29 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
   </div>
 
   <div class="flux-arrow">→</div>
-  <div class="wip-box wip-out"><div class="wip-label">WIP sortant</div><div class="wip-count" id="wipOut">0</div><div class="wip-sub">pièces produites</div></div>
+  <div class="wip-box wip-out"><div class="wip-label">Outgoing WIP</div><div class="wip-count" id="wipOut">0</div><div class="wip-sub">parts produced</div></div>
 
   <div class="data-box">
     <div class="db-title"><span style="color:var(--accent);margin-right:4px;">▌</span>DATA BOX</div>
-    <div class="db-row"><span class="db-key">C/T ACTUEL</span><span class="db-val" id="dbCTact">—</span></div>
-    <div class="db-row"><span class="db-key">C/T MOYEN</span><span class="db-val" id="dbCTmoy">—</span></div>
-    <div class="db-row"><span class="db-key">C/T MIN</span><span class="db-val" id="dbCTmin">—</span></div>
+    <div class="db-row"><span class="db-key">ACTUAL C/T</span><span class="db-val" id="dbCTact">—</span></div>
+    <div class="db-row"><span class="db-key">AVG C/T</span><span class="db-val" id="dbCTmoy">—</span></div>
+    <div class="db-row"><span class="db-key">MIN C/T</span><span class="db-val" id="dbCTmin">—</span></div>
     <div class="db-divider"></div>
     <div class="db-row"><span class="db-key">TAKT TIME</span><span class="db-val accent" id="dbTakt">—</span></div>
     <div class="db-row"><span class="db-key">C/O</span><span class="db-val accent" id="dbCO">—</span></div>
     <div class="db-divider"></div>
-    <div class="db-row"><span class="db-key">DISPO %</span><span class="db-val good" id="dbDispo">100%</span></div>
+    <div class="db-row"><span class="db-key">AVAIL %</span><span class="db-val good" id="dbDispo">100%</span></div>
     <div class="db-row"><span class="db-key">OUTPUT</span><span class="db-val good" id="dbOutput">0</span></div>
-    <div class="db-row"><span class="db-key">ERREURS</span><span class="db-val bad" id="dbScrap">0</span></div>
+    <div class="db-row"><span class="db-key">ERRORS</span><span class="db-val bad" id="dbScrap">0</span></div>
     <div class="db-row"><span class="db-key">FTY %</span><span class="db-val good" id="dbFTY">—</span></div>
   </div>
 </div>
 
 <div class="bottom-bar">
-  <div class="bb-cell"><div class="bb-key">C/T MOY</div><div class="bb-val" id="bbCT">—</div></div>
+  <div class="bb-cell"><div class="bb-key">AVG C/T</div><div class="bb-val" id="bbCT">—</div></div>
   <div class="bb-cell"><div class="bb-key">TAKT</div><div class="bb-val" id="bbTakt">—</div></div>
   <div class="bb-cell"><div class="bb-key">C/O</div><div class="bb-val" id="bbCO">—</div></div>
-  <div class="bb-cell"><div class="bb-key">DISPO</div><div class="bb-val good" id="bbDispo">100%</div></div>
+  <div class="bb-cell"><div class="bb-key">AVAIL</div><div class="bb-val good" id="bbDispo">100%</div></div>
   <div class="bb-cell"><div class="bb-key">OUTPUT</div><div class="bb-val good" id="bbOutput">0</div></div>
   <div class="bb-cell"><div class="bb-key">FTY %</div><div class="bb-val good" id="bbFTY">—</div></div>
   <div class="bb-cell"><div class="bb-key">WIP IN</div><div class="bb-val" id="bbWipIn">0</div></div>
@@ -248,14 +248,14 @@ const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000'};
 
 // Component pool — fixed assignment per station
 const COMPONENT_POOL=[
-  {id:'A1',name:'Axe Ø6'},{id:'B2',name:'Bague'},{id:'C3',name:'Carter'},
-  {id:'D4',name:'Douille'},{id:'E5',name:'Ecrou M8'},{id:'F6',name:'Flasque'},
-  {id:'G7',name:'Goupille'},{id:'H8',name:'Hex M10'},{id:'J9',name:'Joint'},
-  {id:'K10',name:'Ressort'},{id:'L11',name:'Levier'},{id:'M12',name:'Manchon'},
-  {id:'N13',name:'Noix'},{id:'P14',name:'Pivot'},{id:'R15',name:'Rondelle'},
-  {id:'S16',name:'Segment'},{id:'T17',name:'Tige Ø4'},{id:'U18',name:'Unité'},
-  {id:'V19',name:'Vis M6'},{id:'W20',name:'Bouchon'},{id:'X21',name:'Support'},
-  {id:'Y22',name:'Yoke'},{id:'Z23',name:'Circlip'},{id:'Q24',name:'Came'},
+  {id:'A1',name:'Shaft Ø6'},{id:'B2',name:'Bushing'},{id:'C3',name:'Housing'},
+  {id:'D4',name:'Sleeve'},{id:'E5',name:'Nut M8'},{id:'F6',name:'Flange'},
+  {id:'G7',name:'Pin'},{id:'H8',name:'Hex M10'},{id:'J9',name:'Gasket'},
+  {id:'K10',name:'Spring'},{id:'L11',name:'Lever'},{id:'M12',name:'Coupling'},
+  {id:'N13',name:'Nut Block'},{id:'P14',name:'Pivot'},{id:'R15',name:'Washer'},
+  {id:'S16',name:'Ring'},{id:'T17',name:'Rod Ø4'},{id:'U18',name:'Unit'},
+  {id:'V19',name:'Screw M6'},{id:'W20',name:'Cap'},{id:'X21',name:'Bracket'},
+  {id:'Y22',name:'Yoke'},{id:'Z23',name:'Circlip'},{id:'Q24',name:'Cam'},
 ];
 
 // ══════════════════════════════════════════════════════
@@ -368,7 +368,7 @@ function initStation(){
   applyProfile(DEFAULT_PROFILE); // apply default until Firebase responds
   ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
   ['dbCO','bbCO'].forEach(id=>document.getElementById(id).textContent=CFG.co+'s');
-  document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLAGE`;
+  document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLY`;
   // Assign my pieces from pool segment
   const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
   const segStart=(STATION-1)*4;
@@ -378,7 +378,7 @@ function initStation(){
   }));
   initCycle();
   updateWIPDisplay();
-  setConn('waiting','Connexion Firebase...');
+  setConn('waiting','Connecting to Firebase...');
   initFirebase();
 }
 
@@ -404,8 +404,8 @@ function initCycle(){
   setMsg('');
   renderBuffer();renderBoard();updateBufferProgress();
   const btn=document.getElementById('btnStart');
-  if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
-  else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
+  if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+  else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
 }
 
 // ══════════════════════════════════════════════════════
@@ -413,7 +413,7 @@ function initCycle(){
 // ══════════════════════════════════════════════════════
 function renderBuffer(){
   const bar=document.getElementById('bufferBar');
-  bar.innerHTML=`<div class="buffer-bar-label">BUFFER</div>${!S.running?'<div style="font-size:9px;letter-spacing:1px;color:var(--danger);font-weight:700;text-transform:uppercase;align-self:center;margin-left:4px;">🔒 Démarrer le cycle</div>':''}`;
+  bar.innerHTML=`<div class="buffer-bar-label">BUFFER</div>${!S.running?'<div style="font-size:9px;letter-spacing:1px;color:var(--danger);font-weight:700;text-transform:uppercase;align-self:center;margin-left:4px;">🔒 Start Cycle First</div>':''}`;
   const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
   displayOrder.forEach(i=>{
     const comp=S.cornerComps[i];
@@ -439,7 +439,7 @@ function renderBuffer(){
         div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
         div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
       } else {
-        div.addEventListener('click',()=>setMsg('▶ Cliquez sur "Nouveau cycle" pour commencer','err'));
+        div.addEventListener('click',()=>setMsg('▶ Click "Start Cycle" to begin','err'));
       }
     }
     bar.appendChild(div);
@@ -500,7 +500,7 @@ function renderBoard(){
 let currentDrag=null;
 
 function handleDrop(compIdx,targetPos){
-  if(!S.running){setMsg('▶ Cliquez sur "Nouveau cycle" pour commencer','err');return;}
+  if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
   if(comp.targetPos===targetPos){
@@ -513,7 +513,7 @@ function handleDrop(compIdx,targetPos){
     S.errorCount++;
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
-    setMsg(`❌ Mauvais emplacement ! Attendu : ${comp.id} | Erreurs : ${S.errorCount}`,'err');
+    setMsg(`❌ Wrong position! Expected : ${comp.id} | Errors : ${S.errorCount}`,'err');
     // Pas de scrap — rework, le cycle continue
   }
 }
@@ -533,7 +533,7 @@ document.addEventListener('touchmove',e=>{
 },{passive:true});
 document.addEventListener('touchend',e=>{
   if(!currentDrag)return;
-  if(!S.running){currentDrag=null;setMsg('▶ Cliquez sur "Nouveau cycle" pour commencer','err');return;}
+  if(!S.running){currentDrag=null;setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const touch=e.changedTouches[0];
   const el=document.elementFromPoint(touch.clientX,touch.clientY);
   if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.idx,parseInt(cd.dataset.pos));}
@@ -546,7 +546,7 @@ document.addEventListener('touchend',e=>{
 // ══════════════════════════════════════════════════════
 function startCycle(){
   if(S.running)return;
-  if(STATION>1&&S.wipIn<=0){setMsg('⏳ Pas de pièce en WIP entrant !','err');return;}
+  if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
   startSessionTimer();
   if(STATION>1&&db){
     // Pop the next puzzle state from our queue (FIFO)
@@ -572,7 +572,7 @@ function startCycle(){
 function _doStartCycle(){
   S.running=true;
   document.getElementById('timerDisp').classList.add('running');
-  setMsg('▶ Glissez vos pièces vers leurs emplacements sur le puzzle','ok');
+  setMsg('▶ Drag your parts to their positions on the puzzle','ok');
   document.getElementById('btnStart').disabled=true;
   renderBuffer();renderBoard();
 }
@@ -597,13 +597,13 @@ function finishCycle(ok){
     if(isLast){
       // All 16 pieces → flash complete puzzle
       showCompletePuzzle();
-      document.getElementById('valText').textContent='🏆 PUZZLE COMPLET — Produit fini !';
+      document.getElementById('valText').textContent='🏆 PUZZLE COMPLETE — Finished Product!';
     } else {
-      document.getElementById('valText').textContent=`✅ ASSY ${STATION} terminé — Puzzle → ASSY ${STATION+1}`;
+      document.getElementById('valText').textContent=`✅ ASSY ${STATION} done — Puzzle → ASSY ${STATION+1}`;
     }
-    setMsg(`✅ Assemblage terminé en ${fmt(elapsed)}s`,'ok');
+    setMsg(`✅ Assembly completed en ${fmt(elapsed)}s`,'ok');
     document.getElementById('validateBanner').classList.add('show');
-    document.getElementById('cycleCount').textContent=`Cycles : ${S.cycles}`;
+    document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
     updateStats();updateWIPDisplay();pushStats();
   } else {
     // Ne devrait plus arriver — gardé pour sécurité
@@ -668,8 +668,8 @@ function updateWIPDisplay(){
   document.getElementById('bbOutput').textContent=S.output;
   const btn=document.getElementById('btnStart');
   if(!S.running){
-    if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
-    else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
+    if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+    else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
   }
 }
 function updateStats(){
@@ -703,11 +703,11 @@ function initFirebase(){
     if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
     db=firebase.database();
     listenWipIn();listenPuzzleState();listenSessionConfig();pushStats();
-    setConn('online',`${ASSY_NAMES[STATION]} connectée`);
+    setConn('online',`${ASSY_NAMES[STATION]} connected`);
     if(STATION===1){S.wipIn=999;updateWIPDisplay();}
   }catch(e){
-    setConn('offline','Mode local');
-    if(STATION===1){S.wipIn=999;document.getElementById('btnStart').disabled=false;document.getElementById('btnStart').textContent='▶ Nouveau cycle';}
+    setConn('offline','Local mode');
+    if(STATION===1){S.wipIn=999;document.getElementById('btnStart').disabled=false;document.getElementById('btnStart').textContent='▶ Start Cycle';}
   }
 }
 function listenWipIn(){
@@ -731,7 +731,7 @@ function listenSessionConfig(){
       S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
       initCycle();
     }
-    if(cfg.status==='stopped'){setMsg('⏹ Session arrêtée','err');document.getElementById('btnStart').disabled=true;}
+    if(cfg.status==='stopped'){setMsg('⏹ Session stopped','err');document.getElementById('btnStart').disabled=true;}
     if(cfg.reset_signal&&cfg.reset_signal!==S.lastResetSignal){
       S.lastResetSignal=cfg.reset_signal;
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
@@ -739,9 +739,9 @@ function listenSessionConfig(){
       // Clear our queue slot
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
       updateWIPDisplay();updateStats();
-      document.getElementById('cycleCount').textContent='Cycles : 0';
+      document.getElementById('cycleCount').textContent='Cycles: 0';
       initCycle();
-      setMsg('↺ Session réinitialisée par le formateur','info');
+      setMsg('↺ Session reset by trainer','info');
     }
   });
 }
@@ -752,7 +752,7 @@ function pushStats(){
 
 document.getElementById('btnStart').addEventListener('click',startCycle);
 document.getElementById('btnValidate').addEventListener('click',validatePiece);
-document.getElementById('btnReset').addEventListener('click',()=>{S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.history=[];S.puzzleState={};updateWIPDisplay();initCycle();setMsg('Session réinitialisée','info');});
+document.getElementById('btnReset').addEventListener('click',()=>{S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.history=[];S.puzzleState={};updateWIPDisplay();initCycle();setMsg('Session reset','info');});
 
 initStation();
 </script>
