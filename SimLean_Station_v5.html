@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Station</title>
+<title>SimLean Assembly Line — Station v5.1</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
 :root{
@@ -78,8 +78,8 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 /* PUZZLE BOARD */
 .puzzle-wrap{display:flex;justify-content:flex-start;overflow-x:auto;margin-bottom:8px;}
 .puzzle-board{display:inline-grid;gap:0;}
-.puzzle-board.cols4{grid-template-columns:repeat(4,62px);}
-.puzzle-board.cols5{grid-template-columns:repeat(5,52px);}
+.puzzle-board.cols4{grid-template-columns:repeat(4,62px);grid-template-rows:repeat(4,62px);}
+.puzzle-board.cols5{grid-template-columns:repeat(5,52px);grid-template-rows:repeat(5,52px);}
 
 .puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;}
 .puzzle-board.cols4 .puzzle-cell{width:62px;height:62px;}
@@ -90,14 +90,14 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 /* CORNER DROP ZONES */
 .corner-drop{position:relative;display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);background:rgba(255,255,255,.02);transition:all .2s;overflow:visible;}
 .corner-drop .drop-hint{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-weight:700;text-align:center;pointer-events:none;}
-.corner-drop.drag-over{border-color:var(--success);border-style:solid;background:rgba(61,232,138,.1);transform:scale(1.04);}
+.corner-drop.drag-over{border-color:var(--success);border-style:solid;background:rgba(61,232,138,.15);transform:scale(1.06);box-shadow:0 0 12px rgba(61,232,138,.3);}
 .corner-drop.filled{border:none;background:transparent;}
 .corner-drop.error-flash{border-color:var(--danger);border-style:solid;background:rgba(232,64,64,.12);animation:shake .35s;}
 .corner-drop.pulsing{border-color:var(--s1);border-style:solid;animation:blink .7s infinite alternate;}
 .cp-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;z-index:10;}
 .cp-ref{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;z-index:10;}
 
-@keyframes popIn{0%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes popIn{0%{transform:scale(1.25);filter:brightness(1.6)}100%{transform:scale(1);filter:brightness(1)}}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 @keyframes blink{from{opacity:.5}to{opacity:1}}
 @keyframes completeFlash{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
@@ -217,36 +217,25 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-// ══════════════════════════════════════════════════════
-// PUZZLE PRODUCT — dynamic grid, profile from Firebase
-// ══════════════════════════════════════════════════════
 let COLS=4, ROWS=4;
-let PIECE_MAP=[];       // built dynamically from profile
-let STATION_POSITIONS={ 1:[0,3,12,15], 2:[1,4,11,14], 3:[2,7,8,13], 4:[5,6,9,10] }; // default
-
-// Default profile (4x4 équilibré) — overridden by Firebase
+let PIECE_MAP=[];
+let STATION_POSITIONS={ 1:[0,3,12,15], 2:[1,4,11,14], 3:[2,7,8,13], 4:[5,6,9,10] };
 const DEFAULT_PROFILE={cols:4,rows:4,1:[0,3,12,15],2:[1,4,11,14],3:[2,7,8,13],4:[5,6,9,10]};
 
 function applyProfile(profileData){
   const p=profileData||DEFAULT_PROFILE;
   COLS=p.cols||4; ROWS=p.rows||4;
   STATION_POSITIONS={1:p[1]||p['1']||[],2:p[2]||p['2']||[],3:p[3]||p['3']||[],4:p[4]||p['4']||[]};
-  // Build PIECE_MAP
   PIECE_MAP=new Array(COLS*ROWS).fill(0);
-  for(let st=1;st<=4;st++){
-    (STATION_POSITIONS[st]||[]).forEach(idx=>{ PIECE_MAP[idx]=st; });
-  }
-  // Update grid CSS class
+  for(let st=1;st<=4;st++){(STATION_POSITIONS[st]||[]).forEach(idx=>{PIECE_MAP[idx]=st;});}
   const board=document.getElementById('puzzleBoard');
   if(board) board.className=`puzzle-board cols${COLS}`;
 }
 
-// Station colors
 const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8'};
 const ST_STROKE={1:'#a01818',2:'#a06000',3:'#20a050',4:'#007a6a'};
 const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000'};
 
-// Component pool — fixed assignment per station
 const COMPONENT_POOL=[
   {id:'A1',name:'Shaft Ø6'},{id:'B2',name:'Bushing'},{id:'C3',name:'Housing'},
   {id:'D4',name:'Sleeve'},{id:'E5',name:'Nut M8'},{id:'F6',name:'Flange'},
@@ -258,9 +247,6 @@ const COMPONENT_POOL=[
   {id:'Y22',name:'Yoke'},{id:'Z23',name:'Circlip'},{id:'Q24',name:'Cam'},
 ];
 
-// ══════════════════════════════════════════════════════
-// URL PARAMS
-// ══════════════════════════════════════════════════════
 const params=new URLSearchParams(window.location.search);
 const STATION=parseInt(params.get('station')||'1');
 const SESSION=params.get('session')||'demo';
@@ -270,7 +256,6 @@ document.getElementById('stationBadge').style.background=ST_COLOR[STATION]||'var
 document.getElementById('stationBadge').style.color=ST_TEXT[STATION]||'#000';
 document.getElementById('sessionId').textContent=SESSION.toUpperCase();
 
-// Legend
 const legendEl=document.getElementById('puzzleLegend');
 for(let s=1;s<=4;s++){
   const sp=document.createElement('span');
@@ -281,23 +266,15 @@ for(let s=1;s<=4;s++){
 
 let CFG={takt:15,co:30};
 
-// ══════════════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════════════
 let S={
   wipIn:0,wipOut:0,cycles:0,output:0,scrap:0,history:[],
-  myPieces:[],        // 4 pieces assigned to this station
-  cornerComps:[],     // pieces with their target position
-  placedPositions:{}, // posIdx -> comp
-  puzzleState:{},     // full puzzle: posIdx -> stationNum (from Firebase)
+  myPieces:[],cornerComps:[],placedPositions:{},puzzleState:{},
   running:false,started:false,startTime:null,raf:null,errorCount:0,
   topology:null,cornerSides:{},bufferDisplayOrder:null,lastResetSignal:null,inheritedState:{},fty:0,
 };
 let NB_STATIONS=4,sessionStart=null,sessionInterval=null,db=null;
 
-// ══════════════════════════════════════════════════════
-// SVG ENGINE
-// ══════════════════════════════════════════════════════
+// ── SVG ENGINE ──────────────────────────────────────────
 function generateTopology(){
   const h=[],v=[];
   for(let r=0;r<ROWS-1;r++){h[r]=[];for(let c=0;c<COLS;c++)h[r][c]=Math.random()>.5?1:-1;}
@@ -339,9 +316,7 @@ function makeSVG(sides,sz,fill,stroke){
   return `<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;width:100%;height:100%;display:block;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
 }
 
-// ══════════════════════════════════════════════════════
-// CLOCK
-// ══════════════════════════════════════════════════════
+// ── CLOCK ──────────────────────────────────────────────
 function tickClock(){const n=new Date();document.getElementById('clockDisp').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');}
 setInterval(tickClock,1000);tickClock();
 function startSessionTimer(){
@@ -361,21 +336,15 @@ function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.fl
 function fmt(ms){return(ms/1000).toFixed(3).padStart(6,'0');}
 function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');el.textContent=txt;el.className=`status-msg show ${type}`;if(!txt)el.classList.remove('show');}
 
-// ══════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════
+// ── INIT ───────────────────────────────────────────────
 function initStation(){
-  applyProfile(DEFAULT_PROFILE); // apply default until Firebase responds
+  applyProfile(DEFAULT_PROFILE);
   ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
   ['dbCO','bbCO'].forEach(id=>document.getElementById(id).textContent=CFG.co+'s');
   document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLY`;
-  // Assign my pieces from pool segment
   const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
   const segStart=(STATION-1)*4;
-  S.myPieces=myPositions.map((pos,i)=>({
-    ...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],
-    targetPos:pos
-  }));
+  S.myPieces=myPositions.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
   initCycle();
   updateWIPDisplay();
   setConn('waiting','Connecting to Firebase...');
@@ -384,18 +353,12 @@ function initStation(){
 
 function initCycle(){
   S.topology=generateTopology();
-  // Precompute corner sides for buffer matching
   S.cornerSides={};
-  (STATION_POSITIONS[STATION]||[]).forEach(pos=>{
-    S.cornerSides[pos]=getSides(pos,S.topology);
-  });
-  // Shuffle display order in buffer
+  (STATION_POSITIONS[STATION]||[]).forEach(pos=>{S.cornerSides[pos]=getSides(pos,S.topology);});
   S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]);
-  // Corner comps = my pieces shuffled for display
   S.cornerComps=S.myPieces.map(p=>({...p}));
   S.placedPositions={};
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
-  // Reset error display for new cycle
   const scrapEl=document.getElementById('dbScrap');
   if(scrapEl)scrapEl.textContent='0';
   cancelAnimationFrame(S.raf);
@@ -408,9 +371,7 @@ function initCycle(){
   else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
 }
 
-// ══════════════════════════════════════════════════════
-// RENDER BUFFER
-// ══════════════════════════════════════════════════════
+// ── RENDER BUFFER ──────────────────────────────────────
 function renderBuffer(){
   const bar=document.getElementById('bufferBar');
   bar.innerHTML=`<div class="buffer-bar-label">BUFFER</div>${!S.running?'<div style="font-size:9px;letter-spacing:1px;color:var(--danger);font-weight:700;text-transform:uppercase;align-self:center;margin-left:4px;">🔒 Start Cycle First</div>':''}`;
@@ -446,47 +407,62 @@ function renderBuffer(){
   });
 }
 
-// ══════════════════════════════════════════════════════
-// RENDER BOARD — full 4x4 puzzle
-// ══════════════════════════════════════════════════════
+// ── RENDER BOARD — FIXED v5.1 ──────────────────────────
+// Corrections :
+// 1. corner-drop : width/height explicites = zone de drop correctement positionnée
+// 2. dragover : e.dataTransfer.dropEffect='move' = drop garanti par le navigateur
+// 3. pièces posées : animation popIn pour confirmer le placement
+// 4. pièces autres stations : opacité 50% (vs 35%) + gris plus clair
 function renderBoard(){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
   const SZ=COLS===5?52:62;
   for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
     const sides=getSides(flatIdx,S.topology);
-    const ownerStation=PIECE_MAP[flatIdx]; // which station owns this position
+    const ownerStation=PIECE_MAP[flatIdx];
     const isMyPos=(STATION_POSITIONS[STATION]||[]).includes(flatIdx);
-    const alreadyPlaced=!!S.placedPositions[flatIdx]; // placed this cycle
-    const prevPlaced=S.inheritedState&&S.inheritedState[flatIdx]; // placed by prev stations (FIFO queue)
+    const alreadyPlaced=!!S.placedPositions[flatIdx];
+    const prevPlaced=S.inheritedState&&S.inheritedState[flatIdx];
 
     if(isMyPos&&!alreadyPlaced){
-      // My empty position — drop zone
+      // ZONE DE DROP — dimensions explicites obligatoires
       const comp=S.cornerComps.find(c=>c.targetPos===flatIdx);
       const cell=document.createElement('div');
       cell.className='corner-drop'+(S.running?' pulsing':'');
+      cell.style.cssText=`width:${SZ}px;height:${SZ}px;`;
       cell.dataset.pos=flatIdx;
       cell.innerHTML=`<span class="drop-hint" style="font-size:9px;">${comp?comp.id:''}</span>`;
       if(S.running){
-        cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');cell.classList.remove('pulsing');});
+        cell.addEventListener('dragover',e=>{
+          e.preventDefault();
+          e.dataTransfer.dropEffect='move';
+          cell.classList.add('drag-over');
+          cell.classList.remove('pulsing');
+        });
         cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
-        cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,flatIdx);});
+        cell.addEventListener('drop',e=>{
+          e.preventDefault();
+          cell.classList.remove('drag-over');
+          const idx=parseInt(e.dataTransfer.getData('compIdx'));
+          handleDrop(idx,flatIdx);
+        });
       }
       board.appendChild(cell);
     } else {
-      // Filled cell — show with correct station color
+      // PIÈCE PLACÉE ou autre station
       const stNum=alreadyPlaced?STATION:(prevPlaced||ownerStation);
-      const fill=alreadyPlaced?ST_COLOR[STATION]:(prevPlaced?ST_COLOR[prevPlaced]:'#2a3040');
-      const stroke=alreadyPlaced?ST_STROKE[STATION]:(prevPlaced?ST_STROKE[prevPlaced]:'#1a2030');
-      const opacity=(!alreadyPlaced&&!prevPlaced)?'.35':'1';
+      const fill=alreadyPlaced?ST_COLOR[STATION]:(prevPlaced?ST_COLOR[prevPlaced]:'#3a4560');
+      const stroke=alreadyPlaced?ST_STROKE[STATION]:(prevPlaced?ST_STROKE[prevPlaced]:'#2a3450');
       const cell=document.createElement('div');
       cell.className='puzzle-cell';
-      cell.style.cssText=`width:${SZ}px;height:${SZ}px;`;
+      cell.style.cssText=`width:${SZ}px;height:${SZ}px;${alreadyPlaced?'animation:popIn .25s ease both;':''}`;
       cell.innerHTML=makeSVG(sides,SZ,fill,stroke);
-      if(!alreadyPlaced&&!prevPlaced){cell.querySelector('svg').style.filter=`opacity(.35)`;}
+      if(!alreadyPlaced&&!prevPlaced){
+        cell.querySelector('svg').style.filter='opacity(.5) grayscale(.3)';
+      }
       const numEl=document.createElement('span');
       numEl.className='piece-st-num';
-      numEl.style.cssText=`font-size:${SZ*.2}px;color:${(alreadyPlaced||prevPlaced)?ST_TEXT[stNum]:'#555'};`;
+      numEl.style.cssText=`font-size:${SZ*.2}px;color:${(alreadyPlaced||prevPlaced)?ST_TEXT[stNum]:'#6a7590'};`;
       numEl.textContent=stNum;
       cell.appendChild(numEl);
       board.appendChild(cell);
@@ -494,9 +470,7 @@ function renderBoard(){
   }
 }
 
-// ══════════════════════════════════════════════════════
-// DROP LOGIC
-// ══════════════════════════════════════════════════════
+// ── DROP LOGIC ─────────────────────────────────────────
 let currentDrag=null;
 
 function handleDrop(compIdx,targetPos){
@@ -507,14 +481,13 @@ function handleDrop(compIdx,targetPos){
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
     S.placedPositions[targetPos]=comp;
     renderBuffer();renderBoard();updateBufferProgress();
-    setMsg(`✓ ${comp.id} placé (${Object.keys(S.placedPositions).length}/4)`,'ok');
+    setMsg(`✓ ${comp.id} placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
   } else {
     S.errorCount++;
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
     setMsg(`❌ Wrong position! Expected : ${comp.id} | Errors : ${S.errorCount}`,'err');
-    // Pas de scrap — rework, le cycle continue
   }
 }
 
@@ -523,7 +496,6 @@ function updateBufferProgress(){
   document.getElementById('bufferProgress').textContent=`${placed} / ${S.myPieces.length}`;
 }
 
-// Touch drag
 document.addEventListener('touchmove',e=>{
   if(!currentDrag)return;
   const touch=e.touches[0];
@@ -541,25 +513,20 @@ document.addEventListener('touchend',e=>{
   currentDrag=null;
 });
 
-// ══════════════════════════════════════════════════════
-// CYCLE
-// ══════════════════════════════════════════════════════
+// ── CYCLE ──────────────────────────────────────────────
 function startCycle(){
   if(S.running)return;
   if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
   startSessionTimer();
   if(STATION>1&&db){
-    // Pop the next puzzle state from our queue (FIFO)
     db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).limitToFirst(1).once('value',snap=>{
       if(snap.exists()){
         const key=Object.keys(snap.val())[0];
         S.inheritedState=snap.val()[key]||{};
-        // Remove this item from queue
         db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}/${key}`).remove();
       } else {
         S.inheritedState={};
       }
-      // Decrement WIP
       db.ref(`assembly_line/${SESSION}/stations/s${STATION}/wip_in`).transaction(v=>Math.max(0,(v||0)-1));
       _doStartCycle();
     });
@@ -589,30 +556,24 @@ function finishCycle(ok){
   S.cycles++;
   if(ok){
     S.output++;S.wipOut++;S.history.push(elapsed);
-    // FTY: bon du premier coup si 0 erreur ce cycle
     if(S.errorCount===0) S.fty++;
-    // NOTE: puzzle state pushed to Firebase only on validatePiece (not before)
-    // Check if puzzle is complete (station 4 last)
     const isLast=(STATION===NB_STATIONS);
     if(isLast){
-      // All 16 pieces → flash complete puzzle
       showCompletePuzzle();
       document.getElementById('valText').textContent='🏆 PUZZLE COMPLETE — Finished Product!';
     } else {
       document.getElementById('valText').textContent=`✅ ASSY ${STATION} done — Puzzle → ASSY ${STATION+1}`;
     }
-    setMsg(`✅ Assembly completed en ${fmt(elapsed)}s`,'ok');
+    setMsg(`✅ Assembly completed in ${fmt(elapsed)}s`,'ok');
     document.getElementById('validateBanner').classList.add('show');
     document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
     updateStats();updateWIPDisplay();pushStats();
   } else {
-    // Ne devrait plus arriver — gardé pour sécurité
     setTimeout(()=>initCycle(),700);
   }
 }
 
 function showCompletePuzzle(){
-  // All 16 pieces become their station color
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
   const SZ=COLS===5?52:62;
@@ -635,19 +596,14 @@ function showCompletePuzzle(){
 function validatePiece(){
   document.getElementById('validateBanner').classList.remove('show');
   S.wipOut--;updateWIPDisplay();
-  // Push this station's pieces + inherited state to queue for next station
   if(db){
-    // Build cumulative state: inherited + my pieces
     const cumulative={...S.inheritedState};
     Object.keys(S.placedPositions).forEach(pos=>{cumulative[pos]=STATION;});
-
     if(STATION<NB_STATIONS){
-      // Push to next station's queue
       db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION+1}`).push(cumulative);
       db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);
       setMsg(`📦 Puzzle → ASSY ${STATION+1}`,'info');
     } else {
-      // Last station — deliver to client
       db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);
       setMsg('🏁 Produit livré au CLIENT ✅','ok');
     }
@@ -655,10 +611,7 @@ function validatePiece(){
     setMsg('🏁 Produit livré au CLIENT ✅','ok');
   }
   pushStats();
-  setTimeout(()=>{
-    S.inheritedState={};
-    initCycle();
-  },700);
+  setTimeout(()=>{S.inheritedState={};initCycle();},700);
 }
 
 function updateWIPDisplay(){
@@ -681,7 +634,7 @@ function updateStats(){
   document.getElementById('dbCTmin').textContent=(min/1000).toFixed(3)+'s';
   document.getElementById('bbCT').textContent=(moy/1000).toFixed(1)+'s';
   document.getElementById('dbOutput').textContent=S.output;
-  document.getElementById('dbScrap').textContent=S.errorCount; // erreurs cycle courant
+  document.getElementById('dbScrap').textContent=S.errorCount;
   const ftyPct=S.output>0?Math.round((S.fty/S.output)*100):100;
   const ftyEl=document.getElementById('dbFTY');
   if(ftyEl){ftyEl.textContent=ftyPct+'%';ftyEl.className='db-val '+(ftyPct>=95?'good':ftyPct>=80?'accent':'bad');}
@@ -692,9 +645,7 @@ function updateStats(){
   document.getElementById('bbDispo').textContent=dispo+'%';document.getElementById('bbDispo').className='bb-val '+dc;
 }
 
-// ══════════════════════════════════════════════════════
-// FIREBASE
-// ══════════════════════════════════════════════════════
+// ── FIREBASE ───────────────────────────────────────────
 const firebaseConfig={apiKey:"AIzaSyDIE-YJ68VQkMj60n1vklQWei9-32Dv-Oo",authDomain:"keeplean-beergame.firebaseapp.com",databaseURL:"https://keeplean-beergame-default-rtdb.europe-west1.firebasedatabase.app",projectId:"keeplean-beergame",storageBucket:"keeplean-beergame.firebasestorage.app",messagingSenderId:"731779808067",appId:"1:731779808067:web:e4312b55afe16e72b6cdf6"};
 const stKey=`s${STATION}`;
 function setConn(s,l){document.getElementById('connDot').className='conn-dot '+s;document.getElementById('connLabel').textContent=l;}
@@ -702,7 +653,7 @@ function initFirebase(){
   try{
     if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
     db=firebase.database();
-    listenWipIn();listenPuzzleState();listenSessionConfig();pushStats();
+    listenWipIn();listenSessionConfig();pushStats();
     setConn('online',`${ASSY_NAMES[STATION]} connected`);
     if(STATION===1){S.wipIn=999;updateWIPDisplay();}
   }catch(e){
@@ -715,9 +666,6 @@ function listenWipIn(){
     if(STATION>1){S.wipIn=snap.val()||0;updateWIPDisplay();}
   });
 }
-function listenPuzzleState(){
-  // Puzzle state now managed via FIFO queue — no global listener needed
-}
 function listenSessionConfig(){
   db.ref(`assembly_line/${SESSION}/config`).on('value',snap=>{
     const cfg=snap.val();if(!cfg)return;
@@ -725,7 +673,6 @@ function listenSessionConfig(){
     if(cfg.nb_stations)NB_STATIONS=cfg.nb_stations;
     if(cfg.profile_data){
       applyProfile(cfg.profile_data);
-      // Re-assign my pieces with new profile
       const myPos=STATION_POSITIONS[STATION]||[];
       const segStart=([0,4,8,12,16])[STATION-1]||((STATION-1)*4);
       S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
@@ -736,7 +683,6 @@ function listenSessionConfig(){
       S.lastResetSignal=cfg.reset_signal;
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
       S.history=[];S.inheritedState={};S.fty=0;
-      // Clear our queue slot
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
       updateWIPDisplay();updateStats();
       document.getElementById('cycleCount').textContent='Cycles: 0';
@@ -758,3 +704,4 @@ initStation();
 </script>
 </body>
 </html>
+
