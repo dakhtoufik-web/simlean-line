@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Formateur</title>
+<title>SimLean Assembly Line — Formateur v2</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
 
@@ -208,7 +208,7 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Formateur</span></div>
+  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Formateur v2</span></div>
   <div style="display:flex;gap:10px;align-items:center;">
     <span style="font-size:11px;color:#888;">
       <span class="conn-dot waiting" id="connDot"></span>
@@ -236,6 +236,14 @@ body {
       </select>
     </div>
     <div class="setup-field">
+      <label>TAILLE PUZZLE</label>
+      <select id="cfgGrid">
+        <option value="3" selected>3×3 — Facile (4 coins)</option>
+        <option value="4">4×4 — Moyen (4 coins + bords)</option>
+        <option value="5">5×5 — Difficile (nombreuses grises)</option>
+      </select>
+    </div>
+    <div class="setup-field">
       <label>TAKT TIME (s)</label>
       <input id="cfgTakt" type="number" value="15" min="5" max="120">
     </div>
@@ -258,6 +266,7 @@ body {
 <div class="session-info" id="sessionInfo">
   <div><div class="si-label">SESSION</div><div class="si-val" id="siCode">—</div></div>
   <div><div class="si-label">STATIONS</div><div class="si-val" id="siStations">—</div></div>
+  <div><div class="si-label">PUZZLE</div><div class="si-val" id="siGrid" style="color:var(--cyan);">—</div></div>
   <div><div class="si-label">STATUT</div><div class="si-val" id="siStatus">—</div></div>
   <div><div class="si-label">DURÉE</div><div class="si-val" id="siDuration">00:00:00</div></div>
 </div>
@@ -301,12 +310,12 @@ let F = {
   sessionCode: '',
   nbStations: 3,
   takt: 15,
+  gridSize: 3,
   baseUrl: '',
   running: false,
   startTime: null,
   timerInterval: null,
-  // Données stations (sera Firebase)
-  stations: [], // [{wipIn, wipOut, cycles, output, scrap, status}]
+  stations: [],
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -316,12 +325,13 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   F.sessionCode = document.getElementById('cfgSession').value.trim().toUpperCase() || 'LEAN01';
   F.nbStations  = parseInt(document.getElementById('cfgStations').value);
   F.takt        = parseInt(document.getElementById('cfgTakt').value) || 15;
+  F.gridSize    = parseInt(document.getElementById('cfgGrid').value) || 3;
   F.baseUrl     = document.getElementById('cfgBaseUrl').value.trim().replace(/\/$/,'');
 
   // Init stations locales
   F.stations = Array.from({length: F.nbStations}, (_,i)=>({
     num: i+1, wipIn:0, wipOut:0, cycles:0, output:0, scrap:0, status:'idle',
-    name: `Station ${i+1}`
+    name: `ASSY ${i+1}`
   }));
 
   F.running = true;
@@ -330,6 +340,7 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   // Afficher session info
   document.getElementById('siCode').textContent     = F.sessionCode;
   document.getElementById('siStations').textContent = F.nbStations;
+  document.getElementById('siGrid') && (document.getElementById('siGrid').textContent = F.gridSize+'×'+F.gridSize);
   document.getElementById('siStatus').textContent   = '▶ EN COURS';
   document.getElementById('sessionInfo').classList.add('show');
   document.getElementById('btnCreate').style.display = 'none';
@@ -381,7 +392,7 @@ function renderFlux(){
     card.className = `station-card ${st.status}`;
     card.id = `stCard${i}`;
     card.innerHTML = `
-      <div class="sc-num">STATION ${st.num}</div>
+      <div class="sc-num">ASSY ${st.num} <span style="color:var(--cyan);font-size:9px;letter-spacing:1px;">${F.gridSize}×${F.gridSize}</span></div>
       <div class="sc-name" id="scName${i}">${st.name}</div>
       <div class="sc-status idle" id="scStatus${i}">Hors ligne</div>
       <div class="sc-cycles" id="scCycles${i}">0</div>
@@ -417,13 +428,13 @@ function renderLinks(){
   tbody.innerHTML = '';
 
   const base = F.baseUrl || window.location.href.replace(/\/[^/]*(\?.*)?$/, '');
-  const stationFile = 'SimLean_Station.html';
+  const stationFile = 'SimLean_Station_v4.html';
 
   F.stations.forEach((st, i)=>{
-    const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}`;
+    const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}&grid=${F.gridSize}`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>Station ${st.num}</strong></td>
+      <td><strong>ASSY ${st.num}</strong></td>
       <td style="color:#888;">Opérateur ${st.num}</td>
       <td><div class="link-url" id="linkUrl${i}">${url}</div></td>
       <td>
@@ -516,6 +527,7 @@ function pushSessionToFirebase(){
   db.ref(`assembly_line/${F.sessionCode}/config`).set({
     nb_stations: F.nbStations,
     takt: F.takt,
+    grid_size: F.gridSize,
     status: 'running',
     created_at: Date.now()
   });
@@ -592,3 +604,4 @@ initFirebase();
 </script>
 </body>
 </html>
+
