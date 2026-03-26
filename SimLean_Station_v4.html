@@ -286,7 +286,7 @@ let S={
   placedPositions:{}, // posIdx -> comp
   puzzleState:{},     // full puzzle: posIdx -> stationNum (from Firebase)
   running:false,started:false,startTime:null,raf:null,errorCount:0,
-  topology:null,cornerSides:{},bufferDisplayOrder:null,lastResetSignal:null,
+  topology:null,cornerSides:{},bufferDisplayOrder:null,lastResetSignal:null,inheritedState:{},
 };
 let NB_STATIONS=4,sessionStart=null,sessionInterval=null,db=null;
 
@@ -442,7 +442,7 @@ function renderBoard(){
     const ownerStation=PIECE_MAP[flatIdx]; // which station owns this position
     const isMyPos=(STATION_POSITIONS[STATION]||[]).includes(flatIdx);
     const alreadyPlaced=!!S.placedPositions[flatIdx]; // placed this cycle
-    const prevPlaced=S.puzzleState&&S.puzzleState[flatIdx]; // placed by prev station (from Firebase)
+    const prevPlaced=S.inheritedState&&S.inheritedState[flatIdx]; // placed by prev stations (FIFO queue)
 
     if(isMyPos&&!alreadyPlaced){
       // My empty position — drop zone
@@ -529,8 +529,28 @@ function startCycle(){
   if(S.running)return;
   if(STATION>1&&S.wipIn<=0){setMsg('⏳ Pas de pièce en WIP entrant !','err');return;}
   startSessionTimer();
-  if(STATION>1&&db){db.ref(`assembly_line/${SESSION}/stations/s${STATION}/wip_in`).transaction(v=>Math.max(0,(v||0)-1));}
-  else if(STATION>1){S.wipIn--;updateWIPDisplay();}
+  if(STATION>1&&db){
+    // Pop the next puzzle state from our queue (FIFO)
+    db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).limitToFirst(1).once('value',snap=>{
+      if(snap.exists()){
+        const key=Object.keys(snap.val())[0];
+        S.inheritedState=snap.val()[key]||{};
+        // Remove this item from queue
+        db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}/${key}`).remove();
+      } else {
+        S.inheritedState={};
+      }
+      // Decrement WIP
+      db.ref(`assembly_line/${SESSION}/stations/s${STATION}/wip_in`).transaction(v=>Math.max(0,(v||0)-1));
+      _doStartCycle();
+    });
+  } else {
+    S.inheritedState={};
+    _doStartCycle();
+  }
+}
+
+function _doStartCycle(){
   S.running=true;
   document.getElementById('timerDisp').classList.add('running');
   setMsg('▶ Glissez vos pièces vers leurs emplacements sur le puzzle','ok');
@@ -594,23 +614,28 @@ function showCompletePuzzle(){
 function validatePiece(){
   document.getElementById('validateBanner').classList.remove('show');
   S.wipOut--;updateWIPDisplay();
-  // NOW push puzzle pieces to Firebase — only after operator validates
+  // Push this station's pieces + inherited state to queue for next station
   if(db){
-    const updates={};
-    Object.keys(S.placedPositions).forEach(pos=>{updates[pos]=STATION;});
-    db.ref(`assembly_line/${SESSION}/puzzle_state`).update(updates);
-  }
-  if(STATION<NB_STATIONS&&db){
-    db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);
-    setMsg(`📦 Puzzle → ASSY ${STATION+1}`,'info');
+    // Build cumulative state: inherited + my pieces
+    const cumulative={...S.inheritedState};
+    Object.keys(S.placedPositions).forEach(pos=>{cumulative[pos]=STATION;});
+
+    if(STATION<NB_STATIONS){
+      // Push to next station's queue
+      db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION+1}`).push(cumulative);
+      db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);
+      setMsg(`📦 Puzzle → ASSY ${STATION+1}`,'info');
+    } else {
+      // Last station — deliver to client
+      db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);
+      setMsg('🏁 Produit livré au CLIENT ✅','ok');
+    }
   } else {
-    if(db)db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);
-    if(db)db.ref(`assembly_line/${SESSION}/puzzle_state`).remove(); // reset puzzle for next product
     setMsg('🏁 Produit livré au CLIENT ✅','ok');
   }
   pushStats();
   setTimeout(()=>{
-    S.puzzleState={};
+    S.inheritedState={};
     initCycle();
   },700);
 }
@@ -667,11 +692,7 @@ function listenWipIn(){
   });
 }
 function listenPuzzleState(){
-  // Listen to puzzle state from previous stations
-  db.ref(`assembly_line/${SESSION}/puzzle_state`).on('value',snap=>{
-    S.puzzleState=snap.val()||{};
-    renderBoard();
-  });
+  // Puzzle state now managed via FIFO queue — no global listener needed
 }
 function listenSessionConfig(){
   db.ref(`assembly_line/${SESSION}/config`).on('value',snap=>{
@@ -681,9 +702,10 @@ function listenSessionConfig(){
     if(cfg.status==='stopped'){setMsg('⏹ Session arrêtée','err');document.getElementById('btnStart').disabled=true;}
     if(cfg.reset_signal&&cfg.reset_signal!==S.lastResetSignal){
       S.lastResetSignal=cfg.reset_signal;
-      // Reset local stats
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
-      S.history=[];S.puzzleState={};
+      S.history=[];S.inheritedState={};
+      // Clear our queue slot
+      if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
       updateWIPDisplay();updateStats();
       document.getElementById('cycleCount').textContent='Cycles : 0';
       initCycle();
