@@ -199,7 +199,8 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <div class="db-divider"></div>
     <div class="db-row"><span class="db-key">DISPO %</span><span class="db-val good" id="dbDispo">100%</span></div>
     <div class="db-row"><span class="db-key">OUTPUT</span><span class="db-val good" id="dbOutput">0</span></div>
-    <div class="db-row"><span class="db-key">SCRAP</span><span class="db-val bad" id="dbScrap">0</span></div>
+    <div class="db-row"><span class="db-key">ERREURS</span><span class="db-val bad" id="dbScrap">0</span></div>
+    <div class="db-row"><span class="db-key">FTY %</span><span class="db-val good" id="dbFTY">—</span></div>
   </div>
 </div>
 
@@ -209,7 +210,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
   <div class="bb-cell"><div class="bb-key">C/O</div><div class="bb-val" id="bbCO">—</div></div>
   <div class="bb-cell"><div class="bb-key">DISPO</div><div class="bb-val good" id="bbDispo">100%</div></div>
   <div class="bb-cell"><div class="bb-key">OUTPUT</div><div class="bb-val good" id="bbOutput">0</div></div>
-  <div class="bb-cell"><div class="bb-key">SCRAP</div><div class="bb-val bad" id="bbScrap">0</div></div>
+  <div class="bb-cell"><div class="bb-key">FTY %</div><div class="bb-val good" id="bbFTY">—</div></div>
   <div class="bb-cell"><div class="bb-key">WIP IN</div><div class="bb-val" id="bbWipIn">0</div></div>
 </div>
 
@@ -290,7 +291,7 @@ let S={
   placedPositions:{}, // posIdx -> comp
   puzzleState:{},     // full puzzle: posIdx -> stationNum (from Firebase)
   running:false,started:false,startTime:null,raf:null,errorCount:0,
-  topology:null,cornerSides:{},bufferDisplayOrder:null,lastResetSignal:null,inheritedState:{},
+  topology:null,cornerSides:{},bufferDisplayOrder:null,lastResetSignal:null,inheritedState:{},fty:0,
 };
 let NB_STATIONS=4,sessionStart=null,sessionInterval=null,db=null;
 
@@ -394,6 +395,9 @@ function initCycle(){
   S.cornerComps=S.myPieces.map(p=>({...p}));
   S.placedPositions={};
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
+  // Reset error display for new cycle
+  const scrapEl=document.getElementById('dbScrap');
+  if(scrapEl)scrapEl.textContent='0';
   cancelAnimationFrame(S.raf);
   const td=document.getElementById('timerDisp');td.textContent='00.000';td.className='timer-val';
   document.getElementById('validateBanner').classList.remove('show');
@@ -501,8 +505,8 @@ function handleDrop(compIdx,targetPos){
     S.errorCount++;
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
-    setMsg(`❌ Mauvais emplacement ! ${comp.id} → pos ${comp.targetPos} | Erreurs : ${S.errorCount}`,'err');
-    if(S.errorCount>0&&S.errorCount%3===0){S.scrap++;finishCycle(false);}
+    setMsg(`❌ Mauvais emplacement ! Attendu : ${comp.id} | Erreurs : ${S.errorCount}`,'err');
+    // Pas de scrap — rework, le cycle continue
   }
 }
 
@@ -576,6 +580,8 @@ function finishCycle(ok){
   S.cycles++;
   if(ok){
     S.output++;S.wipOut++;S.history.push(elapsed);
+    // FTY: bon du premier coup si 0 erreur ce cycle
+    if(S.errorCount===0) S.fty++;
     // NOTE: puzzle state pushed to Firebase only on validatePiece (not before)
     // Check if puzzle is complete (station 4 last)
     const isLast=(STATION===NB_STATIONS);
@@ -591,7 +597,7 @@ function finishCycle(ok){
     document.getElementById('cycleCount').textContent=`Cycles : ${S.cycles}`;
     updateStats();updateWIPDisplay();pushStats();
   } else {
-    setMsg('🗑 Scrap','err');
+    // Ne devrait plus arriver — gardé pour sécurité
     setTimeout(()=>initCycle(),700);
   }
 }
@@ -651,7 +657,6 @@ function updateWIPDisplay(){
   document.getElementById('wipOut').textContent=S.wipOut;
   document.getElementById('bbWipIn').textContent=S.wipIn===999?'∞':S.wipIn;
   document.getElementById('bbOutput').textContent=S.output;
-  document.getElementById('bbScrap').textContent=S.scrap;
   const btn=document.getElementById('btnStart');
   if(!S.running){
     if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
@@ -667,8 +672,12 @@ function updateStats(){
   document.getElementById('dbCTmin').textContent=(min/1000).toFixed(3)+'s';
   document.getElementById('bbCT').textContent=(moy/1000).toFixed(1)+'s';
   document.getElementById('dbOutput').textContent=S.output;
-  document.getElementById('dbScrap').textContent=S.scrap;
-  document.getElementById('bbScrap').textContent=S.scrap;
+  document.getElementById('dbScrap').textContent=S.errorCount; // erreurs cycle courant
+  const ftyPct=S.output>0?Math.round((S.fty/S.output)*100):100;
+  const ftyEl=document.getElementById('dbFTY');
+  if(ftyEl){ftyEl.textContent=ftyPct+'%';ftyEl.className='db-val '+(ftyPct>=95?'good':ftyPct>=80?'accent':'bad');}
+  const ftyBbEl=document.getElementById('bbFTY');
+  if(ftyBbEl){ftyBbEl.textContent=ftyPct+'%';ftyBbEl.className='bb-val '+(ftyPct>=95?'good':ftyPct>=80?'accent':'bad');}
   const dispo=S.cycles>0?Math.round((S.output/S.cycles)*100):100,dc=dispo>=80?'good':dispo>=60?'accent':'bad';
   document.getElementById('dbDispo').textContent=dispo+'%';document.getElementById('dbDispo').className='db-val '+dc;
   document.getElementById('bbDispo').textContent=dispo+'%';document.getElementById('bbDispo').className='bb-val '+dc;
@@ -717,7 +726,7 @@ function listenSessionConfig(){
     if(cfg.reset_signal&&cfg.reset_signal!==S.lastResetSignal){
       S.lastResetSignal=cfg.reset_signal;
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
-      S.history=[];S.inheritedState={};
+      S.history=[];S.inheritedState={};S.fty=0;
       // Clear our queue slot
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
       updateWIPDisplay();updateStats();
@@ -729,7 +738,7 @@ function listenSessionConfig(){
 }
 function pushStats(){
   if(!db)return;
-  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)):0,status:S.running?'running':'idle',name:`${ASSY_NAMES[STATION]} — Assemblage`,last_updated:Date.now()});
+  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',name:`${ASSY_NAMES[STATION]} — Assemblage`,last_updated:Date.now()});
 }
 
 document.getElementById('btnStart').addEventListener('click',startCycle);
