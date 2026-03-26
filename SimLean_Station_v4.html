@@ -353,7 +353,7 @@ let S={
   interiorComps:[],                 // grey pieces = interior
   placedCorners:{},                 // cornerKey -> comp
   running:false,started:false,startTime:null,raf:null,errorCount:0,
-  topology:null,
+  topology:null, cornerSides:{},
 };
 let NB_STATIONS=3,sessionStart=null,sessionInterval=null;
 
@@ -431,6 +431,25 @@ function initCycle(){
   const td=document.getElementById('timerDisp');td.textContent='00.000';td.className='timer-val';
   document.getElementById('validateBanner').classList.remove('show');
   S.topology=generateTopology(cols,rows);
+
+  // Pre-compute corner sides so buffer pieces match board corners
+  const {h,v}=S.topology;
+  S.cornerSides={};
+  const csPositions=[
+    {key:'TL',row:0,     col:0      },
+    {key:'TR',row:0,     col:cols-1 },
+    {key:'BL',row:rows-1,col:0      },
+    {key:'BR',row:rows-1,col:cols-1 },
+  ];
+  csPositions.forEach(({key,row,col})=>{
+    S.cornerSides[key]={
+      top:    row===0      ?0:h[row-1][col],
+      bottom: row===rows-1 ?0:-h[row][col],
+      left:   col===0      ?0:v[row][col-1],
+      right:  col===cols-1 ?0:-v[row][col],
+    };
+  });
+
   setMsg('');
   renderBuffer();renderBoard();
   updateBufferProgress();
@@ -460,7 +479,15 @@ function renderBuffer(){
 
     const fill=placed?'rgba(61,232,138,.2)':'#e84040';
     const stroke=placed?'rgba(61,232,138,.4)':'#a01818';
-    div.innerHTML=makeBufferPieceSVG(fill,stroke);
+    // Use same shape as the corner on the board
+    const cSides = S.cornerSides && S.cornerSides[comp.cornerPos.key]
+      ? S.cornerSides[comp.cornerPos.key]
+      : {top:1,right:-1,bottom:1,left:-1};
+    const pad=20,vs=100+pad*2;
+    const bufPath=piecePath(cSides,100);
+    div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="90" height="90" style="display:block;margin:auto;overflow:visible;">
+      <path d="${bufPath}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
+    </svg>`;
 
     // Station number
     const numEl=document.createElement('span');
