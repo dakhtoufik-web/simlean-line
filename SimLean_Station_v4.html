@@ -86,9 +86,10 @@ body {
 }
 .buffer-piece{
   position:relative;width:100px;height:100px;
-  cursor:grab;flex-shrink:0;overflow:visible;
+  cursor:grab;flex-shrink:0;overflow:hidden;
   transition:transform .15s,filter .15s;
-  display:block;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.02);
 }
 .buffer-piece:hover{transform:scale(1.08) translateY(-3px);filter:brightness(1.2);}
 .buffer-piece:active{cursor:grabbing;transform:scale(.95);}
@@ -311,6 +312,14 @@ function makePieceSVG(sides,size,fill,stroke){
   </svg>`;
 }
 
+// Buffer piece: simple fixed SVG — always visible, no negative coords
+function makeBufferPieceSVG(fill,stroke){
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="80" height="80" style="display:block;margin:auto;">
+    <path d="M5,5 L40,5 C40,-4 60,-4 60,5 L95,5 L95,40 C104,40 104,60 95,60 L95,95 L60,95 C60,104 40,104 40,95 L5,95 L5,60 C-4,60 -4,40 5,40 Z"
+      fill="${fill}" stroke="${stroke}" stroke-width="2.5" stroke-linejoin="round"/>
+  </svg>`;
+}
+
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
@@ -450,7 +459,7 @@ function renderBuffer(){
 
     const fill=placed?'rgba(61,232,138,.2)':'#e84040';
     const stroke=placed?'rgba(61,232,138,.4)':'#a01818';
-    div.innerHTML=makePieceSVG(bufSides,100,fill,stroke);
+    div.innerHTML=makeBufferPieceSVG(fill,stroke);
 
     // Station number
     const numEl=document.createElement('span');
