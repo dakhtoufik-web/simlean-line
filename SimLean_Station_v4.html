@@ -3,25 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Station Puzzle</title>
+<title>SimLean Assembly Line — Station</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
-:root {
-  --bg:#0b0e13; --panel:#111520; --panel2:#161b26; --border:#1e2538;
-  --accent:#f0a500; --cyan:#00c2a8; --danger:#e84040; --success:#3de88a;
-  --text:#dde1ed; --muted:#ffffff;
+:root{
+  --bg:#0b0e13;--panel:#111520;--panel2:#161b26;--border:#1e2538;
+  --accent:#f0a500;--cyan:#00c2a8;--danger:#e84040;--success:#3de88a;
+  --text:#dde1ed;--muted:#ffffff;
+  --s1:#e84040;--s2:#f0a500;--s3:#3de88a;--s4:#00c2a8;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body {
-  background:var(--bg); color:var(--text);
-  font-family:'Barlow Condensed',sans-serif;
-  min-height:100vh; display:flex; flex-direction:column;
-  align-items:center; padding:14px;
-  background-image:
-    repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),
-    repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
-  background-size:40px 40px;
-}
+body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px;
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
+  background-size:40px 40px;}
 
 .top-bar{width:100%;max-width:1060px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--accent);padding-bottom:10px;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
 .logo{font-size:13px;letter-spacing:4px;color:var(--accent);font-weight:700;}
@@ -55,113 +50,64 @@ body {
 .val-text{font-size:14px;font-weight:700;color:var(--success);}
 .val-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px;}
 
-/* FLUX ROW */
 .flux-row{width:100%;max-width:1060px;display:flex;align-items:stretch;gap:10px;margin-bottom:12px;}
 .wip-box{background:var(--panel);border:1px solid var(--border);padding:12px 14px;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:100px;}
-.wip-box.wip-in{border-color:var(--cyan);}
-.wip-box.wip-out{border-color:var(--success);}
+.wip-box.wip-in{border-color:var(--cyan);}.wip-box.wip-out{border-color:var(--success);}
 .wip-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
 .wip-count{font-family:'Share Tech Mono',monospace;font-size:32px;font-weight:700;line-height:1;}
-.wip-in .wip-count{color:var(--cyan);}
-.wip-out .wip-count{color:var(--success);}
+.wip-in .wip-count{color:var(--cyan);}.wip-out .wip-count{color:var(--success);}
 .wip-sub{font-size:9px;color:var(--muted);font-weight:700;}
 .flux-arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:22px;padding:0 2px;align-self:center;}
 
-/* STATION AREA */
 .station-area{flex:1;background:var(--panel);border:1px solid var(--border);padding:16px;}
 .station-title{font-size:12px;letter-spacing:3px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
 .section-label{font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;font-weight:700;}
 
-/* ══ BUFFER ══ */
-.buffer-bar{
-  display:flex;gap:16px;align-items:center;
-  background:rgba(0,0,0,.25);border:1px solid var(--success);
-  padding:20px 16px;margin-bottom:16px;
-  flex-wrap:wrap;min-height:140px;overflow:visible;
-}
-.buffer-bar-label{
-  font-size:10px;letter-spacing:3px;font-weight:700;
-  color:var(--success);text-transform:uppercase;
-  margin-right:4px;flex-shrink:0;
-}
-.buffer-piece{
-  position:relative;width:100px;height:100px;
-  cursor:grab;flex-shrink:0;overflow:visible;
-  transition:transform .15s,filter .15s;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.02);
-}
+/* BUFFER */
+.buffer-bar{display:flex;gap:16px;align-items:center;background:rgba(0,0,0,.25);border:1px solid var(--success);padding:16px;margin-bottom:16px;flex-wrap:wrap;min-height:130px;overflow:visible;}
+.buffer-bar-label{font-size:10px;letter-spacing:3px;font-weight:700;color:var(--success);text-transform:uppercase;margin-right:4px;flex-shrink:0;}
+.buffer-piece{position:relative;width:100px;height:100px;cursor:grab;flex-shrink:0;overflow:visible;transition:transform .15s,filter .15s;}
 .buffer-piece:hover{transform:scale(1.08) translateY(-3px);filter:brightness(1.2);}
-.buffer-piece:active{cursor:grabbing;transform:scale(.95);}
+.buffer-piece:active{cursor:grabbing;}
 .buffer-piece.used{opacity:.15;cursor:default;filter:grayscale(1);}
-.buffer-piece.used:hover{transform:none;filter:grayscale(1);}
 .buffer-piece.dragging{opacity:.3;}
-.buffer-piece svg{width:100%;height:100%;overflow:visible;}
-.bp-num{position:absolute;top:28px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-weight:700;font-size:18px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;z-index:10;}
-.bp-ref{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;z-index:10;}
-.bp-name{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.5px;pointer-events:none;z-index:10;}
-.buffer-progress{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--success);margin-left:auto;align-self:flex-end;}
+.bp-num{position:absolute;top:26px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-weight:700;font-size:20px;text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none;z-index:10;}
+.bp-ref{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:11px;text-shadow:0 1px 2px rgba(0,0,0,.9);pointer-events:none;z-index:10;}
+.bp-name{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.5px;pointer-events:none;z-index:10;}
 
-/* ══ PUZZLE BOARD ══ */
+/* PUZZLE BOARD */
 .puzzle-wrap{display:flex;justify-content:flex-start;overflow-x:auto;margin-bottom:14px;}
 .puzzle-board{display:inline-grid;gap:0;}
-.puzzle-board.cols3{grid-template-columns:repeat(3,92px);}
 .puzzle-board.cols4{grid-template-columns:repeat(4,82px);}
-.puzzle-board.cols5{grid-template-columns:repeat(5,72px);}
 
-/* Regular puzzle cell */
-.puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;}
-.puzzle-board.cols3 .puzzle-cell{width:92px;height:92px;}
-.puzzle-board.cols4 .puzzle-cell{width:82px;height:82px;}
-.puzzle-board.cols5 .puzzle-cell{width:72px;height:72px;}
+.puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;width:82px;height:82px;}
 .puzzle-cell svg{width:100%;height:100%;overflow:visible;}
+.piece-st-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;z-index:10;text-shadow:0 1px 2px rgba(0,0,0,.6);}
 
-/* Grey (other stations) */
-.puzzle-cell.grey svg{filter:opacity(.35);}
-.piece-st-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;z-index:10;color:#555;text-shadow:0 1px 2px rgba(0,0,0,.4);}
-
-/* ══ CORNER DROP ZONES ══ */
-.corner-drop{
-  position:relative;
-  display:flex;align-items:center;justify-content:center;
-  border:2px dashed var(--border);
-  background:rgba(255,255,255,.02);
-  transition:all .2s;overflow:visible;
-}
-.corner-drop .drop-hint{
-  font-size:9px;letter-spacing:1px;color:var(--muted);
-  text-transform:uppercase;font-weight:700;text-align:center;
-  pointer-events:none;
-}
-.corner-drop.drag-over{
-  border-color:var(--success);border-style:solid;
-  background:rgba(61,232,138,.1);transform:scale(1.04);
-}
+/* CORNER DROP ZONES */
+.corner-drop{position:relative;display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);background:rgba(255,255,255,.02);transition:all .2s;overflow:visible;width:82px;height:82px;}
+.corner-drop .drop-hint{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-weight:700;text-align:center;pointer-events:none;}
+.corner-drop.drag-over{border-color:var(--success);border-style:solid;background:rgba(61,232,138,.1);transform:scale(1.04);}
 .corner-drop.filled{border:none;background:transparent;}
-.corner-drop.filled svg{width:100%;height:100%;overflow:visible;animation:popIn .25s ease;}
 .corner-drop.error-flash{border-color:var(--danger);border-style:solid;background:rgba(232,64,64,.12);animation:shake .35s;}
-.corner-drop.pulsing{border-color:var(--accent);border-style:solid;animation:blink .7s infinite alternate;}
-.cp-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:18px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;z-index:10;}
-.cp-ref{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;z-index:10;bottom:16px;}
-.cp-name{position:absolute;font-size:8px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.5px;pointer-events:none;z-index:10;bottom:4px;}
+.corner-drop.pulsing{border-color:var(--s1);border-style:solid;animation:blink .7s infinite alternate;}
+.cp-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;z-index:10;}
+.cp-ref{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;z-index:10;}
 
 @keyframes popIn{0%{transform:scale(1.2)}100%{transform:scale(1)}}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 @keyframes blink{from{opacity:.5}to{opacity:1}}
+@keyframes completeFlash{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
 
-/* BUTTONS */
 .btn{border:none;padding:10px 20px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .15s;}
-.btn-primary{background:var(--accent);color:#000;}
-.btn-primary:hover{opacity:.85;}
+.btn-primary{background:var(--accent);color:#000;}.btn-primary:hover{opacity:.85;}
 .btn-primary:disabled{background:#333;color:#666;cursor:not-allowed;}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
-.btn-ghost:hover{border-color:var(--cyan);}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}.btn-ghost:hover{border-color:var(--cyan);}
 .ctrl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 
 .timer-box{background:var(--panel);border:1px solid var(--border);padding:12px 16px;text-align:center;min-width:130px;}
 .timer-val{font-family:'Share Tech Mono',monospace;font-size:30px;color:var(--accent);line-height:1;}
-.timer-val.running{color:var(--success);}
-.timer-val.done{color:var(--cyan);}
+.timer-val.running{color:var(--success);}.timer-val.done{color:var(--cyan);}
 .timer-sub{font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:4px;font-weight:700;}
 
 .data-box{background:var(--panel);border:1px solid var(--border);padding:12px 14px;display:flex;flex-direction:column;min-width:148px;}
@@ -204,7 +150,7 @@ body {
 
 <div class="status-msg" id="statusMsg"></div>
 <div class="validate-banner" id="validateBanner">
-  <div><div class="val-text">✅ Puzzle complet — Poste assemblé !</div><div class="val-sub">Validez pour envoyer au flux aval</div></div>
+  <div><div class="val-text" id="valText">✅ Assemblage terminé !</div><div class="val-sub">Validez pour envoyer au flux aval</div></div>
   <button class="btn" style="background:var(--success);color:#000;" id="btnValidate">→ Envoyer au flux aval</button>
 </div>
 
@@ -218,21 +164,13 @@ body {
       <span style="font-size:11px;color:var(--muted);font-weight:700;" id="cycleCount">Cycles : 0</span>
     </div>
 
-    <!-- BUFFER -->
-    <div class="section-label">BUFFER — GLISSEZ CHAQUE PIÈCE VERS SON COIN ↓
-      <span class="buffer-progress" id="bufferProgress">0 / 4 placées</span>
+    <div class="section-label">BUFFER — GLISSEZ VOS PIÈCES VERS LEUR EMPLACEMENT ↓
+      <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--success);margin-left:8px;" id="bufferProgress">0 / 4</span>
     </div>
-    <div class="buffer-bar" id="bufferBar">
-      <div class="buffer-bar-label">BUFFER</div>
-    </div>
+    <div class="buffer-bar" id="bufferBar"><div class="buffer-bar-label">BUFFER</div></div>
 
-    <!-- PUZZLE BOARD -->
-    <div class="section-label">
-      POSTE DE TRAVAIL — <span style="color:var(--danger);">■</span> vos pièces &nbsp;
-      <span style="color:#555;">■</span> autres stations &nbsp;
-      <span style="color:var(--border);font-size:9px;">[ coins vides = vos emplacements ]</span>
-    </div>
-    <div class="puzzle-wrap"><div class="puzzle-board cols3" id="puzzleBoard"></div></div>
+    <div class="section-label">PUZZLE PRODUIT — <span id="puzzleLegend"></span></div>
+    <div class="puzzle-wrap"><div class="puzzle-board cols4" id="puzzleBoard"></div></div>
 
     <div class="ctrl-row" style="margin-top:12px;">
       <button class="btn btn-primary" id="btnStart" disabled>▶ Nouveau cycle</button>
@@ -276,63 +214,34 @@ body {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 // ══════════════════════════════════════════════════════
-// PUZZLE SVG ENGINE
+// PUZZLE PRODUCT — 4x4 grid, 4 stations × 4 pieces
+// Fixed position layout:
+//  Row 0: S1  S2  S3  S1
+//  Row 1: S2  S4  S4  S3
+//  Row 2: S3  S4  S4  S2
+//  Row 3: S1  S3  S2  S1
 // ══════════════════════════════════════════════════════
-function generateTopology(cols,rows){
-  const h=[],v=[];
-  for(let r=0;r<rows-1;r++){h[r]=[];for(let c=0;c<cols;c++)h[r][c]=Math.random()>.5?1:-1;}
-  for(let r=0;r<rows;r++){v[r]=[];for(let c=0;c<cols-1;c++)v[r][c]=Math.random()>.5?1:-1;}
-  return{h,v};
-}
+const COLS=4, ROWS=4;
+const PIECE_MAP=[
+  1,2,3,1,
+  2,4,4,3,
+  3,4,4,2,
+  1,3,2,1
+];
+// For each station, which flat indices are theirs
+const STATION_POSITIONS={
+  1:[0,3,12,15],   // 4 corners
+  2:[1,4,11,14],   // edges mid
+  3:[2,7,8,13],    // edges other
+  4:[5,6,9,10],    // center
+};
 
-function piecePath(sides,S){
-  const T=S*.18,W=S*.28,C=S/2;
-  function tab(from,to,dir,out){
-    const dx=to[0]-from[0],dy=to[1]-from[1],len=Math.sqrt(dx*dx+dy*dy);
-    const ux=dx/len,uy=dy/len,px=-uy*dir,py=ux*dir,m=out*T;
-    const p=(a,b)=>`${a.toFixed(1)},${b.toFixed(1)}`;
-    const x1=from[0]+ux*(C-W)+px*m*.3,y1=from[1]+uy*(C-W)+py*m*.3;
-    const x2=from[0]+ux*(C-W)+px*m,  y2=from[1]+uy*(C-W)+py*m;
-    const x3=from[0]+ux*(C+W)+px*m,  y3=from[1]+uy*(C+W)+py*m;
-    const x4=from[0]+ux*(C+W)+px*m*.3,y4=from[1]+uy*(C+W)+py*m*.3;
-    return `L${p(x1,y1)} L${p(x2,y2)} L${p(x3,y3)} L${p(x4,y4)} L${p(to[0],to[1])}`;
-  }
-  let d=`M0,0 `;
-  d+=sides.top===0?`L${S},0 `:tab([0,0],[S,0],-1,sides.top);
-  d+=sides.right===0?`L${S},${S} `:tab([S,0],[S,S],1,sides.right);
-  d+=sides.bottom===0?`L0,${S} `:tab([S,S],[0,S],1,sides.bottom);
-  d+=sides.left===0?`L0,0 `:tab([0,S],[0,0],-1,sides.left);
-  return d+'Z';
-}
+// Station colors
+const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8'};
+const ST_STROKE={1:'#a01818',2:'#a06000',3:'#20a050',4:'#007a6a'};
+const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000'};
 
-function makePieceSVG(sides,size,fill,stroke){
-  const pad=size*.22,vs=size+pad*2,d=piecePath(sides,size);
-  return `<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;width:100%;height:100%;display:block;">
-    <path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2.5" stroke-linejoin="round"/>
-  </svg>`;
-}
-
-// Buffer piece: simple fixed SVG — always visible, no negative coords
-function makeBufferPieceSVG(fill,stroke){
-  // viewBox starts at -12 to include tab overflow
-  return `<svg viewBox="-12 -12 124 124" xmlns="http://www.w3.org/2000/svg" width="90" height="90" style="display:block;margin:auto;">
-    <path d="M5,5 L40,5 C40,-4 60,-4 60,5 L95,5 L95,40 C104,40 104,60 95,60 L95,95 L60,95 C60,104 40,104 40,95 L5,95 L5,60 C-4,60 -4,40 5,40 Z"
-      fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
-  </svg>`;
-}
-
-// ══════════════════════════════════════════════════════
-// CONFIG
-// ══════════════════════════════════════════════════════
-const params=new URLSearchParams(window.location.search);
-const STATION=parseInt(params.get('station')||'1');
-const SESSION=params.get('session')||'demo';
-const CFG_B64=params.get('cfg')||'';
-const ASSY_NAMES={1:'ASSY 1',2:'ASSY 2',3:'ASSY 3',4:'ASSY 4',5:'ASSY 5'};
-document.getElementById('stationBadge').textContent=ASSY_NAMES[STATION]||`ASSY ${STATION}`;
-document.getElementById('sessionId').textContent=SESSION.toUpperCase();
-
-const DIFFICULTIES={easy:{grid:3,seqLen:4},medium:{grid:4,seqLen:6},hard:{grid:5,seqLen:8}};
+// Component pool — fixed assignment per station
 const COMPONENT_POOL=[
   {id:'A1',name:'Axe Ø6'},{id:'B2',name:'Bague'},{id:'C3',name:'Carter'},
   {id:'D4',name:'Douille'},{id:'E5',name:'Ecrou M8'},{id:'F6',name:'Flasque'},
@@ -344,29 +253,94 @@ const COMPONENT_POOL=[
   {id:'Y22',name:'Yoke'},{id:'Z23',name:'Circlip'},{id:'Q24',name:'Came'},
 ];
 
-let CFG={difficulty:'easy',stationName:`${ASSY_NAMES[STATION]||'ASSY '+STATION} — Assemblage`,takt:15,co:30,gridComps:[],sequence:[]};
-if(CFG_B64){try{const d=JSON.parse(decodeURIComponent(escape(atob(CFG_B64))));CFG.difficulty=d.d||CFG.difficulty;CFG.stationName=d.name||CFG.stationName;CFG.takt=d.t||CFG.takt;CFG.co=d.co||CFG.co;if(d.g)CFG.gridComps=d.g.map(c=>({id:c.i,name:c.n}));if(d.s)CFG.sequence=d.s;}catch(e){}}
+// ══════════════════════════════════════════════════════
+// URL PARAMS
+// ══════════════════════════════════════════════════════
+const params=new URLSearchParams(window.location.search);
+const STATION=parseInt(params.get('station')||'1');
+const SESSION=params.get('session')||'demo';
+const ASSY_NAMES={1:'ASSY 1',2:'ASSY 2',3:'ASSY 3',4:'ASSY 4'};
+document.getElementById('stationBadge').textContent=ASSY_NAMES[STATION]||`ASSY ${STATION}`;
+document.getElementById('stationBadge').style.background=ST_COLOR[STATION]||'var(--accent)';
+document.getElementById('stationBadge').style.color=ST_TEXT[STATION]||'#000';
+document.getElementById('sessionId').textContent=SESSION.toUpperCase();
 
+// Legend
+const legendEl=document.getElementById('puzzleLegend');
+for(let s=1;s<=4;s++){
+  const sp=document.createElement('span');
+  sp.style.cssText=`color:${ST_COLOR[s]};margin-right:12px;font-weight:700;`;
+  sp.textContent=`■ ASSY ${s}`;
+  legendEl.appendChild(sp);
+}
+
+let CFG={takt:15,co:30};
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
 let S={
   wipIn:0,wipOut:0,cycles:0,output:0,scrap:0,history:[],
-  sessionComps:[],cornerComps:[],  // 4 red pieces = corners
-  interiorComps:[],                 // grey pieces = interior
-  placedCorners:{},                 // cornerKey -> comp
+  myPieces:[],        // 4 pieces assigned to this station
+  cornerComps:[],     // pieces with their target position
+  placedPositions:{}, // posIdx -> comp
+  puzzleState:{},     // full puzzle: posIdx -> stationNum (from Firebase)
   running:false,started:false,startTime:null,raf:null,errorCount:0,
-  topology:null, cornerSides:{},
+  topology:null,cornerSides:{},bufferDisplayOrder:null,
 };
-let NB_STATIONS=3,sessionStart=null,sessionInterval=null;
+let NB_STATIONS=4,sessionStart=null,sessionInterval=null,db=null;
+
+// ══════════════════════════════════════════════════════
+// SVG ENGINE
+// ══════════════════════════════════════════════════════
+function generateTopology(){
+  const h=[],v=[];
+  for(let r=0;r<ROWS-1;r++){h[r]=[];for(let c=0;c<COLS;c++)h[r][c]=Math.random()>.5?1:-1;}
+  for(let r=0;r<ROWS;r++){v[r]=[];for(let c=0;c<COLS-1;c++)v[r][c]=Math.random()>.5?1:-1;}
+  return{h,v};
+}
+function getSides(flatIdx,topo){
+  const row=Math.floor(flatIdx/COLS),col=flatIdx%COLS;
+  const{h,v}=topo;
+  return{
+    top:   row===0      ?0:h[row-1][col],
+    bottom:row===ROWS-1 ?0:-h[row][col],
+    left:  col===0      ?0:v[row][col-1],
+    right: col===COLS-1 ?0:-v[row][col],
+  };
+}
+function piecePath(sides,SZ){
+  const T=SZ*.18,W=SZ*.28,C=SZ/2;
+  function tab(from,to,dir,out){
+    const dx=to[0]-from[0],dy=to[1]-from[1],len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len,px=-uy*dir,py=ux*dir,m=out*T;
+    const p=(a,b)=>`${a.toFixed(1)},${b.toFixed(1)}`;
+    const x1=from[0]+ux*(C-W)+px*m*.3,y1=from[1]+uy*(C-W)+py*m*.3;
+    const x2=from[0]+ux*(C-W)+px*m,  y2=from[1]+uy*(C-W)+py*m;
+    const x3=from[0]+ux*(C+W)+px*m,  y3=from[1]+uy*(C+W)+py*m;
+    const x4=from[0]+ux*(C+W)+px*m*.3,y4=from[1]+uy*(C+W)+py*m*.3;
+    return `L${p(x1,y1)} L${p(x2,y2)} L${p(x3,y3)} L${p(x4,y4)} L${p(to[0],to[1])}`;
+  }
+  let d=`M0,0 `;
+  d+=sides.top===0?`L${SZ},0 `:tab([0,0],[SZ,0],-1,sides.top);
+  d+=sides.right===0?`L${SZ},${SZ} `:tab([SZ,0],[SZ,SZ],1,sides.right);
+  d+=sides.bottom===0?`L0,${SZ} `:tab([SZ,SZ],[0,SZ],1,sides.bottom);
+  d+=sides.left===0?`L0,0 `:tab([0,SZ],[0,0],-1,sides.left);
+  return d+'Z';
+}
+function makeSVG(sides,sz,fill,stroke){
+  const pad=sz*.2,vs=sz+pad*2,d=piecePath(sides,sz);
+  return `<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;width:100%;height:100%;display:block;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+}
 
 // ══════════════════════════════════════════════════════
 // CLOCK
 // ══════════════════════════════════════════════════════
 function tickClock(){const n=new Date();document.getElementById('clockDisp').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');}
 setInterval(tickClock,1000);tickClock();
-
 function startSessionTimer(){
-  if(sessionStart)return;
-  sessionStart=Date.now();
-  sessionInterval=setInterval(()=>{
+  if(sessionStart)return;sessionStart=Date.now();
+  setInterval(()=>{
     const e=Date.now()-sessionStart;
     document.getElementById('sessionTimerDisp').textContent=[Math.floor(e/3600000),Math.floor((e%3600000)/60000),Math.floor((e%60000)/1000)].map(x=>String(x).padStart(2,'0')).join(':');
     const prod=S.history.reduce((a,b)=>a+b,0);
@@ -377,7 +351,6 @@ function startSessionTimer(){
     document.getElementById('occBar').style.width=pct+'%';
   },1000);
 }
-
 function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
 function fmt(ms){return(ms/1000).toFixed(3).padStart(6,'0');}
 function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');el.textContent=txt;el.className=`status-msg show ${type}`;if(!txt)el.classList.remove('show');}
@@ -386,232 +359,117 @@ function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');e
 // INIT
 // ══════════════════════════════════════════════════════
 function initStation(){
-  document.getElementById('stationName').textContent=CFG.stationName;
   ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
   ['dbCO','bbCO'].forEach(id=>document.getElementById(id).textContent=CFG.co+'s');
-  const cfg=DIFFICULTIES[CFG.difficulty];
-  if(CFG.gridComps.length){S.sessionComps=CFG.gridComps;S.sequence=CFG.sequence;}
-  else{
-    // Chaque station reçoit un segment exclusif du pool — pas de chevauchement
-    const totalNeeded=cfg.grid*cfg.grid;
-    const segStart=((STATION-1)*totalNeeded)%COMPONENT_POOL.length;
-    // Extraire le segment en bouclant si nécessaire
-    const segment=[];
-    for(let i=0;i<totalNeeded;i++){
-      segment.push(COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length]);
-    }
-    const pool=shuffle(segment);
-    S.sessionComps=pool;
-    S.sequence=shuffle([...pool]).slice(0,cfg.seqLen).map(c=>c.id);
-  }
-  initCycle();updateWIPDisplay();
-  setConn('waiting','Connexion Firebase...');initFirebase();
+  document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLAGE`;
+  // Assign my 4 pieces from pool segment
+  const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
+  const segStart=(STATION-1)*4;
+  S.myPieces=myPositions.map((pos,i)=>({
+    ...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],
+    targetPos:pos
+  }));
+  initCycle();
+  updateWIPDisplay();
+  setConn('waiting','Connexion Firebase...');
+  initFirebase();
 }
 
 function initCycle(){
-  const cfg=DIFFICULTIES[CFG.difficulty];
-  const cols=cfg.grid,rows=cfg.grid;
-  // Corner indices in flat grid: TL, TR, BL, BR
-  const cornerPositions=[
-    {idx:0,              key:'TL',label:'Coin ↖'},
-    {idx:cols-1,         key:'TR',label:'Coin ↗'},
-    {idx:(rows-1)*cols,  key:'BL',label:'Coin ↙'},
-    {idx:(rows-1)*cols+(cols-1),key:'BR',label:'Coin ↘'},
-  ];
-
-  // Pick 4 station pieces for corners (shuffled)
-  const stComps=shuffle([...S.sessionComps]);
-  S.cornerComps=stComps.slice(0,4).map((c,i)=>({...c,cornerPos:cornerPositions[i]}));
-
-  // Fill interior with grey pieces (other station numbers)
-  const total=cols*rows;
-  const stIds=new Set(S.sessionComps.map(c=>c.id));
-  const filler=COMPONENT_POOL.filter(c=>!stIds.has(c.id));
-  const interiorCount=total-4;
-  const interiorFiller=shuffle(filler).slice(0,interiorCount).map((c,i)=>({...c,grey:true,greyStation:(i%4)+1}));
-  // Avoid greyStation=STATION (so it's always different from red corners)
-  interiorFiller.forEach(p=>{if(p.greyStation===STATION)p.greyStation=p.greyStation===4?1:p.greyStation+1;});
-  S.interiorComps=interiorFiller;
-
-  S.placedCorners={};
+  S.topology=generateTopology();
+  // Precompute corner sides for buffer matching
+  S.cornerSides={};
+  (STATION_POSITIONS[STATION]||[]).forEach(pos=>{
+    S.cornerSides[pos]=getSides(pos,S.topology);
+  });
+  // Shuffle display order in buffer
+  S.bufferDisplayOrder=shuffle([0,1,2,3]);
+  // Corner comps = my pieces shuffled for display
+  S.cornerComps=S.myPieces.map(p=>({...p}));
+  S.placedPositions={};
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
   cancelAnimationFrame(S.raf);
   const td=document.getElementById('timerDisp');td.textContent='00.000';td.className='timer-val';
   document.getElementById('validateBanner').classList.remove('show');
-  S.topology=generateTopology(cols,rows);
-
-  // Pre-compute corner sides so buffer pieces match board corners
-  const {h,v}=S.topology;
-  S.cornerSides={};
-  const csPositions=[
-    {key:'TL',row:0,     col:0      },
-    {key:'TR',row:0,     col:cols-1 },
-    {key:'BL',row:rows-1,col:0      },
-    {key:'BR',row:rows-1,col:cols-1 },
-  ];
-  csPositions.forEach(({key,row,col})=>{
-    S.cornerSides[key]={
-      top:    row===0      ?0:h[row-1][col],
-      bottom: row===rows-1 ?0:-h[row][col],
-      left:   col===0      ?0:v[row][col-1],
-      right:  col===cols-1 ?0:-v[row][col],
-    };
-  });
-
   setMsg('');
-  renderBuffer();renderBoard();
-  updateBufferProgress();
+  renderBuffer();renderBoard();updateBufferProgress();
   const btn=document.getElementById('btnStart');
-  if(STATION===1){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
-  else if(S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
+  if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
   else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
 }
 
 // ══════════════════════════════════════════════════════
-// RENDER BUFFER — draggable pieces
+// RENDER BUFFER
 // ══════════════════════════════════════════════════════
 function renderBuffer(){
   const bar=document.getElementById('bufferBar');
-  // Keep label
   bar.innerHTML='<div class="buffer-bar-label">BUFFER</div>';
-
-  // Flat sides for buffer pieces (standalone, no neighbors)
-  const bufSides={top:1,right:-1,bottom:1,left:-1};
-
-  S.cornerComps.forEach(comp=>{
-    const placed=!!S.placedCorners[comp.cornerPos.key];
+  const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
+  displayOrder.forEach(i=>{
+    const comp=S.cornerComps[i];
+    if(!comp)return;
+    const placed=!!S.placedPositions[comp.targetPos];
     const div=document.createElement('div');
     div.className='buffer-piece'+(placed?' used':'');
-    div.dataset.id=comp.id;
-    div.dataset.cornerKey=comp.cornerPos.key;
-
-    const fill=placed?'rgba(61,232,138,.2)':'#e84040';
-    const stroke=placed?'rgba(61,232,138,.4)':'#a01818';
-    // Use same shape as the corner on the board
-    const cSides = S.cornerSides && S.cornerSides[comp.cornerPos.key]
-      ? S.cornerSides[comp.cornerPos.key]
-      : {top:1,right:-1,bottom:1,left:-1};
-    const pad=20,vs=100+pad*2;
-    const bufPath=piecePath(cSides,100);
-    div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="90" height="90" style="display:block;margin:auto;overflow:visible;">
-      <path d="${bufPath}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
-    </svg>`;
-
-    // Station number
-    const numEl=document.createElement('span');
-    numEl.className='bp-num';
-    numEl.textContent=STATION;
-    numEl.style.color=placed?'var(--success)':'#fff';
-    div.appendChild(numEl);
-
-    // Ref
-    const refEl=document.createElement('span');
-    refEl.className='bp-ref';
-    refEl.textContent=comp.id;
-    refEl.style.color=placed?'var(--success)':'#fff';
-    div.appendChild(refEl);
-
-    // Name
-    const nameEl=document.createElement('span');
-    nameEl.className='bp-name';
-    nameEl.textContent=comp.name;
-    div.appendChild(nameEl);
-
+    div.dataset.idx=i;
+    const fill=placed?'rgba(61,232,138,.2)':ST_COLOR[STATION];
+    const stroke=placed?'rgba(61,232,138,.4)':ST_STROKE[STATION];
+    const sides=S.cornerSides[comp.targetPos]||{top:0,right:0,bottom:0,left:0};
+    const pad=20,vs=80+pad*2,d=piecePath(sides,80);
+    div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="90" height="90" style="display:block;margin:auto;overflow:visible;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+    const numEl=document.createElement('span');numEl.className='bp-num';numEl.textContent=STATION;numEl.style.color=ST_TEXT[STATION];div.appendChild(numEl);
+    const refEl=document.createElement('span');refEl.className='bp-ref';refEl.textContent=comp.id;refEl.style.color=placed?'var(--success)':ST_TEXT[STATION];div.appendChild(refEl);
+    const nameEl=document.createElement('span');nameEl.className='bp-name';nameEl.textContent=comp.name;div.appendChild(nameEl);
     if(!placed){
       div.draggable=true;
-      div.addEventListener('dragstart',e=>{
-        div.classList.add('dragging');
-        e.dataTransfer.setData('pieceId',comp.id);
-        e.dataTransfer.setData('cornerKey',comp.cornerPos.key);
-        e.dataTransfer.effectAllowed='move';
-        currentDrag={id:comp.id,cornerKey:comp.cornerPos.key};
-      });
+      div.addEventListener('dragstart',e=>{div.classList.add('dragging');e.dataTransfer.setData('compIdx',i);e.dataTransfer.effectAllowed='move';currentDrag={idx:i,comp};});
       div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
-      div.addEventListener('touchstart',()=>{currentDrag={id:comp.id,cornerKey:comp.cornerPos.key};},{passive:true});
+      div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
     }
     bar.appendChild(div);
   });
 }
 
 // ══════════════════════════════════════════════════════
-// RENDER BOARD — grey interior + empty corner drop zones
+// RENDER BOARD — full 4x4 puzzle
 // ══════════════════════════════════════════════════════
 function renderBoard(){
-  const cfg=DIFFICULTIES[CFG.difficulty];
-  const cols=cfg.grid,rows=cfg.grid;
   const board=document.getElementById('puzzleBoard');
-  const cellSize=cols===3?92:cols===4?82:72;
-  board.className=`puzzle-board cols${cols}`;
-  board.style.gridTemplateColumns=`repeat(${cols},${cellSize}px)`;
   board.innerHTML='';
+  const SZ=82;
+  for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
+    const sides=getSides(flatIdx,S.topology);
+    const ownerStation=PIECE_MAP[flatIdx]; // which station owns this position
+    const isMyPos=(STATION_POSITIONS[STATION]||[]).includes(flatIdx);
+    const alreadyPlaced=!!S.placedPositions[flatIdx]; // placed this cycle
+    const prevPlaced=S.puzzleState&&S.puzzleState[flatIdx]; // placed by prev station (from Firebase)
 
-  const {h,v}=S.topology;
-  const cornerPositions=[0,cols-1,(rows-1)*cols,(rows-1)*cols+(cols-1)];
-  const cornerMap={
-    0:'TL', [cols-1]:'TR',
-    [(rows-1)*cols]:'BL', [(rows-1)*cols+(cols-1)]:'BR'
-  };
-
-  // Build flat array: corners = null (drop zones), others = grey pieces
-  let interiorIdx=0;
-
-  for(let flatIdx=0;flatIdx<cols*rows;flatIdx++){
-    const row=Math.floor(flatIdx/cols),col=flatIdx%cols;
-    const sides={
-      top:   row===0      ?0:h[row-1][col],
-      bottom:row===rows-1 ?0:-h[row][col],
-      left:  col===0      ?0:v[row][col-1],
-      right: col===cols-1 ?0:-v[row][col],
-    };
-
-    const isCorner=cornerPositions.includes(flatIdx);
-    const cornerKey=cornerMap[flatIdx];
-
-    if(isCorner){
-      // ── CORNER DROP ZONE ──
-      const placed=S.placedCorners[cornerKey];
-      const cornerComp=S.cornerComps.find(c=>c.cornerPos.key===cornerKey);
+    if(isMyPos&&!alreadyPlaced){
+      // My empty position — drop zone
+      const comp=S.cornerComps.find(c=>c.targetPos===flatIdx);
       const cell=document.createElement('div');
-      cell.className='corner-drop'+(placed?' filled':S.running?' pulsing':'');
-      cell.style.cssText=`width:${cellSize}px;height:${cellSize}px;`;
-      cell.dataset.cornerKey=cornerKey;
-
-      if(placed){
-        // Show placed piece
-        cell.innerHTML=makePieceSVG(sides,cellSize,'#e84040','#a01818');
-        const numEl=document.createElement('span');
-        numEl.className='cp-num';numEl.style.cssText=`font-size:${cellSize*.2}px;color:#fff;`;numEl.textContent=STATION;
-        cell.appendChild(numEl);
-        const refEl=document.createElement('span');
-        refEl.className='cp-ref';refEl.style.cssText=`font-size:${cellSize*.12}px;color:#fff;bottom:${cellSize*.17}px;`;refEl.textContent=placed.id;
-        cell.appendChild(refEl);
-      } else {
-        // Empty drop zone
-        cell.innerHTML=`<span class="drop-hint" style="font-size:${cellSize*.1}px;">${cornerKey}<br><span style="font-size:${cellSize*.08}px;color:var(--accent);">${cornerComp?cornerComp.id:''}</span></span>`;
-      }
-
-      if(!placed){
-        cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');cell.classList.remove('pulsing');});
-        cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
-        cell.addEventListener('drop',e=>{
-          e.preventDefault();cell.classList.remove('drag-over');
-          const pid=e.dataTransfer.getData('pieceId');
-          const pck=e.dataTransfer.getData('cornerKey');
-          handleDrop(pid,pck,cornerKey);
-        });
-      }
+      cell.className='corner-drop'+(S.running?' pulsing':'');
+      cell.dataset.pos=flatIdx;
+      cell.innerHTML=`<span class="drop-hint" style="font-size:9px;">${comp?comp.id:''}</span>`;
+      cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');cell.classList.remove('pulsing');});
+      cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');if(S.running)cell.classList.add('pulsing');});
+      cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,flatIdx);});
       board.appendChild(cell);
     } else {
-      // ── GREY INTERIOR PIECE ──
-      const comp=S.interiorComps[interiorIdx++]||{id:'?',name:'',greyStation:2};
+      // Filled cell — show with correct station color
+      const stNum=alreadyPlaced?STATION:(prevPlaced||ownerStation);
+      const fill=alreadyPlaced?ST_COLOR[STATION]:(prevPlaced?ST_COLOR[prevPlaced]:'#2a3040');
+      const stroke=alreadyPlaced?ST_STROKE[STATION]:(prevPlaced?ST_STROKE[prevPlaced]:'#1a2030');
+      const opacity=(!alreadyPlaced&&!prevPlaced)?'.35':'1';
       const cell=document.createElement('div');
-      cell.className='puzzle-cell grey';
-      cell.style.cssText=`width:${cellSize}px;height:${cellSize}px;`;
-      cell.innerHTML=makePieceSVG(sides,cellSize,'#b0b8c8','#8090a8');
+      cell.className='puzzle-cell';
+      cell.style.cssText=`width:${SZ}px;height:${SZ}px;`;
+      cell.innerHTML=makeSVG(sides,SZ,fill,stroke);
+      if(!alreadyPlaced&&!prevPlaced){cell.querySelector('svg').style.filter=`opacity(.35)`;}
       const numEl=document.createElement('span');
       numEl.className='piece-st-num';
-      numEl.style.cssText=`font-size:${cellSize*.2}px;`;
-      numEl.textContent=comp.greyStation||'?';
+      numEl.style.cssText=`font-size:${SZ*.2}px;color:${(alreadyPlaced||prevPlaced)?ST_TEXT[stNum]:'#555'};`;
+      numEl.textContent=stNum;
       cell.appendChild(numEl);
       board.appendChild(cell);
     }
@@ -619,39 +477,32 @@ function renderBoard(){
 }
 
 // ══════════════════════════════════════════════════════
-// DROP LOGIC — buffer piece → corner slot
+// DROP LOGIC
 // ══════════════════════════════════════════════════════
 let currentDrag=null;
 
-function handleDrop(pieceId,pieceCornerKey,targetCornerKey){
-  if(!S.running){ startCycle(); }
-  // The piece must go to its assigned corner
-  if(pieceCornerKey===targetCornerKey){
-    // Correct corner!
+function handleDrop(compIdx,targetPos){
+  if(!S.running){startCycle();}
+  const comp=S.cornerComps[compIdx];
+  if(!comp)return;
+  if(comp.targetPos===targetPos){
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
-    const comp=S.cornerComps.find(c=>c.id===pieceId);
-    S.placedCorners[targetCornerKey]=comp;
-    renderBuffer();renderBoard();
-    updateBufferProgress();
-    setMsg(`✓ Pièce ${pieceId} placée en ${targetCornerKey} (${Object.keys(S.placedCorners).length}/4)`,'ok');
-    if(Object.keys(S.placedCorners).length===4)finishCycle(true);
+    S.placedPositions[targetPos]=comp;
+    renderBuffer();renderBoard();updateBufferProgress();
+    setMsg(`✓ ${comp.id} placé (${Object.keys(S.placedPositions).length}/4)`,'ok');
+    if(Object.keys(S.placedPositions).length===4)finishCycle(true);
   } else {
-    // Wrong corner!
     S.errorCount++;
-    const cell=document.getElementById('puzzleBoard').querySelector(`[data-corner-key="${targetCornerKey}"]`);
-    if(cell){
-      cell.classList.add('error-flash');
-      cell.classList.remove('pulsing');
-      setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);
-    }
-    setMsg(`❌ Mauvais coin ! ${pieceId} appartient à ${pieceCornerKey} | Erreurs : ${S.errorCount}`,'err');
-    if(S.errorCount>0&&S.errorCount%3===0){S.scrap++;finishCycle(false);}
+    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
+    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
+    setMsg(`❌ Mauvais emplacement ! ${comp.id} → pos ${comp.targetPos} | Erreurs : ${S.errorCount}`,'err');
+    if(S.errorCount%3===0){S.scrap++;finishCycle(false);}
   }
 }
 
 function updateBufferProgress(){
-  const placed=Object.keys(S.placedCorners).length;
-  document.getElementById('bufferProgress').textContent=`${placed} / 4 placées`;
+  const placed=Object.keys(S.placedPositions).length;
+  document.getElementById('bufferProgress').textContent=`${placed} / 4`;
 }
 
 // Touch drag
@@ -660,13 +511,13 @@ document.addEventListener('touchmove',e=>{
   const touch=e.touches[0];
   document.querySelectorAll('.corner-drop.drag-over').forEach(s=>s.classList.remove('drag-over'));
   const el=document.elementFromPoint(touch.clientX,touch.clientY);
-  if(el){const cd=el.closest('.corner-drop[data-corner-key]');if(cd&&!cd.classList.contains('filled'))cd.classList.add('drag-over');}
+  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)cd.classList.add('drag-over');}
 },{passive:true});
 document.addEventListener('touchend',e=>{
   if(!currentDrag)return;
   const touch=e.changedTouches[0];
   const el=document.elementFromPoint(touch.clientX,touch.clientY);
-  if(el){const cd=el.closest('.corner-drop[data-corner-key]');if(cd)handleDrop(currentDrag.id,currentDrag.cornerKey,cd.dataset.cornerKey);}
+  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.idx,parseInt(cd.dataset.pos));}
   document.querySelectorAll('.drag-over').forEach(s=>s.classList.remove('drag-over'));
   currentDrag=null;
 });
@@ -682,17 +533,15 @@ function startCycle(){
   else if(STATION>1){S.wipIn--;updateWIPDisplay();}
   S.running=true;
   document.getElementById('timerDisp').classList.add('running');
-  setMsg('▶ Cycle démarré — glissez chaque pièce rouge vers son coin du plateau','ok');
+  setMsg('▶ Glissez vos pièces vers leurs emplacements sur le puzzle','ok');
   document.getElementById('btnStart').disabled=true;
   renderBuffer();renderBoard();
 }
-
 function runTimer(){
   const el=document.getElementById('timerDisp');
   function tick(){if(!S.running)return;el.textContent=fmt(performance.now()-S.startTime);S.raf=requestAnimationFrame(tick);}
   S.raf=requestAnimationFrame(tick);
 }
-
 function finishCycle(ok){
   S.running=false;cancelAnimationFrame(S.raf);
   const elapsed=S.startTime?performance.now()-S.startTime:0;
@@ -701,22 +550,68 @@ function finishCycle(ok){
   S.cycles++;
   if(ok){
     S.output++;S.wipOut++;S.history.push(elapsed);
-    setMsg(`✅ Puzzle assemblé en ${fmt(elapsed)}s !`,'ok');
+    // Push my placed pieces to Firebase puzzle state
+    if(db){
+      const updates={};
+      Object.keys(S.placedPositions).forEach(pos=>{updates[pos]=STATION;});
+      db.ref(`assembly_line/${SESSION}/puzzle_state`).update(updates);
+    }
+    // Check if puzzle is complete (station 4 last)
+    const isLast=(STATION===NB_STATIONS);
+    if(isLast){
+      // All 16 pieces → flash complete puzzle
+      showCompletePuzzle();
+      document.getElementById('valText').textContent='🏆 PUZZLE COMPLET — Produit fini !';
+    } else {
+      document.getElementById('valText').textContent=`✅ ASSY ${STATION} terminé — Puzzle → ASSY ${STATION+1}`;
+    }
+    setMsg(`✅ Assemblage terminé en ${fmt(elapsed)}s`,'ok');
     document.getElementById('validateBanner').classList.add('show');
     document.getElementById('cycleCount').textContent=`Cycles : ${S.cycles}`;
     updateStats();updateWIPDisplay();pushStats();
   } else {
-    setMsg('🗑 Scrap — trop d\'erreurs','err');
+    setMsg('🗑 Scrap','err');
     setTimeout(()=>initCycle(),700);
+  }
+}
+
+function showCompletePuzzle(){
+  // All 16 pieces become their station color
+  const board=document.getElementById('puzzleBoard');
+  board.innerHTML='';
+  const SZ=82;
+  for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
+    const sides=getSides(flatIdx,S.topology);
+    const stNum=PIECE_MAP[flatIdx];
+    const cell=document.createElement('div');
+    cell.className='puzzle-cell';
+    cell.style.cssText=`width:${SZ}px;height:${SZ}px;animation:popIn .3s ease ${(flatIdx*.03).toFixed(2)}s both;`;
+    cell.innerHTML=makeSVG(sides,SZ,ST_COLOR[stNum],ST_STROKE[stNum]);
+    const numEl=document.createElement('span');
+    numEl.className='piece-st-num';
+    numEl.style.cssText=`font-size:${SZ*.2}px;color:${ST_TEXT[stNum]};`;
+    numEl.textContent=stNum;
+    cell.appendChild(numEl);
+    board.appendChild(cell);
   }
 }
 
 function validatePiece(){
   document.getElementById('validateBanner').classList.remove('show');
   S.wipOut--;updateWIPDisplay();
-  if(STATION<NB_STATIONS&&db){db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);setMsg(`📦 Envoyé → ASSY ${STATION+1}`,'info');}
-  else{if(db)db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);setMsg('🏁 Livré au CLIENT ✅','ok');}
-  pushStats();setTimeout(()=>initCycle(),700);
+  if(STATION<NB_STATIONS&&db){
+    db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);
+    setMsg(`📦 Puzzle → ASSY ${STATION+1}`,'info');
+  } else {
+    if(db)db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);
+    if(db)db.ref(`assembly_line/${SESSION}/puzzle_state`).remove(); // reset puzzle for next product
+    setMsg('🏁 Produit livré au CLIENT ✅','ok');
+  }
+  pushStats();
+  setTimeout(()=>{
+    S.puzzleState={};
+    initCycle();
+  },700);
 }
 
 function updateWIPDisplay(){
@@ -726,9 +621,11 @@ function updateWIPDisplay(){
   document.getElementById('bbOutput').textContent=S.output;
   document.getElementById('bbScrap').textContent=S.scrap;
   const btn=document.getElementById('btnStart');
-  if(!S.running){if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}}
+  if(!S.running){
+    if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
+    else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
+  }
 }
-
 function updateStats(){
   if(!S.history.length)return;
   const last=S.history[S.history.length-1],moy=S.history.reduce((a,b)=>a+b,0)/S.history.length,min=Math.min(...S.history),taktMs=CFG.takt*1000;
@@ -745,18 +642,52 @@ function updateStats(){
   document.getElementById('bbDispo').textContent=dispo+'%';document.getElementById('bbDispo').className='bb-val '+dc;
 }
 
-// Firebase
+// ══════════════════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════════════════
 const firebaseConfig={apiKey:"AIzaSyDIE-YJ68VQkMj60n1vklQWei9-32Dv-Oo",authDomain:"keeplean-beergame.firebaseapp.com",databaseURL:"https://keeplean-beergame-default-rtdb.europe-west1.firebasedatabase.app",projectId:"keeplean-beergame",storageBucket:"keeplean-beergame.firebasestorage.app",messagingSenderId:"731779808067",appId:"1:731779808067:web:e4312b55afe16e72b6cdf6"};
-let db=null;const stKey=`s${STATION}`;
+const stKey=`s${STATION}`;
 function setConn(s,l){document.getElementById('connDot').className='conn-dot '+s;document.getElementById('connLabel').textContent=l;}
-function initFirebase(){try{if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);db=firebase.database();listenWipIn();listenSessionConfig();pushStats();setConn('online',`${ASSY_NAMES[STATION]||'ASSY '+STATION} connectée`);}catch(e){setConn('offline','Firebase indisponible — mode local');}}
-function listenWipIn(){db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).on('value',snap=>{S.wipIn=snap.val()||0;updateWIPDisplay();});}
-function listenSessionConfig(){db.ref(`assembly_line/${SESSION}/config`).on('value',snap=>{const cfg=snap.val();if(!cfg)return;if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}if(cfg.nb_stations)NB_STATIONS=cfg.nb_stations;if(cfg.status==='stopped'){setMsg('⏹ Session arrêtée par le formateur','err');document.getElementById('btnStart').disabled=true;}});}
-function pushStats(){if(!db)return;db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)):0,status:S.running?'running':'idle',name:CFG.stationName,last_updated:Date.now()});}
+function initFirebase(){
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+    db=firebase.database();
+    listenWipIn();listenPuzzleState();listenSessionConfig();pushStats();
+    setConn('online',`${ASSY_NAMES[STATION]} connectée`);
+    if(STATION===1){S.wipIn=999;updateWIPDisplay();}
+  }catch(e){
+    setConn('offline','Mode local');
+    if(STATION===1){S.wipIn=999;document.getElementById('btnStart').disabled=false;document.getElementById('btnStart').textContent='▶ Nouveau cycle';}
+  }
+}
+function listenWipIn(){
+  db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).on('value',snap=>{
+    if(STATION>1){S.wipIn=snap.val()||0;updateWIPDisplay();}
+  });
+}
+function listenPuzzleState(){
+  // Listen to puzzle state from previous stations
+  db.ref(`assembly_line/${SESSION}/puzzle_state`).on('value',snap=>{
+    S.puzzleState=snap.val()||{};
+    renderBoard();
+  });
+}
+function listenSessionConfig(){
+  db.ref(`assembly_line/${SESSION}/config`).on('value',snap=>{
+    const cfg=snap.val();if(!cfg)return;
+    if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}
+    if(cfg.nb_stations)NB_STATIONS=cfg.nb_stations;
+    if(cfg.status==='stopped'){setMsg('⏹ Session arrêtée','err');document.getElementById('btnStart').disabled=true;}
+  });
+}
+function pushStats(){
+  if(!db)return;
+  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)):0,status:S.running?'running':'idle',name:`${ASSY_NAMES[STATION]} — Assemblage`,last_updated:Date.now()});
+}
 
 document.getElementById('btnStart').addEventListener('click',startCycle);
 document.getElementById('btnValidate').addEventListener('click',validatePiece);
-document.getElementById('btnReset').addEventListener('click',()=>{S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.history=[];updateWIPDisplay();initCycle();setMsg('Session réinitialisée','info');});
+document.getElementById('btnReset').addEventListener('click',()=>{S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.history=[];S.puzzleState={};updateWIPDisplay();initCycle();setMsg('Session réinitialisée','info');});
 
 initStation();
 </script>
