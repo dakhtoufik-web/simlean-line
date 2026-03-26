@@ -247,10 +247,7 @@ body {
       <label>TAKT TIME (s)</label>
       <input id="cfgTakt" type="number" value="15" min="5" max="120">
     </div>
-    <div class="setup-field">
-      <label>URL BASE NETLIFY</label>
-      <input id="cfgBaseUrl" type="text" placeholder="https://monsite.netlify.app" style="min-width:260px;">
-    </div>
+
     <div class="setup-field">
       <label>&nbsp;</label>
       <button class="btn btn-primary" id="btnCreate">▶ Créer la session</button>
@@ -258,6 +255,10 @@ body {
     <div class="setup-field">
       <label>&nbsp;</label>
       <button class="btn btn-danger" id="btnStop" style="display:none;">⏹ Arrêter</button>
+    </div>
+    <div class="setup-field">
+      <label>&nbsp;</label>
+      <button class="btn" id="btnResetAll" style="display:none;background:transparent;border:1px solid var(--cyan);color:var(--cyan);">↺ Reset session</button>
     </div>
   </div>
 </div>
@@ -326,7 +327,7 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   F.nbStations  = parseInt(document.getElementById('cfgStations').value);
   F.takt        = parseInt(document.getElementById('cfgTakt').value) || 15;
   F.gridSize    = parseInt(document.getElementById('cfgGrid').value) || 3;
-  F.baseUrl     = document.getElementById('cfgBaseUrl').value.trim().replace(/\/$/,'');
+  F.baseUrl     = 'https://dakhtoufik-web.github.io/simlean-line';
 
   // Init stations locales
   F.stations = Array.from({length: F.nbStations}, (_,i)=>({
@@ -344,7 +345,8 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   document.getElementById('siStatus').textContent   = '▶ EN COURS';
   document.getElementById('sessionInfo').classList.add('show');
   document.getElementById('btnCreate').style.display = 'none';
-  document.getElementById('btnStop').style.display   = 'inline-block';
+  document.getElementById('btnStop').style.display      = 'inline-block';
+  document.getElementById('btnResetAll').style.display  = 'inline-block';
 
   startDurationTimer();
   renderFlux();
@@ -353,12 +355,31 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   pushSessionToFirebase();
 });
 
+document.getElementById('btnResetAll').addEventListener('click', ()=>{
+  if(!confirm('Réinitialiser toutes les stations (output, scrap, cycles, WIP, puzzle) ?')) return;
+  if(!db || !F.sessionCode) return;
+  // Reset all station stats
+  for(let i=1;i<=F.nbStations;i++){
+    db.ref(`assembly_line/${F.sessionCode}/stations/s${i}`).update({
+      cycles:0,output:0,scrap:0,wip_out:0,wip_in:i===1?999:0,ct_moy:0,status:'idle'
+    });
+  }
+  // Reset puzzle state
+  db.ref(`assembly_line/${F.sessionCode}/puzzle_state`).remove();
+  // Reset client output
+  db.ref(`assembly_line/${F.sessionCode}/stations/s${F.nbStations}/client_output`).set(0);
+  // Signal reset to all stations
+  db.ref(`assembly_line/${F.sessionCode}/config/reset_signal`).set(Date.now());
+  setConn('online', `Session ${F.sessionCode} — Reset effectué ✓`);
+});
+
 document.getElementById('btnStop').addEventListener('click', ()=>{
   F.running = false;
   clearInterval(F.timerInterval);
   document.getElementById('siStatus').textContent = '⏹ TERMINÉE';
-  document.getElementById('btnStop').style.display = 'none';
-  document.getElementById('btnCreate').style.display = 'inline-block';
+  document.getElementById('btnStop').style.display     = 'none';
+  document.getElementById('btnResetAll').style.display  = 'none';
+  document.getElementById('btnCreate').style.display    = 'inline-block';
   setConn('offline', 'Session terminée');
   stopSessionFirebase();
 });
@@ -604,4 +625,3 @@ initFirebase();
 </script>
 </body>
 </html>
-
