@@ -236,11 +236,19 @@ body {
       </select>
     </div>
     <div class="setup-field">
-      <label>TAILLE PUZZLE</label>
-      <select id="cfgGrid">
-        <option value="3" selected>3×3 — Facile (4 coins)</option>
-        <option value="4">4×4 — Moyen (4 coins + bords)</option>
-        <option value="5">5×5 — Difficile (nombreuses grises)</option>
+      <label>GRILLE PUZZLE</label>
+      <select id="cfgGridSize" onchange="updateProfiles()">
+        <option value="4x4" selected>4×4 (16 pièces)</option>
+        <option value="5x5">5×5 (25 pièces)</option>
+      </select>
+    </div>
+    <div class="setup-field">
+      <label>PROFIL GOULOT</label>
+      <select id="cfgProfile">
+        <option value="Équilibré (4-4-4-4)">Équilibré (4-4-4-4)</option>
+        <option value="Goulot S2 (2-8-3-3)">Goulot S2 (2-8-3-3)</option>
+        <option value="Goulot S3 (4-2-6-4)">Goulot S3 (4-2-6-4)</option>
+        <option value="Goulot S4 (4-4-2-6)">Goulot S4 (4-4-2-6)</option>
       </select>
     </div>
     <div class="setup-field">
@@ -307,11 +315,39 @@ body {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
+// ── PROFILES ──────────────────────────────────────────
+const PROFILES = {
+  '4x4': {
+    'Équilibré (4-4-4-4)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4,11,14],           3:[2,7,8,13],             4:[5,6,9,10]},
+    'Goulot S2 (2-8-3-3)':  {cols:4,rows:4, 1:[0,3],         2:[1,4,5,6,9,10,11,14],  3:[2,7,8],                4:[12,13,15]},
+    'Goulot S3 (4-2-6-4)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4],                 3:[2,5,6,7,8,13],         4:[9,10,11,14]},
+    'Goulot S4 (4-4-2-6)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4,11,14],           3:[2,7],                  4:[5,6,8,9,10,13]},
+  },
+  '5x5': {
+    'Équilibré (6-6-6-7)':  {cols:5,rows:5, 1:[0,4,20,24,2,22],         2:[1,3,5,9,15,19],          3:[10,14,21,23,11,13],       4:[6,7,8,12,16,17,18]},
+    'Goulot S2 (4-10-6-5)': {cols:5,rows:5, 1:[0,4,20,24],             2:[1,2,3,5,6,7,8,9,14,19],  3:[10,11,13,15,21,23],       4:[12,16,17,18,22]},
+    'Goulot S3 (6-4-10-5)': {cols:5,rows:5, 1:[0,4,20,24,2,22],        2:[1,3,5,9],                3:[6,7,8,10,11,12,13,14,15,19], 4:[16,17,18,21,23]},
+    'Goulot S4 (6-6-4-9)':  {cols:5,rows:5, 1:[0,4,20,24,2,22],        2:[1,3,5,9,15,19],          3:[10,14,21,23],              4:[6,7,8,11,12,13,16,17,18]},
+  }
+};
+
+function updateProfiles(){
+  const gridSize = document.getElementById('cfgGridSize').value;
+  const sel = document.getElementById('cfgProfile');
+  sel.innerHTML = '';
+  Object.keys(PROFILES[gridSize]).forEach(p=>{
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    sel.appendChild(opt);
+  });
+}
+
 let F = {
   sessionCode: '',
-  nbStations: 3,
+  nbStations: 4,
   takt: 15,
-  gridSize: 3,
+  gridSize: '4x4',
+  profile: 'Équilibré (4-4-4-4)',
   baseUrl: '',
   running: false,
   startTime: null,
@@ -324,9 +360,10 @@ let F = {
 // ═══════════════════════════════════════════════════════════
 document.getElementById('btnCreate').addEventListener('click', ()=>{
   F.sessionCode = document.getElementById('cfgSession').value.trim().toUpperCase() || 'LEAN01';
-  F.nbStations  = parseInt(document.getElementById('cfgStations').value);
+  F.nbStations  = 4; // always 4 stations for puzzle
   F.takt        = parseInt(document.getElementById('cfgTakt').value) || 15;
-  F.gridSize    = parseInt(document.getElementById('cfgGrid').value) || 3;
+  F.gridSize    = document.getElementById('cfgGridSize').value;
+  F.profile     = document.getElementById('cfgProfile').value;
   F.baseUrl     = 'https://dakhtoufik-web.github.io/simlean-line';
 
   // Init stations locales
@@ -340,8 +377,8 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
 
   // Afficher session info
   document.getElementById('siCode').textContent     = F.sessionCode;
-  document.getElementById('siStations').textContent = F.nbStations;
-  document.getElementById('siGrid') && (document.getElementById('siGrid').textContent = F.gridSize+'×'+F.gridSize);
+  document.getElementById('siStations').textContent = '4';
+  document.getElementById('siGrid') && (document.getElementById('siGrid').textContent = F.gridSize+' — '+F.profile);
   document.getElementById('siStatus').textContent   = '▶ EN COURS';
   document.getElementById('sessionInfo').classList.add('show');
   document.getElementById('btnCreate').style.display = 'none';
@@ -453,7 +490,7 @@ function renderLinks(){
   const stationFile = 'SimLean_Station_v5.html';
 
   F.stations.forEach((st, i)=>{
-    const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}&grid=${F.gridSize}`;
+    const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>ASSY ${st.num}</strong></td>
@@ -546,10 +583,14 @@ function initFirebase(){
 // Écrire config session dans Firebase
 function pushSessionToFirebase(){
   if(!db) return;
+  const profileData = PROFILES[F.gridSize] && PROFILES[F.gridSize][F.profile]
+    ? PROFILES[F.gridSize][F.profile] : PROFILES['4x4']['Équilibré (4-4-4-4)'];
   db.ref(`assembly_line/${F.sessionCode}/config`).set({
-    nb_stations: F.nbStations,
+    nb_stations: 4,
     takt: F.takt,
     grid_size: F.gridSize,
+    profile: F.profile,
+    profile_data: profileData,
     status: 'running',
     created_at: Date.now()
   });
@@ -626,3 +667,5 @@ initFirebase();
 </script>
 </body>
 </html>
+
+
