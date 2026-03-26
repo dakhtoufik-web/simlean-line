@@ -3,317 +3,236 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Station</title>
+<title>SimLean Assembly Line — Station Puzzle</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
 :root {
-  --bg:      #0b0e13;
-  --panel:   #111520;
-  --panel2:  #161b26;
-  --border:  #1e2538;
-  --accent:  #f0a500;
-  --cyan:    #00c2a8;
-  --danger:  #e84040;
-  --success: #3de88a;
-  --text:    #dde1ed;
-  --muted:   #ffffff;
-  --wip-color: #f0a500;
+  --bg:#0b0e13; --panel:#111520; --panel2:#161b26; --border:#1e2538;
+  --accent:#f0a500; --cyan:#00c2a8; --danger:#e84040; --success:#3de88a;
+  --text:#dde1ed; --muted:#ffffff;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-
 body {
-  background: var(--bg); color: var(--text);
-  font-family: 'Barlow Condensed', sans-serif;
-  min-height: 100vh; display:flex; flex-direction:column;
-  align-items:center; padding:16px;
+  background:var(--bg); color:var(--text);
+  font-family:'Barlow Condensed',sans-serif;
+  min-height:100vh; display:flex; flex-direction:column;
+  align-items:center; padding:14px;
   background-image:
     repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),
     repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
   background-size:40px 40px;
 }
 
-/* ── TOP BAR ── */
-.top-bar {
-  width:100%; max-width:1000px;
-  display:flex; justify-content:space-between; align-items:center;
-  border-bottom:2px solid var(--accent);
-  padding-bottom:10px; margin-bottom:18px; flex-wrap:wrap; gap:8px;
-}
-.logo { font-size:13px; letter-spacing:4px; color:var(--accent); font-weight:700; }
-.logo span { color:var(--muted); }
-.session-badge {
-  background:var(--panel2); border:1px solid var(--border);
-  border-radius:20px; padding:4px 14px;
-  font-size:11px; letter-spacing:2px; color:var(--cyan);
-}
-.station-badge {
-  background:var(--accent); color:#000;
-  border-radius:20px; padding:4px 16px;
-  font-size:13px; font-weight:700; letter-spacing:2px;
-}
+.top-bar{width:100%;max-width:1060px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--accent);padding-bottom:10px;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.logo{font-size:13px;letter-spacing:4px;color:var(--accent);font-weight:700;}
+.logo span{color:var(--muted);}
+.session-badge{background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:11px;letter-spacing:2px;color:var(--cyan);}
+.station-badge{background:var(--accent);color:#000;border-radius:20px;padding:4px 16px;font-size:13px;font-weight:700;letter-spacing:2px;}
+.conn-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;}
+.conn-dot.online{background:var(--success);box-shadow:0 0 6px var(--success);}
+.conn-dot.offline{background:var(--danger);}
+.conn-dot.waiting{background:var(--accent);animation:pulse .8s infinite alternate;}
+@keyframes pulse{from{opacity:.6}to{opacity:1}}
 
-/* ── FLUX ROW ── */
-.flux-row {
-  width:100%; max-width:1000px;
-  display:flex; align-items:stretch; gap:12px;
-  margin-bottom:16px;
-}
+.chrono-bar{width:100%;max-width:1060px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.chrono-cell{background:var(--panel);border:1px solid var(--border);padding:8px 10px;text-align:center;}
+.chrono-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
+.chrono-val{font-family:'Share Tech Mono',monospace;font-size:22px;line-height:1.2;}
+.cv-clock{color:var(--cyan);}.cv-time{color:var(--accent);}
+.cv-occ{color:var(--success);}.cv-occ.low{color:var(--danger);}.cv-occ.mid{color:var(--accent);}
+.occ-bar-wrap{margin-top:4px;height:3px;background:var(--border);}
+.occ-bar-fill{height:100%;background:var(--success);transition:width .5s;}
+.occ-bar-fill.low{background:var(--danger);}.occ-bar-fill.mid{background:var(--accent);}
 
-/* WIP BOX */
-.wip-box {
-  background:var(--panel); border:1px solid var(--border);
-  border-radius:10px; padding:16px 20px;
-  display:flex; flex-direction:column; align-items:center;
-  gap:6px; min-width:130px; position:relative;
-}
-.wip-box.wip-in  { border-color: var(--cyan); }
-.wip-box.wip-out { border-color: var(--success); }
-.wip-label {
-  font-size:10px; letter-spacing:2px; color:#888; text-transform:uppercase;
-}
-.wip-count {
-  font-family:'Share Tech Mono',monospace;
-  font-size:42px; font-weight:700; line-height:1;
-}
-.wip-in  .wip-count { color:var(--cyan); }
-.wip-out .wip-count { color:var(--success); }
-.wip-sub { font-size:10px; color:#666; }
+.status-msg{width:100%;max-width:1060px;padding:8px 14px;font-size:12px;letter-spacing:1px;margin-bottom:8px;display:none;border:1px solid var(--border);background:var(--panel);}
+.status-msg.show{display:block;}
+.status-msg.ok{border-color:var(--success);color:var(--success);}
+.status-msg.err{border-color:var(--danger);color:var(--danger);}
+.status-msg.info{border-color:var(--cyan);color:var(--cyan);}
 
-/* ARROW */
-.flux-arrow {
-  display:flex; align-items:center; justify-content:center;
-  color:var(--accent); font-size:24px; padding:0 4px;
-  align-self:center;
-}
+.validate-banner{display:none;width:100%;max-width:1060px;background:rgba(61,232,138,.1);border:2px solid var(--success);padding:14px 20px;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px;}
+.validate-banner.show{display:flex;}
+.val-text{font-size:14px;font-weight:700;color:var(--success);}
+.val-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px;}
+
+/* FLUX ROW */
+.flux-row{width:100%;max-width:1060px;display:flex;align-items:stretch;gap:10px;margin-bottom:12px;}
+.wip-box{background:var(--panel);border:1px solid var(--border);padding:12px 14px;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:100px;}
+.wip-box.wip-in{border-color:var(--cyan);}
+.wip-box.wip-out{border-color:var(--success);}
+.wip-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
+.wip-count{font-family:'Share Tech Mono',monospace;font-size:32px;font-weight:700;line-height:1;}
+.wip-in .wip-count{color:var(--cyan);}
+.wip-out .wip-count{color:var(--success);}
+.wip-sub{font-size:9px;color:var(--muted);font-weight:700;}
+.flux-arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:22px;padding:0 2px;align-self:center;}
 
 /* STATION AREA */
-.station-area {
-  flex:1; background:var(--panel); border:1px solid var(--border);
-  border-radius:10px; padding:18px;
-}
-.station-title {
-  font-size:13px; letter-spacing:3px; font-weight:700;
-  color:var(--accent); text-transform:uppercase;
-  margin-bottom:14px; padding-bottom:8px;
-  border-bottom:1px solid var(--border);
-  display:flex; justify-content:space-between; align-items:center;
-}
+.station-area{flex:1;background:var(--panel);border:1px solid var(--border);padding:16px;}
+.station-title{font-size:12px;letter-spacing:3px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.section-label{font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;font-weight:700;}
 
-/* GAMME */
-.gamme-label { font-size:10px; letter-spacing:2px; color:#888; margin-bottom:6px; }
-.seq-row {
-  display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;
+/* ══ BUFFER ══ */
+.buffer-bar{
+  display:flex;gap:12px;align-items:center;
+  background:rgba(0,0,0,.25);border:1px solid var(--success);
+  padding:12px 16px;margin-bottom:16px;
+  border-radius:2px;flex-wrap:wrap;
 }
-.seq-slot {
-  width:60px; height:52px; border:2px dashed var(--border);
-  border-radius:6px; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; gap:2px;
-  font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--muted);
+.buffer-bar-label{
+  font-size:10px;letter-spacing:3px;font-weight:700;
+  color:var(--success);text-transform:uppercase;
+  writing-mode:horizontal-tb;margin-right:4px;
+}
+.buffer-piece{
+  position:relative;width:90px;height:90px;
+  cursor:grab;flex-shrink:0;overflow:visible;
+  transition:transform .15s,filter .15s;
+}
+.buffer-piece:hover{transform:scale(1.08) translateY(-3px);filter:brightness(1.2);}
+.buffer-piece:active{cursor:grabbing;transform:scale(.95);}
+.buffer-piece.used{opacity:.15;cursor:default;filter:grayscale(1);}
+.buffer-piece.used:hover{transform:none;filter:grayscale(1);}
+.buffer-piece.dragging{opacity:.3;}
+.buffer-piece svg{width:100%;height:100%;overflow:visible;}
+.bp-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:18px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;z-index:10;}
+.bp-ref{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;z-index:10;bottom:16px;}
+.bp-name{position:absolute;font-size:8px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.5px;pointer-events:none;z-index:10;bottom:5px;}
+.buffer-progress{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--success);margin-left:auto;align-self:flex-end;}
+
+/* ══ PUZZLE BOARD ══ */
+.puzzle-wrap{display:flex;justify-content:flex-start;overflow-x:auto;margin-bottom:14px;}
+.puzzle-board{display:inline-grid;gap:0;}
+.puzzle-board.cols3{grid-template-columns:repeat(3,92px);}
+.puzzle-board.cols4{grid-template-columns:repeat(4,82px);}
+.puzzle-board.cols5{grid-template-columns:repeat(5,72px);}
+
+/* Regular puzzle cell */
+.puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;}
+.puzzle-board.cols3 .puzzle-cell{width:92px;height:92px;}
+.puzzle-board.cols4 .puzzle-cell{width:82px;height:82px;}
+.puzzle-board.cols5 .puzzle-cell{width:72px;height:72px;}
+.puzzle-cell svg{width:100%;height:100%;overflow:visible;}
+
+/* Grey (other stations) */
+.puzzle-cell.grey svg{filter:opacity(.35);}
+.piece-st-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;z-index:10;color:#555;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+
+/* ══ CORNER DROP ZONES ══ */
+.corner-drop{
   position:relative;
+  display:flex;align-items:center;justify-content:center;
+  border:2px dashed var(--border);
+  background:rgba(255,255,255,.02);
+  transition:all .2s;overflow:visible;
 }
-.seq-slot.done  { border-color:var(--success); background:rgba(61,232,138,.08); color:var(--success); }
-.seq-slot.active{ border-color:var(--accent);  background:rgba(240,165,0,.08);  color:var(--accent); animation:pulse .8s infinite alternate; }
-.seq-slot .si   { font-size:9px; color:#666; position:absolute; top:3px; left:5px; }
+.corner-drop .drop-hint{
+  font-size:9px;letter-spacing:1px;color:var(--muted);
+  text-transform:uppercase;font-weight:700;text-align:center;
+  pointer-events:none;
+}
+.corner-drop.drag-over{
+  border-color:var(--success);border-style:solid;
+  background:rgba(61,232,138,.1);transform:scale(1.04);
+}
+.corner-drop.filled{border:none;background:transparent;}
+.corner-drop.filled svg{width:100%;height:100%;overflow:visible;animation:popIn .25s ease;}
+.corner-drop.error-flash{border-color:var(--danger);border-style:solid;background:rgba(232,64,64,.12);animation:shake .35s;}
+.corner-drop.pulsing{border-color:var(--accent);border-style:solid;animation:blink .7s infinite alternate;}
+.cp-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:18px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;z-index:10;}
+.cp-ref{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;z-index:10;bottom:16px;}
+.cp-name{position:absolute;font-size:8px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.5px;pointer-events:none;z-index:10;bottom:4px;}
 
-@keyframes pulse { from{opacity:.7} to{opacity:1} }
+@keyframes popIn{0%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@keyframes blink{from{opacity:.5}to{opacity:1}}
 
-/* GRID */
-.grid-label { font-size:10px; letter-spacing:2px; color:#888; margin-bottom:6px; }
-.comp-grid {
-  display:grid; gap:8px; margin-bottom:14px;
-}
-.comp-grid.g3 { grid-template-columns: repeat(3,1fr); }
-.comp-grid.g4 { grid-template-columns: repeat(4,1fr); }
-.comp-grid.g5 { grid-template-columns: repeat(5,1fr); }
+/* BUTTONS */
+.btn{border:none;padding:10px 20px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{opacity:.85;}
+.btn-primary:disabled{background:#333;color:#666;cursor:not-allowed;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-ghost:hover{border-color:var(--cyan);}
+.ctrl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 
-.comp-cell {
-  background:var(--panel2); border:1px solid var(--border);
-  border-radius:8px; padding:10px 6px;
-  display:flex; flex-direction:column; align-items:center; gap:4px;
-  cursor:pointer; transition:all .15s; position:relative;
-}
-.comp-cell:hover  { border-color:var(--cyan); transform:translateY(-2px); }
-.comp-cell.picked { border-color:var(--success); background:rgba(61,232,138,.1); opacity:.5; pointer-events:none; }
-.comp-cell.error  { border-color:var(--danger); background:rgba(232,64,64,.12); animation:shake .3s; }
-.cpos  { font-size:9px; color:#555; position:absolute; top:3px; left:5px; }
-.cid   { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--cyan); font-weight:700; }
-.cname { font-size:10px; color:#888; text-align:center; }
+.timer-box{background:var(--panel);border:1px solid var(--border);padding:12px 16px;text-align:center;min-width:130px;}
+.timer-val{font-family:'Share Tech Mono',monospace;font-size:30px;color:var(--accent);line-height:1;}
+.timer-val.running{color:var(--success);}
+.timer-val.done{color:var(--cyan);}
+.timer-sub{font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:4px;font-weight:700;}
 
-@keyframes shake {
-  0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)}
-}
+.data-box{background:var(--panel);border:1px solid var(--border);padding:12px 14px;display:flex;flex-direction:column;min-width:148px;}
+.db-title{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);font-weight:700;}
+.db-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(30,37,56,.5);}
+.db-row:last-child{border-bottom:none;}
+.db-key{font-size:10px;letter-spacing:1px;color:var(--muted);font-weight:700;text-transform:uppercase;}
+.db-val{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);font-weight:700;}
+.db-val.good{color:var(--success);}.db-val.bad{color:var(--danger);}.db-val.accent{color:var(--accent);}
+.db-divider{height:1px;background:var(--border);margin:4px 0;}
 
-/* CONTROLS */
-.ctrl-row {
-  display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-}
-.btn {
-  border:none; border-radius:6px; padding:10px 20px;
-  font-family:'Barlow Condensed',sans-serif; font-size:13px;
-  font-weight:700; letter-spacing:1px; cursor:pointer; transition:all .15s;
-}
-.btn-primary { background:var(--accent); color:#000; }
-.btn-primary:hover { opacity:.85; }
-.btn-primary:disabled { background:#333; color:#666; cursor:not-allowed; }
-.btn-validate {
-  background:var(--success); color:#000;
-  display:none;
-}
-.btn-validate:hover { opacity:.85; }
-.btn-ghost { background:transparent; border:1px solid var(--border); color:var(--muted); }
-.btn-ghost:hover { border-color:var(--cyan); }
-
-/* TIMER */
-.timer-box {
-  background:var(--panel); border:1px solid var(--border);
-  border-radius:10px; padding:14px 18px; text-align:center; min-width:140px;
-}
-.timer-val {
-  font-family:'Share Tech Mono',monospace; font-size:32px;
-  color:var(--accent); line-height:1;
-}
-.timer-sub { font-size:10px; letter-spacing:2px; color:#666; margin-top:4px; }
-
-/* STATUS MSG */
-.status-msg {
-  width:100%; max-width:1000px;
-  padding:8px 14px; border-radius:6px; font-size:12px;
-  letter-spacing:1px; margin-bottom:10px; display:none;
-  border:1px solid var(--border); background:var(--panel);
-}
-.status-msg.show { display:block; }
-.status-msg.ok   { border-color:var(--success); color:var(--success); }
-.status-msg.err  { border-color:var(--danger);  color:var(--danger); }
-.status-msg.info { border-color:var(--cyan);    color:var(--cyan); }
-
-/* VALIDATE BANNER */
-.validate-banner {
-  display:none; width:100%; max-width:1000px;
-  background:rgba(61,232,138,.1); border:2px solid var(--success);
-  border-radius:10px; padding:16px 24px;
-  align-items:center; justify-content:space-between; gap:16px;
-}
-.validate-banner.show { display:flex; }
-.val-text { font-size:14px; font-weight:700; letter-spacing:1px; color:var(--success); }
-.val-sub  { font-size:11px; color:#888; margin-top:2px; }
-
-/* DATA BOX */
-.data-box {
-  background:var(--panel); border:1px solid var(--border);
-  border-radius:10px; padding:14px 16px;
-  display:flex; flex-direction:column; gap:0; min-width:160px;
-}
-.db-title {
-  font-size:10px; letter-spacing:3px; color:#888;
-  text-transform:uppercase; margin-bottom:10px;
-  padding-bottom:6px; border-bottom:1px solid var(--border);
-}
-.db-row {
-  display:flex; justify-content:space-between; align-items:center;
-  padding:4px 0; border-bottom:1px solid rgba(30,37,56,.5);
-}
-.db-row:last-child { border-bottom:none; }
-.db-key { font-size:10px; letter-spacing:1px; color:#888; }
-.db-val { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--muted); }
-.db-val.good   { color:var(--success); }
-.db-val.bad    { color:var(--danger); }
-.db-val.accent { color:var(--accent); }
-.db-divider { height:1px; background:var(--border); margin:6px 0; }
-
-/* DATA BOX */
-.conn-dot {
-  width:8px; height:8px; border-radius:50%; display:inline-block;
-  margin-right:6px; background:#666;
-}
-.conn-dot.online  { background:var(--success); box-shadow:0 0 6px var(--success); }
-.conn-dot.offline { background:var(--danger); }
-.conn-dot.waiting { background:var(--accent); animation:pulse .8s infinite alternate; }
-
-/* BOTTOM BAR */
-.bottom-bar {
-  width:100%; max-width:1000px;
-  display:flex; gap:0; margin-top:14px;
-  background:var(--panel); border:1px solid var(--border);
-  border-radius:8px; overflow:hidden;
-}
-.bb-cell {
-  flex:1; padding:8px 12px; text-align:center;
-  border-right:1px solid var(--border);
-}
-.bb-cell:last-child { border-right:none; }
-.bb-key { font-size:9px; letter-spacing:2px; color:#666; }
-.bb-val { font-size:14px; font-weight:700; color:var(--muted); font-family:'Share Tech Mono',monospace; }
-.bb-val.good { color:var(--success); }
-.bb-val.bad  { color:var(--danger); }
-
-/* TAKT TIMER */
-.takt-timer {
-  width:100%; max-width:1000px;
-  display:flex; align-items:center; gap:14px;
-  background:var(--panel); border:1px solid var(--border);
-  border-radius:8px; padding:10px 18px; margin-top:10px;
-}
-.takt-label { font-size:9px; letter-spacing:3px; color:#888; text-transform:uppercase; min-width:80px; }
-.takt-bar-wrap { flex:1; height:10px; background:var(--panel2); border-radius:5px; overflow:hidden; border:1px solid var(--border); }
-.takt-bar { height:100%; width:100%; background:var(--success); border-radius:5px; transition:width .5s linear, background .3s; }
-.takt-bar.warn  { background:var(--accent); }
-.takt-bar.alert { background:var(--danger); }
-.takt-count { font-family:'Share Tech Mono',monospace; font-size:16px; font-weight:700; color:var(--success); min-width:48px; text-align:right; }
-.takt-count.warn  { color:var(--accent); }
-.takt-count.alert { color:var(--danger); animation:pulse .4s infinite alternate; }
+.bottom-bar{width:100%;max-width:1060px;display:flex;gap:0;margin-top:12px;background:var(--panel);border:1px solid var(--border);overflow:hidden;}
+.bb-cell{flex:1;padding:8px 10px;text-align:center;border-right:1px solid var(--border);}
+.bb-cell:last-child{border-right:none;}
+.bb-key{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
+.bb-val{font-size:14px;font-weight:700;color:var(--muted);font-family:'Share Tech Mono',monospace;}
+.bb-val.good{color:var(--success);}.bb-val.bad{color:var(--danger);}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div class="top-bar">
   <div class="logo">KEEPLEAN <span>— SimLean Assembly Line</span></div>
-  <div style="display:flex;gap:10px;align-items:center;">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
     <span class="session-badge">SESSION : <span id="sessionId">—</span></span>
-    <span class="station-badge" id="stationBadge">STATION —</span>
-    <span style="font-size:11px;color:#888;">
+    <span class="station-badge" id="stationBadge">ASSY —</span>
+    <span style="font-size:11px;color:var(--muted);font-weight:700;">
       <span class="conn-dot waiting" id="connDot"></span>
       <span id="connLabel">En attente...</span>
     </span>
   </div>
 </div>
 
-<!-- STATUS -->
+<div class="chrono-bar">
+  <div class="chrono-cell"><div class="chrono-label">⏰ Heure</div><div class="chrono-val cv-clock" id="clockDisp">--:--:--</div></div>
+  <div class="chrono-cell"><div class="chrono-label">⏱ Temps sur poste</div><div class="chrono-val cv-time" id="sessionTimerDisp">00:00:00</div></div>
+  <div class="chrono-cell"><div class="chrono-label">📊 Taux occupation</div><div class="chrono-val cv-occ" id="occDisp">—</div><div class="occ-bar-wrap"><div class="occ-bar-fill" id="occBar" style="width:0%"></div></div></div>
+  <div class="chrono-cell"><div class="chrono-label">⏱ Takt Time</div><div class="chrono-val" style="color:var(--text);" id="taktDisp">—</div></div>
+</div>
+
 <div class="status-msg" id="statusMsg"></div>
+<div class="validate-banner" id="validateBanner">
+  <div><div class="val-text">✅ Puzzle complet — Poste assemblé !</div><div class="val-sub">Validez pour envoyer au flux aval</div></div>
+  <button class="btn" style="background:var(--success);color:#000;" id="btnValidate">→ Envoyer au flux aval</button>
+</div>
 
-<!-- FLUX ROW -->
 <div class="flux-row">
-
-  <!-- WIP ENTRANT -->
-  <div class="wip-box wip-in">
-    <div class="wip-label">WIP entrant</div>
-    <div class="wip-count" id="wipIn">0</div>
-    <div class="wip-sub">pièces disponibles</div>
-  </div>
-
+  <div class="wip-box wip-in"><div class="wip-label">WIP entrant</div><div class="wip-count" id="wipIn">0</div><div class="wip-sub">pièces dispo</div></div>
   <div class="flux-arrow">→</div>
 
-  <!-- STATION -->
   <div class="station-area">
     <div class="station-title">
-      <span id="stationName">STATION — ASSEMBLAGE</span>
-      <span style="font-size:11px;color:#888;font-weight:400;" id="cycleCount">Cycles : 0</span>
+      <span id="stationName">ASSY — ASSEMBLAGE</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:700;" id="cycleCount">Cycles : 0</span>
     </div>
 
-    <!-- GAMME -->
-    <div class="gamme-label">GAMME D'ASSEMBLAGE — SÉQUENCE CIBLE</div>
-    <div class="seq-row" id="targetRow"></div>
+    <!-- BUFFER -->
+    <div class="section-label">BUFFER — GLISSEZ CHAQUE PIÈCE VERS SON COIN ↓
+      <span class="buffer-progress" id="bufferProgress">0 / 4 placées</span>
+    </div>
+    <div class="buffer-bar" id="bufferBar">
+      <div class="buffer-bar-label">BUFFER</div>
+    </div>
 
-    <div class="gamme-label" style="margin-top:2px;">ASSEMBLAGE EN COURS</div>
-    <div class="seq-row" id="progressRow"></div>
+    <!-- PUZZLE BOARD -->
+    <div class="section-label">
+      POSTE DE TRAVAIL — <span style="color:var(--danger);">■</span> vos pièces &nbsp;
+      <span style="color:#555;">■</span> autres stations &nbsp;
+      <span style="color:var(--border);font-size:9px;">[ coins vides = vos emplacements ]</span>
+    </div>
+    <div class="puzzle-wrap"><div class="puzzle-board cols3" id="puzzleBoard"></div></div>
 
-    <!-- GRID -->
-    <div class="grid-label">POSTE DE TRAVAIL — COMPOSANTS</div>
-    <div class="comp-grid g3" id="compGrid"></div>
-
-    <!-- CONTROLS -->
-    <div class="ctrl-row">
+    <div class="ctrl-row" style="margin-top:12px;">
       <button class="btn btn-primary" id="btnStart" disabled>▶ Nouveau cycle</button>
       <button class="btn btn-ghost" style="font-size:11px;" id="btnReset">↺ Reset</button>
       <div class="timer-box" style="margin-left:auto;">
@@ -324,86 +243,90 @@ body {
   </div>
 
   <div class="flux-arrow">→</div>
+  <div class="wip-box wip-out"><div class="wip-label">WIP sortant</div><div class="wip-count" id="wipOut">0</div><div class="wip-sub">pièces produites</div></div>
 
-  <!-- WIP SORTANT -->
-  <div class="wip-box wip-out">
-    <div class="wip-label">WIP sortant</div>
-    <div class="wip-count" id="wipOut">0</div>
-    <div class="wip-sub">pièces produites</div>
-  </div>
-
-  <!-- DATA BOX -->
   <div class="data-box">
-    <div class="db-title">
-      <span style="color:var(--accent);margin-right:6px;">▌</span> DATA BOX
-    </div>
+    <div class="db-title"><span style="color:var(--accent);margin-right:4px;">▌</span>DATA BOX</div>
     <div class="db-row"><span class="db-key">C/T ACTUEL</span><span class="db-val" id="dbCTact">—</span></div>
     <div class="db-row"><span class="db-key">C/T MOYEN</span><span class="db-val" id="dbCTmoy">—</span></div>
-    <div class="db-row"><span class="db-key">C/T MIN</span>   <span class="db-val" id="dbCTmin">—</span></div>
+    <div class="db-row"><span class="db-key">C/T MIN</span><span class="db-val" id="dbCTmin">—</span></div>
     <div class="db-divider"></div>
     <div class="db-row"><span class="db-key">TAKT TIME</span><span class="db-val accent" id="dbTakt">—</span></div>
-    <div class="db-row"><span class="db-key">C/O</span>       <span class="db-val accent" id="dbCO">—</span></div>
+    <div class="db-row"><span class="db-key">C/O</span><span class="db-val accent" id="dbCO">—</span></div>
     <div class="db-divider"></div>
-    <div class="db-row"><span class="db-key">DISPO %</span>   <span class="db-val good" id="dbDispo">100%</span></div>
-    <div class="db-row"><span class="db-key">OUTPUT</span>    <span class="db-val good" id="dbOutput">0</span></div>
-    <div class="db-row"><span class="db-key">SCRAP</span>     <span class="db-val bad"  id="dbScrap">0</span></div>
+    <div class="db-row"><span class="db-key">DISPO %</span><span class="db-val good" id="dbDispo">100%</span></div>
+    <div class="db-row"><span class="db-key">OUTPUT</span><span class="db-val good" id="dbOutput">0</span></div>
+    <div class="db-row"><span class="db-key">SCRAP</span><span class="db-val bad" id="dbScrap">0</span></div>
   </div>
-
 </div>
 
-<!-- VALIDATE BANNER -->
-<div class="validate-banner" id="validateBanner">
-  <div>
-    <div class="val-text">✅ Cycle terminé — Pièce prête</div>
-    <div class="val-sub">Validez pour envoyer la pièce à la station suivante</div>
-  </div>
-  <button class="btn btn-validate show" id="btnValidate" style="display:block;">
-    → Envoyer au flux aval
-  </button>
-</div>
-
-<!-- BOTTOM BAR -->
 <div class="bottom-bar">
   <div class="bb-cell"><div class="bb-key">C/T MOY</div><div class="bb-val" id="bbCT">—</div></div>
   <div class="bb-cell"><div class="bb-key">TAKT</div><div class="bb-val" id="bbTakt">—</div></div>
   <div class="bb-cell"><div class="bb-key">C/O</div><div class="bb-val" id="bbCO">—</div></div>
+  <div class="bb-cell"><div class="bb-key">DISPO</div><div class="bb-val good" id="bbDispo">100%</div></div>
   <div class="bb-cell"><div class="bb-key">OUTPUT</div><div class="bb-val good" id="bbOutput">0</div></div>
   <div class="bb-cell"><div class="bb-key">SCRAP</div><div class="bb-val bad" id="bbScrap">0</div></div>
   <div class="bb-cell"><div class="bb-key">WIP IN</div><div class="bb-val" id="bbWipIn">0</div></div>
 </div>
 
-<!-- TAKT TIMER BAR -->
-<div class="takt-timer" id="taktTimerBox" style="display:none;">
-  <span class="takt-label">⏱ TAKT</span>
-  <div class="takt-bar-wrap">
-    <div class="takt-bar" id="taktBar"></div>
-  </div>
-  <span class="takt-count" id="taktCount">—</span>
-</div>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-// ?station=1&session=ABC123&cfg=base64...
-// ═══════════════════════════════════════════════════════════
-const params   = new URLSearchParams(window.location.search);
-const STATION  = parseInt(params.get('station') || '1');
-const SESSION  = params.get('session') || 'demo';
-const CFG_B64  = params.get('cfg') || '';
+// ══════════════════════════════════════════════════════
+// PUZZLE SVG ENGINE
+// ══════════════════════════════════════════════════════
+function generateTopology(cols,rows){
+  const h=[],v=[];
+  for(let r=0;r<rows-1;r++){h[r]=[];for(let c=0;c<cols;c++)h[r][c]=Math.random()>.5?1:-1;}
+  for(let r=0;r<rows;r++){v[r]=[];for(let c=0;c<cols-1;c++)v[r][c]=Math.random()>.5?1:-1;}
+  return{h,v};
+}
 
-document.getElementById('stationBadge').textContent = `STATION ${STATION}`;
-document.getElementById('sessionId').textContent = SESSION.toUpperCase();
+function piecePath(sides,S){
+  const T=S*.18,W=S*.28,C=S/2;
+  function tab(from,to,dir,out){
+    const dx=to[0]-from[0],dy=to[1]-from[1],len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len,px=-uy*dir,py=ux*dir,m=out*T;
+    const p=(a,b)=>`${a.toFixed(1)},${b.toFixed(1)}`;
+    const x1=from[0]+ux*(C-W)+px*m*.3,y1=from[1]+uy*(C-W)+py*m*.3;
+    const x2=from[0]+ux*(C-W)+px*m,  y2=from[1]+uy*(C-W)+py*m;
+    const x3=from[0]+ux*(C+W)+px*m,  y3=from[1]+uy*(C+W)+py*m;
+    const x4=from[0]+ux*(C+W)+px*m*.3,y4=from[1]+uy*(C+W)+py*m*.3;
+    return `L${p(x1,y1)} L${p(x2,y2)} L${p(x3,y3)} L${p(x4,y4)} L${p(to[0],to[1])}`;
+  }
+  let d=`M0,0 `;
+  d+=sides.top===0?`L${S},0 `:tab([0,0],[S,0],-1,sides.top);
+  d+=sides.right===0?`L${S},${S} `:tab([S,0],[S,S],1,sides.right);
+  d+=sides.bottom===0?`L0,${S} `:tab([S,S],[0,S],1,sides.bottom);
+  d+=sides.left===0?`L0,0 `:tab([0,S],[0,0],-1,sides.left);
+  return d+'Z';
+}
 
-// ═══════════════════════════════════════════════════════════
-// CONFIG PAR DÉFAUT (sera remplacée par le lien ?cfg=)
-// ═══════════════════════════════════════════════════════════
-const DIFFICULTIES = {
-  easy:   { grid:3, seqLen:4 },
-  medium: { grid:4, seqLen:6 },
-  hard:   { grid:5, seqLen:8 },
-};
+function makePieceSVG(sides,size,fill,stroke){
+  const pad=size*.22,vs=size+pad*2,d=piecePath(sides,size);
+  return `<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;width:100%;height:100%;display:block;">
+    <path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2.5" stroke-linejoin="round"/>
+  </svg>`;
+}
 
-const COMPONENT_POOL = [
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const params=new URLSearchParams(window.location.search);
+const STATION=parseInt(params.get('station')||'1');
+const SESSION=params.get('session')||'demo';
+const CFG_B64=params.get('cfg')||'';
+const GRID_SIZE=parseInt(params.get('grid')||'3');
+const ASSY_NAMES={1:'ASSY 1',2:'ASSY 2',3:'ASSY 3',4:'ASSY 4',5:'ASSY 5'};
+document.getElementById('stationBadge').textContent=ASSY_NAMES[STATION]||`ASSY ${STATION}`;
+document.title=`SimLean — ${ASSY_NAMES[STATION]||'ASSY '+STATION} (${GRID_SIZE}×${GRID_SIZE})`;
+document.getElementById('sessionId').textContent=SESSION.toUpperCase();
+
+const DIFFICULTIES={easy:{grid:3,seqLen:4},medium:{grid:4,seqLen:6},hard:{grid:5,seqLen:8}};
+// Grid size from formateur overrides difficulty
+const GRID_FROM_URL = GRID_SIZE>=5?'hard':GRID_SIZE>=4?'medium':'easy';
+const COMPONENT_POOL=[
   {id:'A1',name:'Axe Ø6'},{id:'B2',name:'Bague'},{id:'C3',name:'Carter'},
   {id:'D4',name:'Douille'},{id:'E5',name:'Ecrou M8'},{id:'F6',name:'Flasque'},
   {id:'G7',name:'Goupille'},{id:'H8',name:'Hex M10'},{id:'J9',name:'Joint'},
@@ -411,409 +334,449 @@ const COMPONENT_POOL = [
   {id:'N13',name:'Noix'},{id:'P14',name:'Pivot'},{id:'R15',name:'Rondelle'},
   {id:'S16',name:'Segment'},{id:'T17',name:'Tige Ø4'},{id:'U18',name:'Unité'},
   {id:'V19',name:'Vis M6'},{id:'W20',name:'Bouchon'},{id:'X21',name:'Support'},
+  {id:'Y22',name:'Yoke'},{id:'Z23',name:'Circlip'},{id:'Q24',name:'Came'},
 ];
 
-let CFG = {
-  difficulty: 'easy',
-  stationName: `Station ${STATION} — Assemblage`,
-  takt: 15, co: 30,
-  gridComps: [],
-  sequence: [],
-};
+let CFG={difficulty:GRID_FROM_URL,stationName:`${ASSY_NAMES[STATION]||'ASSY '+STATION} — Assemblage`,takt:15,co:30,gridComps:[],sequence:[]};
+if(CFG_B64){try{const d=JSON.parse(decodeURIComponent(escape(atob(CFG_B64))));CFG.difficulty=d.d||CFG.difficulty;CFG.stationName=d.name||CFG.stationName;CFG.takt=d.t||CFG.takt;CFG.co=d.co||CFG.co;if(d.g)CFG.gridComps=d.g.map(c=>({id:c.i,name:c.n}));if(d.s)CFG.sequence=d.s;}catch(e){}}
 
-// Décoder config depuis URL
-if(CFG_B64){
-  try {
-    const decoded = JSON.parse(decodeURIComponent(escape(atob(CFG_B64))));
-    CFG.difficulty  = decoded.d || CFG.difficulty;
-    CFG.stationName = decoded.name || CFG.stationName;
-    CFG.takt        = decoded.t  || CFG.takt;
-    CFG.co          = decoded.co || CFG.co;
-    CFG.gridComps   = decoded.g.map(c=>({id:c.i,name:c.n}));
-    CFG.sequence    = decoded.s || [];
-  } catch(e){ console.warn('Config URL invalide'); }
+let S={
+  wipIn:0,wipOut:0,cycles:0,output:0,scrap:0,history:[],
+  sessionComps:[],cornerComps:[],  // 4 red pieces = corners
+  interiorComps:[],                 // grey pieces = interior
+  placedCorners:{},                 // cornerKey -> comp
+  running:false,started:false,startTime:null,raf:null,errorCount:0,
+  topology:null,bufferDisplayOrder:null,
+};
+let NB_STATIONS=3,sessionStart=null,sessionInterval=null;
+
+// ══════════════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════════════
+function tickClock(){const n=new Date();document.getElementById('clockDisp').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');}
+setInterval(tickClock,1000);tickClock();
+
+function startSessionTimer(){
+  if(sessionStart)return;
+  sessionStart=Date.now();
+  sessionInterval=setInterval(()=>{
+    const e=Date.now()-sessionStart;
+    document.getElementById('sessionTimerDisp').textContent=[Math.floor(e/3600000),Math.floor((e%3600000)/60000),Math.floor((e%60000)/1000)].map(x=>String(x).padStart(2,'0')).join(':');
+    const prod=S.history.reduce((a,b)=>a+b,0);
+    const pct=Math.min(Math.round((prod/e)*100),100)||0;
+    document.getElementById('occDisp').textContent=pct+'%';
+    document.getElementById('occDisp').className='chrono-val cv-occ '+(pct<40?'low':pct<70?'mid':'');
+    document.getElementById('occBar').className='occ-bar-fill '+(pct<40?'low':pct<70?'mid':'');
+    document.getElementById('occBar').style.width=pct+'%';
+  },1000);
 }
 
-// ═══════════════════════════════════════════════════════════
-// ÉTAT
-// ═══════════════════════════════════════════════════════════
-let S = {
-  wipIn:  0,   // pièces en attente (depuis station précédente)
-  wipOut: 0,   // pièces produites (vers station suivante)
-  cycles: 0,
-  output: 0,
-  scrap:  0,
-  history: [],
-  // Cycle en cours
-  gridComps: [],
-  sessionComps: [],
-  sequence: [],
-  progress: [],
-  running: false,
-  started: false,
-  startTime: null,
-  raf: null,
-  errorCount: 0,
-};
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
+function fmt(ms){return(ms/1000).toFixed(3).padStart(6,'0');}
+function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');el.textContent=txt;el.className=`status-msg show ${type}`;if(!txt)el.classList.remove('show');}
 
-// ═══════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════
-function shuffle(a){ const r=[...a]; for(let i=r.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]]; } return r; }
-function fmt(ms){ return (ms/1000).toFixed(3).padStart(6,'0'); }
-function setMsg(txt, type='info'){
-  const el=document.getElementById('statusMsg');
-  el.textContent=txt; el.className=`status-msg show ${type}`;
-  if(txt==='') el.classList.remove('show');
-}
-
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // INIT
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function initStation(){
-  document.getElementById('stationName').textContent = CFG.stationName;
-  document.getElementById('bbTakt').textContent  = CFG.takt + 's';
-  document.getElementById('bbCO').textContent    = CFG.co  + 's';
-  document.getElementById('dbTakt').textContent  = CFG.takt + 's';
-  document.getElementById('dbCO').textContent    = CFG.co  + 's';
-
-  const cfg = DIFFICULTIES[CFG.difficulty];
-  if(CFG.gridComps.length){
-    S.sessionComps = CFG.gridComps;
-    S.sequence     = CFG.sequence;
-  } else {
-    const pool = shuffle(COMPONENT_POOL).slice(0, cfg.grid * cfg.grid);
-    S.sessionComps = pool;
-    S.sequence = shuffle(pool).slice(0, cfg.seqLen).map(c=>c.id);
+  document.getElementById('stationName').textContent=CFG.stationName;
+  const gs=DIFFICULTIES[CFG.difficulty].grid;
+  document.getElementById('gridBadge').textContent=`${gs}×${gs}`;
+  ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
+  ['dbCO','bbCO'].forEach(id=>document.getElementById(id).textContent=CFG.co+'s');
+  const cfg=DIFFICULTIES[CFG.difficulty];
+  if(CFG.gridComps.length){S.sessionComps=CFG.gridComps;S.sequence=CFG.sequence;}
+  else{
+    const pool=shuffle(COMPONENT_POOL).slice(0,cfg.grid*cfg.grid);
+    S.sessionComps=pool;
+    S.sequence=shuffle(pool).slice(0,cfg.seqLen).map(c=>c.id);
   }
-  initCycle();
-  updateWIPDisplay();
-  setConn('waiting', 'Connexion Firebase...');
+  initCycle();updateWIPDisplay();
+  setConn('waiting','Connexion Firebase...');
+  // Station 1 : activer le bouton immédiatement sans attendre Firebase
+  if(STATION===1){
+    const btn=document.getElementById('btnStart');
+    btn.disabled=false; btn.textContent='▶ Nouveau cycle';
+  }
   initFirebase();
 }
 
 function initCycle(){
-  const cfg = DIFFICULTIES[CFG.difficulty];
-  S.gridComps = shuffle([...S.sessionComps]);
-  S.progress  = [];
-  S.running   = false;
-  S.started   = false;
-  S.startTime = null;
-  S.errorCount= 0;
+  const cfg=DIFFICULTIES[CFG.difficulty];
+  const cols=cfg.grid,rows=cfg.grid;
+  // Corner indices in flat grid: TL, TR, BL, BR
+  const cornerPositions=[
+    {idx:0,              key:'TL',label:'Coin ↖'},
+    {idx:cols-1,         key:'TR',label:'Coin ↗'},
+    {idx:(rows-1)*cols,  key:'BL',label:'Coin ↙'},
+    {idx:(rows-1)*cols+(cols-1),key:'BR',label:'Coin ↘'},
+  ];
+
+  // Pick 4 station pieces for corners (shuffled)
+  const stComps=shuffle([...S.sessionComps]);
+  S.cornerComps=stComps.slice(0,4).map((c,i)=>({...c,cornerPos:cornerPositions[i]}));
+
+  // Fill interior with grey pieces (other station numbers)
+  const total=cols*rows;
+  const stIds=new Set(S.sessionComps.map(c=>c.id));
+  const filler=COMPONENT_POOL.filter(c=>!stIds.has(c.id));
+  const interiorCount=total-4;
+  const interiorFiller=shuffle(filler).slice(0,interiorCount).map((c,i)=>({...c,grey:true,greyStation:(i%4)+1}));
+  // Avoid greyStation=STATION (so it's always different from red corners)
+  interiorFiller.forEach(p=>{if(p.greyStation===STATION)p.greyStation=p.greyStation===4?1:p.greyStation+1;});
+  S.interiorComps=interiorFiller;
+
+  S.placedCorners={};
+  S.bufferDisplayOrder=null; // force reshuffle on next render
+  S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
   cancelAnimationFrame(S.raf);
-  document.getElementById('timerDisp').textContent = '00.000';
+  const td=document.getElementById('timerDisp');td.textContent='00.000';td.className='timer-val';
   document.getElementById('validateBanner').classList.remove('show');
-  renderSeq(); renderGrid(); setMsg('');
-
-  // Bouton Start actif seulement si WIP entrant > 0 (sauf Station 1)
-  const btnStart = document.getElementById('btnStart');
-  if(STATION === 1 || S.wipIn > 0){
-    btnStart.disabled = false;
-    btnStart.textContent = '▶ Nouveau cycle';
-  } else {
-    btnStart.disabled = true;
-    btnStart.textContent = '⏳ En attente WIP';
-  }
+  S.topology=generateTopology(cols,rows);
+  setMsg('');
+  renderBuffer();renderBoard();
+  updateBufferProgress();
+  const btn=document.getElementById('btnStart');
+  if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
+  else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
 }
 
-// ═══════════════════════════════════════════════════════════
-// RENDU GAMME + GRILLE
-// ═══════════════════════════════════════════════════════════
-function renderSeq(){
-  const tRow = document.getElementById('targetRow');
-  const pRow = document.getElementById('progressRow');
-  tRow.innerHTML = '';
-  pRow.innerHTML = '';
-  S.sequence.forEach((id,i)=>{
-    const t = document.createElement('div');
-    t.className = 'seq-slot';
-    t.innerHTML = `<span class="si">${i+1}</span>${id}`;
-    tRow.appendChild(t);
-    const p = document.createElement('div');
-    const done = i < S.progress.length;
-    const active = i === S.progress.length;
-    p.className = 'seq-slot' + (done?' done':active?' active':'');
-    p.innerHTML = `<span class="si">${i+1}</span>${done ? S.progress[i] : ''}`;
-    pRow.appendChild(p);
+// ══════════════════════════════════════════════════════
+// RENDER BUFFER — draggable pieces
+// ══════════════════════════════════════════════════════
+function renderBuffer(){
+  const bar=document.getElementById('bufferBar');
+  bar.innerHTML='<div class="buffer-bar-label">BUFFER</div>';
+
+  const bufSides={top:1,right:-1,bottom:1,left:-1};
+
+  // Shuffle display order at each render — force visual search
+  if(!S.bufferDisplayOrder || S.bufferDisplayOrder.length!==S.cornerComps.length){
+    S.bufferDisplayOrder=shuffle([...Array(S.cornerComps.length).keys()]);
+  }
+  const displayComps=S.bufferDisplayOrder.map(i=>S.cornerComps[i]);
+
+  displayComps.forEach(comp=>{
+    const placed=!!S.placedCorners[comp.cornerPos.key];
+    const div=document.createElement('div');
+    div.className='buffer-piece'+(placed?' used':'');
+    div.dataset.id=comp.id;
+    div.dataset.cornerKey=comp.cornerPos.key;
+
+    const fill=placed?'rgba(61,232,138,.2)':'#e84040';
+    const stroke=placed?'rgba(61,232,138,.4)':'#a01818';
+    div.innerHTML=makePieceSVG(bufSides,90,fill,stroke);
+
+    // Station number
+    const numEl=document.createElement('span');
+    numEl.className='bp-num';
+    numEl.textContent=STATION;
+    numEl.style.color=placed?'var(--success)':'#fff';
+    div.appendChild(numEl);
+
+    // Ref
+    const refEl=document.createElement('span');
+    refEl.className='bp-ref';
+    refEl.textContent=comp.id;
+    refEl.style.color=placed?'var(--success)':'#fff';
+    div.appendChild(refEl);
+
+    // Name
+    const nameEl=document.createElement('span');
+    nameEl.className='bp-name';
+    nameEl.textContent=comp.name;
+    div.appendChild(nameEl);
+
+    if(!placed&&S.running){
+      div.draggable=true;
+      div.addEventListener('dragstart',e=>{
+        div.classList.add('dragging');
+        e.dataTransfer.setData('pieceId',comp.id);
+        e.dataTransfer.setData('cornerKey',comp.cornerPos.key);
+        e.dataTransfer.effectAllowed='move';
+        currentDrag={id:comp.id,cornerKey:comp.cornerPos.key};
+      });
+      div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
+      div.addEventListener('touchstart',()=>{currentDrag={id:comp.id,cornerKey:comp.cornerPos.key};},{passive:true});
+    }
+    bar.appendChild(div);
   });
 }
 
-function renderGrid(){
-  const cfg = DIFFICULTIES[CFG.difficulty];
-  const g = document.getElementById('compGrid');
-  g.className = `comp-grid g${cfg.grid}`;
-  g.innerHTML = '';
-  S.gridComps.forEach((comp,idx)=>{
-    const row = Math.floor(idx/cfg.grid);
-    const col = idx % cfg.grid;
-    const posLabel = String.fromCharCode(65+row)+(col+1);
-    const done = S.progress.includes(comp.id);
-    const cell = document.createElement('div');
-    cell.className = 'comp-cell' + (done?' picked':'');
-    cell.dataset.id = comp.id;
-    cell.innerHTML = `<span class="cpos">${posLabel}</span><span class="cid">${comp.id}</span><span class="cname">${comp.name}</span>`;
-    if(!done) cell.addEventListener('click', ()=>pickComp(comp.id, cell));
-    g.appendChild(cell);
-  });
-}
+// ══════════════════════════════════════════════════════
+// RENDER BOARD — grey interior + empty corner drop zones
+// ══════════════════════════════════════════════════════
+function renderBoard(){
+  const cfg=DIFFICULTIES[CFG.difficulty];
+  const cols=cfg.grid,rows=cfg.grid;
+  const board=document.getElementById('puzzleBoard');
+  const cellSize=cols===3?92:cols===4?82:72;
+  board.className=`puzzle-board cols${cols}`;
+  board.style.gridTemplateColumns=`repeat(${cols},${cellSize}px)`;
+  board.innerHTML='';
 
-// ═══════════════════════════════════════════════════════════
-// CYCLE LOGIC
-// ═══════════════════════════════════════════════════════════
-function startCycle(){
-  if(S.running) return;
-  // Consommer 1 pièce du WIP entrant (sauf Station 1)
-  if(STATION > 1 && S.wipIn <= 0){
-    setMsg('⏳ Pas de pièce en WIP entrant !', 'err'); return;
-  }
-  if(STATION > 1){
-    // Décrémenter WIP entrant dans Firebase
-    if(db){
-      db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).transaction(val => Math.max(0,(val||0)-1));
+  const {h,v}=S.topology;
+  const cornerPositions=[0,cols-1,(rows-1)*cols,(rows-1)*cols+(cols-1)];
+  const cornerMap={
+    0:'TL', [cols-1]:'TR',
+    [(rows-1)*cols]:'BL', [(rows-1)*cols+(cols-1)]:'BR'
+  };
+
+  // Build flat array: corners = null (drop zones), others = grey pieces
+  let interiorIdx=0;
+
+  for(let flatIdx=0;flatIdx<cols*rows;flatIdx++){
+    const row=Math.floor(flatIdx/cols),col=flatIdx%cols;
+    const sides={
+      top:   row===0      ?0:h[row-1][col],
+      bottom:row===rows-1 ?0:-h[row][col],
+      left:  col===0      ?0:v[row][col-1],
+      right: col===cols-1 ?0:-v[row][col],
+    };
+
+    const isCorner=cornerPositions.includes(flatIdx);
+    const cornerKey=cornerMap[flatIdx];
+
+    if(isCorner){
+      // ── CORNER DROP ZONE ──
+      const placed=S.placedCorners[cornerKey];
+      const cornerComp=S.cornerComps.find(c=>c.cornerPos.key===cornerKey);
+      const cell=document.createElement('div');
+      cell.className='corner-drop'+(placed?' filled':S.running?' pulsing':'');
+      cell.style.cssText=`width:${cellSize}px;height:${cellSize}px;`;
+      cell.dataset.cornerKey=cornerKey;
+
+      if(placed){
+        // Show placed piece
+        cell.innerHTML=makePieceSVG(sides,cellSize,'#e84040','#a01818');
+        const numEl=document.createElement('span');
+        numEl.className='cp-num';numEl.style.cssText=`font-size:${cellSize*.2}px;color:#fff;`;numEl.textContent=STATION;
+        cell.appendChild(numEl);
+        const refEl=document.createElement('span');
+        refEl.className='cp-ref';refEl.style.cssText=`font-size:${cellSize*.12}px;color:#fff;bottom:${cellSize*.17}px;`;refEl.textContent=placed.id;
+        cell.appendChild(refEl);
+      } else {
+        // Empty drop zone
+        cell.innerHTML=`<span class="drop-hint" style="font-size:${cellSize*.1}px;">${cornerKey}<br><span style="font-size:${cellSize*.08}px;color:var(--accent);">${cornerComp?cornerComp.id:''}</span></span>`;
+      }
+
+      if(S.running&&!placed){
+        cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');cell.classList.remove('pulsing');});
+        cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
+        cell.addEventListener('drop',e=>{
+          e.preventDefault();cell.classList.remove('drag-over');
+          const pid=e.dataTransfer.getData('pieceId');
+          const pck=e.dataTransfer.getData('cornerKey');
+          handleDrop(pid,pck,cornerKey);
+        });
+      }
+      board.appendChild(cell);
     } else {
-      S.wipIn--; updateWIPDisplay();
+      // ── GREY INTERIOR PIECE ──
+      const comp=S.interiorComps[interiorIdx++]||{id:'?',name:'',greyStation:2};
+      const cell=document.createElement('div');
+      cell.className='puzzle-cell grey';
+      cell.style.cssText=`width:${cellSize}px;height:${cellSize}px;`;
+      cell.innerHTML=makePieceSVG(sides,cellSize,'#b0b8c8','#8090a8');
+      const numEl=document.createElement('span');
+      numEl.className='piece-st-num';
+      numEl.style.cssText=`font-size:${cellSize*.2}px;`;
+      numEl.textContent=comp.greyStation||'?';
+      cell.appendChild(numEl);
+      board.appendChild(cell);
     }
   }
-  S.running = true;
-  S.started = true;
-  S.startTime = performance.now();
-  runTimer();
-  startTaktTimer();
-  setMsg('▶ Cycle démarré — cliquez les composants dans l\'ordre de la gamme', 'ok');
-  document.getElementById('btnStart').disabled = true;
 }
 
-// ═══════════════════════════════════════════════════════════
-// TAKT TIMER
-// ═══════════════════════════════════════════════════════════
-let taktRaf = null;
-let taktStart = null;
-function startTaktTimer(){
-  const takt = CFG.takt * 1000;
-  if(!takt) return;
-  taktStart = performance.now();
-  const box   = document.getElementById('taktTimerBox');
-  const bar   = document.getElementById('taktBar');
-  const count = document.getElementById('taktCount');
-  box.style.display = 'flex';
-  cancelAnimationFrame(taktRaf);
-  function tick(){
-    const elapsed = performance.now() - taktStart;
-    const remaining = Math.max(0, takt - elapsed);
-    const pct = (remaining / takt) * 100;
-    bar.style.width = pct + '%';
-    count.textContent = (remaining / 1000).toFixed(1) + 's';
-    // Color states
-    const cls = pct > 40 ? '' : pct > 15 ? 'warn' : 'alert';
-    bar.className  = 'takt-bar' + (cls ? ' ' + cls : '');
-    count.className = 'takt-count' + (cls ? ' ' + cls : '');
-    if(remaining > 0) taktRaf = requestAnimationFrame(tick);
-    else {
-      bar.style.width = '0%';
-      count.textContent = '⚠ 0.0s';
-      count.className = 'takt-count alert';
+// ══════════════════════════════════════════════════════
+// DROP LOGIC — buffer piece → corner slot
+// ══════════════════════════════════════════════════════
+let currentDrag=null;
+
+function handleDrop(pieceId,pieceCornerKey,targetCornerKey){
+  if(!S.running)return;
+  // The piece must go to its assigned corner
+  if(pieceCornerKey===targetCornerKey){
+    // Correct corner!
+    if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
+    const comp=S.cornerComps.find(c=>c.id===pieceId);
+    S.placedCorners[targetCornerKey]=comp;
+    renderBuffer();renderBoard();
+    updateBufferProgress();
+    setMsg(`✓ Pièce ${pieceId} placée en ${targetCornerKey} (${Object.keys(S.placedCorners).length}/4)`,'ok');
+    if(Object.keys(S.placedCorners).length===4)finishCycle(true);
+  } else {
+    // Wrong corner!
+    S.errorCount++;
+    const cell=document.getElementById('puzzleBoard').querySelector(`[data-corner-key="${targetCornerKey}"]`);
+    if(cell){
+      cell.classList.add('error-flash');
+      cell.classList.remove('pulsing');
+      setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);
     }
+    setMsg(`❌ Mauvais coin ! ${pieceId} appartient à ${pieceCornerKey} | Erreurs : ${S.errorCount}`,'err');
+    if(S.errorCount>0&&S.errorCount%3===0){S.scrap++;finishCycle(false);}
   }
-  taktRaf = requestAnimationFrame(tick);
 }
-function stopTaktTimer(){
-  cancelAnimationFrame(taktRaf);
-  document.getElementById('taktTimerBox').style.display = 'none';
+
+function updateBufferProgress(){
+  const placed=Object.keys(S.placedCorners).length;
+  document.getElementById('bufferProgress').textContent=`${placed} / 4 placées`;
+}
+
+// Touch drag
+document.addEventListener('touchmove',e=>{
+  if(!currentDrag)return;
+  const touch=e.touches[0];
+  document.querySelectorAll('.corner-drop.drag-over').forEach(s=>s.classList.remove('drag-over'));
+  const el=document.elementFromPoint(touch.clientX,touch.clientY);
+  if(el){const cd=el.closest('.corner-drop[data-corner-key]');if(cd&&!cd.classList.contains('filled'))cd.classList.add('drag-over');}
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!currentDrag)return;
+  const touch=e.changedTouches[0];
+  const el=document.elementFromPoint(touch.clientX,touch.clientY);
+  if(el){const cd=el.closest('.corner-drop[data-corner-key]');if(cd)handleDrop(currentDrag.id,currentDrag.cornerKey,cd.dataset.cornerKey);}
+  document.querySelectorAll('.drag-over').forEach(s=>s.classList.remove('drag-over'));
+  currentDrag=null;
+});
+
+// ══════════════════════════════════════════════════════
+// CYCLE
+// ══════════════════════════════════════════════════════
+function startCycle(){
+  if(S.running)return;
+  if(STATION>1&&S.wipIn<=0){setMsg('⏳ Pas de pièce en WIP entrant !','err');return;}
+  startSessionTimer();
+  if(STATION>1&&db){db.ref(`assembly_line/${SESSION}/stations/s${STATION}/wip_in`).transaction(v=>Math.max(0,(v||0)-1));}
+  else if(STATION>1){S.wipIn--;updateWIPDisplay();}
+  S.running=true;
+  document.getElementById('timerDisp').classList.add('running');
+  setMsg('▶ Cycle démarré — glissez chaque pièce rouge vers son coin du plateau','ok');
+  document.getElementById('btnStart').disabled=true;
+  renderBuffer();renderBoard();
 }
 
 function runTimer(){
-  const el = document.getElementById('timerDisp');
-  function tick(){
-    if(!S.running){ return; }
-    el.textContent = fmt(performance.now() - S.startTime);
-    S.raf = requestAnimationFrame(tick);
-  }
-  S.raf = requestAnimationFrame(tick);
-}
-
-function pickComp(id, cell){
-  if(!S.running) return;
-  const expected = S.sequence[S.progress.length];
-  if(id === expected){
-    cell.classList.add('picked');
-    S.progress.push(id);
-    renderSeq();
-    if(S.progress.length === S.sequence.length) finishCycle(true);
-  } else {
-    cell.classList.add('error');
-    S.errorCount++;
-    setTimeout(()=>cell.classList.remove('error'), 400);
-    setMsg(`❌ Erreur ! Attendu : ${expected}`, 'err');
-  }
+  const el=document.getElementById('timerDisp');
+  function tick(){if(!S.running)return;el.textContent=fmt(performance.now()-S.startTime);S.raf=requestAnimationFrame(tick);}
+  S.raf=requestAnimationFrame(tick);
 }
 
 function finishCycle(ok){
-  S.running = false;
-  cancelAnimationFrame(S.raf);
-  stopTaktTimer();
-  const elapsed = performance.now() - S.startTime;
+  S.running=false;cancelAnimationFrame(S.raf);
+  const elapsed=S.startTime?performance.now()-S.startTime:0;
+  document.getElementById('timerDisp').classList.remove('running');
+  document.getElementById('timerDisp').classList.add('done');
   S.cycles++;
   if(ok){
-    S.output++;
-    S.wipOut++;
-    S.history.push(elapsed);
-    setMsg(`✅ Cycle terminé en ${fmt(elapsed)}s`, 'ok');
+    S.output++;S.wipOut++;S.history.push(elapsed);
+    setMsg(`✅ Puzzle assemblé en ${fmt(elapsed)}s !`,'ok');
     document.getElementById('validateBanner').classList.add('show');
-    document.getElementById('cycleCount').textContent = `Cycles : ${S.cycles}`;
-    updateStats();
-    updateWIPDisplay();
-    pushStats();
-    // TODO: push wipOut vers Firebase
+    document.getElementById('cycleCount').textContent=`Cycles : ${S.cycles}`;
+    updateStats();updateWIPDisplay();pushStats();
   } else {
-    S.scrap++;
-    setMsg('🗑 Cycle annulé — rebus', 'err');
-    initCycle();
+    setMsg('🗑 Scrap — trop d\'erreurs','err');
+    setTimeout(()=>initCycle(),700);
   }
 }
 
 function validatePiece(){
   document.getElementById('validateBanner').classList.remove('show');
-  S.wipOut--;
-  updateWIPDisplay();
-  // Envoyer pièce à la station suivante via Firebase
-  const nextKey = `s${STATION+1}`;
-  const nextRef = db.ref(`assembly_line/${SESSION}/stations/${nextKey}/wip_in`);
-  nextRef.transaction(val => (val||0) + 1);
+  S.wipOut--;updateWIPDisplay();
+  if(STATION<NB_STATIONS&&db){db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);setMsg(`📦 Envoyé → ASSY ${STATION+1} — Buffer en cours de rechargement...`,'info');}
+  else{if(db)db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);setMsg('🏁 Livré au CLIENT — Buffer en cours de rechargement...','ok');}
   pushStats();
-  setMsg(`📦 Pièce envoyée → Station ${STATION+1}`, 'info');
-  setTimeout(()=>initCycle(), 800);
+  setTimeout(()=>refillBuffer(),600);
 }
 
-// ═══════════════════════════════════════════════════════════
-// WIP DISPLAY
-// ═══════════════════════════════════════════════════════════
+// Recharge le buffer sans réinitialiser les métriques session
+function refillBuffer(){
+  const cfg=DIFFICULTIES[CFG.difficulty];
+  const cols=cfg.grid,rows=cfg.grid;
+
+  const cornerPositions=[
+    {idx:0,                         key:'TL',label:'↖'},
+    {idx:cols-1,                    key:'TR',label:'↗'},
+    {idx:(rows-1)*cols,             key:'BL',label:'↙'},
+    {idx:(rows-1)*cols+(cols-1),    key:'BR',label:'↘'},
+    {idx:Math.floor(cols/2),        key:'TC',label:'↑'},
+    {idx:(rows-1)*cols+Math.floor(cols/2),key:'BC',label:'↓'},
+    {idx:Math.floor(rows/2)*cols,   key:'ML',label:'←'},
+    {idx:Math.floor(rows/2)*cols+(cols-1),key:'MR',label:'→'},
+    {idx:Math.floor(rows/2)*cols+Math.floor(cols/2),key:'MC',label:'●'},
+  ].slice(0,cols*rows);
+
+  // Nouvelles pièces mélangées pour les coins
+  const stComps=shuffle([...S.sessionComps]);
+  S.cornerComps=stComps.slice(0,4).map((c,i)=>({...c,cornerPos:cornerPositions[i]}));
+
+  // Nouveau mélange intérieur
+  const stIds=new Set(S.sessionComps.map(c=>c.id));
+  const filler=COMPONENT_POOL.filter(c=>!stIds.has(c.id));
+  const interiorCount=(cols*rows)-4;
+  const interiorFiller=shuffle(filler).slice(0,interiorCount).map((c,i)=>({...c,grey:true,greyStation:(i%4)+1}));
+  interiorFiller.forEach(p=>{if(p.greyStation===STATION)p.greyStation=p.greyStation===4?1:p.greyStation+1;});
+  S.interiorComps=interiorFiller;
+
+  // Reset cycle state only (pas les métriques)
+  S.placedCorners={};
+  S.bufferDisplayOrder=null; // force reshuffle on next render
+  S.running=false; S.started=false; S.startTime=null; S.errorCount=0;
+  cancelAnimationFrame(S.raf);
+  S.topology=generateTopology(cols,rows);
+
+  const td=document.getElementById('timerDisp');
+  td.textContent='00.000'; td.className='timer-val';
+
+  renderBuffer(); renderBoard(); updateBufferProgress();
+  setMsg('✅ Buffer rechargé — prêt pour le prochain cycle','ok');
+
+  // Activer bouton start
+  const btn=document.getElementById('btnStart');
+  if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
+  else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
+}
+
 function updateWIPDisplay(){
-  document.getElementById('wipIn').textContent  = S.wipIn;
-  document.getElementById('wipOut').textContent = S.wipOut;
-  document.getElementById('bbWipIn').textContent = S.wipIn;
-  document.getElementById('bbOutput').textContent = S.output;
-  document.getElementById('bbScrap').textContent  = S.scrap;
+  document.getElementById('wipIn').textContent=S.wipIn===999?'∞':S.wipIn;
+  document.getElementById('wipOut').textContent=S.wipOut;
+  document.getElementById('bbWipIn').textContent=S.wipIn===999?'∞':S.wipIn;
+  document.getElementById('bbOutput').textContent=S.output;
+  document.getElementById('bbScrap').textContent=S.scrap;
+  const btn=document.getElementById('btnStart');
+  if(!S.running){if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}}
 }
 
 function updateStats(){
-  if(!S.history.length) return;
-  const last = S.history[S.history.length-1];
-  const moy  = S.history.reduce((a,b)=>a+b,0)/S.history.length;
-  const min  = Math.min(...S.history);
-  document.getElementById('dbCTact').textContent  = (last/1000).toFixed(1)+'s';
-  document.getElementById('dbCTmoy').textContent  = (moy/1000).toFixed(1)+'s';
-  document.getElementById('dbCTmin').textContent  = (min/1000).toFixed(1)+'s';
-  document.getElementById('bbCT').textContent     = (moy/1000).toFixed(1)+'s';
-  document.getElementById('dbOutput').textContent = S.output;
-  document.getElementById('dbScrap').textContent  = S.scrap;
-  // Dispo : cycles ok / cycles totaux
-  const dispo = S.cycles > 0 ? Math.round((S.output/S.cycles)*100) : 100;
-  document.getElementById('dbDispo').textContent  = dispo + '%';
-  document.getElementById('dbDispo').className    = 'db-val ' + (dispo>=80?'good':dispo>=60?'accent':'bad');
+  if(!S.history.length)return;
+  const last=S.history[S.history.length-1],moy=S.history.reduce((a,b)=>a+b,0)/S.history.length,min=Math.min(...S.history),taktMs=CFG.takt*1000;
+  document.getElementById('dbCTact').textContent=(last/1000).toFixed(3)+'s';
+  document.getElementById('dbCTact').className='db-val '+(last<=taktMs?'good':'bad');
+  document.getElementById('dbCTmoy').textContent=(moy/1000).toFixed(3)+'s';
+  document.getElementById('dbCTmin').textContent=(min/1000).toFixed(3)+'s';
+  document.getElementById('bbCT').textContent=(moy/1000).toFixed(1)+'s';
+  document.getElementById('dbOutput').textContent=S.output;
+  document.getElementById('dbScrap').textContent=S.scrap;
+  document.getElementById('bbScrap').textContent=S.scrap;
+  const dispo=S.cycles>0?Math.round((S.output/S.cycles)*100):100,dc=dispo>=80?'good':dispo>=60?'accent':'bad';
+  document.getElementById('dbDispo').textContent=dispo+'%';document.getElementById('dbDispo').className='db-val '+dc;
+  document.getElementById('bbDispo').textContent=dispo+'%';document.getElementById('bbDispo').className='bb-val '+dc;
 }
 
-// ═══════════════════════════════════════════════════════════
-// FIREBASE
-// ═══════════════════════════════════════════════════════════
-const firebaseConfig = {
-  apiKey: "AIzaSyDIE-YJ68VQkMj60n1vklQWei9-32Dv-Oo",
-  authDomain: "keeplean-beergame.firebaseapp.com",
-  databaseURL: "https://keeplean-beergame-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "keeplean-beergame",
-  storageBucket: "keeplean-beergame.firebasestorage.app",
-  messagingSenderId: "731779808067",
-  appId: "1:731779808067:web:e4312b55afe16e72b6cdf6"
-};
+// Firebase
+const firebaseConfig={apiKey:"AIzaSyDIE-YJ68VQkMj60n1vklQWei9-32Dv-Oo",authDomain:"keeplean-beergame.firebaseapp.com",databaseURL:"https://keeplean-beergame-default-rtdb.europe-west1.firebasedatabase.app",projectId:"keeplean-beergame",storageBucket:"keeplean-beergame.firebasestorage.app",messagingSenderId:"731779808067",appId:"1:731779808067:web:e4312b55afe16e72b6cdf6"};
+let db=null;const stKey=`s${STATION}`;
+function setConn(s,l){document.getElementById('connDot').className='conn-dot '+s;document.getElementById('connLabel').textContent=l;}
+function initFirebase(){try{if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);db=firebase.database();listenWipIn();listenSessionConfig();pushStats();setConn('online',`${ASSY_NAMES[STATION]||'ASSY '+STATION} connectée`);}catch(e){setConn('offline','Firebase indisponible — mode local');}}
+function listenWipIn(){db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).on('value',snap=>{S.wipIn=snap.val()||0;updateWIPDisplay();});}
+function listenSessionConfig(){db.ref(`assembly_line/${SESSION}/config`).on('value',snap=>{const cfg=snap.val();if(!cfg)return;if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}if(cfg.nb_stations)NB_STATIONS=cfg.nb_stations;if(cfg.status==='stopped'){setMsg('⏹ Session arrêtée par le formateur','err');document.getElementById('btnStart').disabled=true;}});}
+function pushStats(){if(!db)return;db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)):0,status:S.running?'running':'idle',name:CFG.stationName,last_updated:Date.now()});}
 
-let db = null;
-const stKey = `s${STATION}`;
+document.getElementById('btnStart').addEventListener('click',startCycle);
+document.getElementById('btnValidate').addEventListener('click',validatePiece);
+document.getElementById('btnReset').addEventListener('click',()=>{S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.history=[];updateWIPDisplay();initCycle();setMsg('Session réinitialisée','info');});
 
-function setConn(state, label){
-  const dot = document.getElementById('connDot');
-  const lbl = document.getElementById('connLabel');
-  dot.className = 'conn-dot ' + state;
-  lbl.textContent = label;
-}
-
-function initFirebase(){
-  try {
-    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-    setConn('waiting', 'Connexion Firebase...');
-    listenWipIn();
-    listenSessionConfig();
-    pushStats();
-    setConn('online', `Station ${STATION} connectée`);
-  } catch(e){
-    setConn('offline', 'Firebase indisponible — mode local');
-    console.warn('Firebase error:', e);
-  }
-}
-
-// Écoute WIP entrant en temps réel
-function listenWipIn(){
-  db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).on('value', snap=>{
-    const val = snap.val() || 0;
-    S.wipIn = val;
-    updateWIPDisplay();
-    // Activer/désactiver bouton Start
-    const btn = document.getElementById('btnStart');
-    if(STATION === 1 || S.wipIn > 0){
-      btn.disabled = false;
-      btn.textContent = '▶ Nouveau cycle';
-    } else {
-      btn.disabled = true;
-      btn.textContent = '⏳ En attente WIP';
-    }
-  });
-}
-
-// Écoute config session (takt, statut)
-function listenSessionConfig(){
-  db.ref(`assembly_line/${SESSION}/config`).on('value', snap=>{
-    const cfg = snap.val();
-    if(!cfg) return;
-    if(cfg.takt){
-      CFG.takt = cfg.takt;
-      document.getElementById('dbTakt').textContent = cfg.takt + 's';
-      document.getElementById('bbTakt').textContent = cfg.takt + 's';
-    }
-    if(cfg.status === 'stopped'){
-      setMsg('⏹ Session arrêtée par le formateur', 'err');
-      document.getElementById('btnStart').disabled = true;
-    }
-  });
-}
-
-// Écriture stats station dans Firebase
-function pushStats(){
-  if(!db) return;
-  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({
-    cycles:  S.cycles,
-    output:  S.output,
-    scrap:   S.scrap,
-    wip_out: S.wipOut,
-    ct_moy:  S.history.length ? parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)) : 0,
-    status:  S.running ? 'running' : 'idle',
-    name:    CFG.stationName,
-    last_updated: Date.now()
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
-// EVENTS
-// ═══════════════════════════════════════════════════════════
-document.getElementById('btnStart').addEventListener('click', startCycle);
-document.getElementById('btnValidate').addEventListener('click', validatePiece);
-document.getElementById('btnReset').addEventListener('click', ()=>{
-  S.output=0; S.scrap=0; S.cycles=0; S.wipIn=0; S.wipOut=0; S.history=[];
-  updateWIPDisplay(); initCycle();
-  setMsg('Session réinitialisée', 'info');
-});
-
-// ═══════════════════════════════════════════════════════════
-// START
-// ═══════════════════════════════════════════════════════════
 initStation();
 </script>
 </body>
