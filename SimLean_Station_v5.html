@@ -86,6 +86,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .puzzle-board.cols5 .puzzle-cell{width:52px;height:52px;}
 .puzzle-cell svg{width:100%;height:100%;overflow:visible;}
 .piece-st-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;z-index:10;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+.buffer-piece svg,.buffer-piece path,.buffer-piece span{pointer-events:none;}
 
 /* CORNER DROP ZONES */
 .corner-drop{position:relative;display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);background:rgba(255,255,255,.02);transition:all .2s;overflow:visible;}
@@ -387,7 +388,7 @@ function renderBuffer(){
     const stroke=placed?'rgba(61,232,138,.4)':ST_STROKE[STATION];
     const sides=S.cornerSides[comp.targetPos]||{top:0,right:0,bottom:0,left:0};
     const pad=14,vs=60+pad*2,d=piecePath(sides,60);
-    div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="72" height="72" style="display:block;margin:auto;overflow:visible;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+    div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="72" height="72" style="display:block;margin:auto;overflow:visible;pointer-events:none;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
     const numEl=document.createElement('span');numEl.className='bp-num';numEl.textContent=STATION;numEl.style.color=ST_TEXT[STATION];div.appendChild(numEl);
     const refEl=document.createElement('span');refEl.className='bp-ref';refEl.textContent=comp.id;refEl.style.color=placed?'var(--success)':ST_TEXT[STATION];div.appendChild(refEl);
     const nameEl=document.createElement('span');nameEl.className='bp-name';nameEl.textContent=comp.name;div.appendChild(nameEl);
@@ -457,6 +458,7 @@ function renderBoard(){
       cell.className='puzzle-cell';
       cell.style.cssText=`width:${SZ}px;height:${SZ}px;${alreadyPlaced?'animation:popIn .25s ease both;':''}`;
       cell.innerHTML=makeSVG(sides,SZ,fill,stroke);
+      cell.querySelector('svg').style.pointerEvents='none';
       if(!alreadyPlaced&&!prevPlaced){
         cell.querySelector('svg').style.filter='opacity(.5) grayscale(.3)';
       }
@@ -704,4 +706,3 @@ initStation();
 </script>
 </body>
 </html>
-
