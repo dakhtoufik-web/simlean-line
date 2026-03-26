@@ -364,8 +364,9 @@ document.getElementById('btnResetAll').addEventListener('click', ()=>{
       cycles:0,output:0,scrap:0,wip_out:0,wip_in:i===1?999:0,ct_moy:0,status:'idle'
     });
   }
-  // Reset puzzle state
+  // Reset puzzle state + queues
   db.ref(`assembly_line/${F.sessionCode}/puzzle_state`).remove();
+  db.ref(`assembly_line/${F.sessionCode}/puzzle_queue`).remove();
   // Reset client output
   db.ref(`assembly_line/${F.sessionCode}/stations/s${F.nbStations}/client_output`).set(0);
   // Signal reset to all stations
@@ -449,7 +450,7 @@ function renderLinks(){
   tbody.innerHTML = '';
 
   const base = F.baseUrl || window.location.href.replace(/\/[^/]*(\?.*)?$/, '');
-  const stationFile = 'SimLean_Station_v4.html';
+  const stationFile = 'SimLean_Station_v5.html';
 
   F.stations.forEach((st, i)=>{
     const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}&grid=${F.gridSize}`;
