@@ -392,9 +392,17 @@ function initStation(){
   const cfg=DIFFICULTIES[CFG.difficulty];
   if(CFG.gridComps.length){S.sessionComps=CFG.gridComps;S.sequence=CFG.sequence;}
   else{
-    const pool=shuffle(COMPONENT_POOL).slice(0,cfg.grid*cfg.grid);
+    // Chaque station reçoit un segment exclusif du pool — pas de chevauchement
+    const totalNeeded=cfg.grid*cfg.grid;
+    const segStart=((STATION-1)*totalNeeded)%COMPONENT_POOL.length;
+    // Extraire le segment en bouclant si nécessaire
+    const segment=[];
+    for(let i=0;i<totalNeeded;i++){
+      segment.push(COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length]);
+    }
+    const pool=shuffle(segment);
     S.sessionComps=pool;
-    S.sequence=shuffle(pool).slice(0,cfg.seqLen).map(c=>c.id);
+    S.sequence=shuffle([...pool]).slice(0,cfg.seqLen).map(c=>c.id);
   }
   initCycle();updateWIPDisplay();
   setConn('waiting','Connexion Firebase...');initFirebase();
