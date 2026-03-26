@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Formateur v2</title>
+<title>SimLean Assembly Line — Trainer v2</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
 
@@ -208,22 +208,22 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Formateur v2</span></div>
+  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Trainer v2</span></div>
   <div style="display:flex;gap:10px;align-items:center;">
     <span style="font-size:11px;color:#888;">
       <span class="conn-dot waiting" id="connDot"></span>
-      <span id="connLabel">Non connecté</span>
+      <span id="connLabel">Not connected</span>
     </span>
-    <span class="badge-formateur">FORMATEUR</span>
+    <span class="badge-formateur">TRAINER</span>
   </div>
 </div>
 
 <!-- SETUP PANEL -->
 <div class="setup-panel">
-  <div class="panel-title">⚙ Configuration de la session</div>
+  <div class="panel-title">⚙ Session Configuration</div>
   <div class="setup-row">
     <div class="setup-field">
-      <label>CODE SESSION</label>
+      <label>SESSION CODE</label>
       <input id="cfgSession" type="text" value="LEAN01" maxlength="8" placeholder="Ex: LEAN01">
     </div>
     <div class="setup-field">
@@ -236,20 +236,20 @@ body {
       </select>
     </div>
     <div class="setup-field">
-      <label>GRILLE PUZZLE</label>
+      <label>PUZZLE GRID</label>
       <select id="cfgGridSize" onchange="updateProfiles()">
-        <option value="4x4" selected>4×4 (16 pièces)</option>
-        <option value="5x5">5×5 (25 pièces)</option>
+        <option value="4x4" selected>4×4 (16 parts)</option>
+        <option value="5x5">5×5 (25 parts)</option>
       </select>
     </div>
     <div class="setup-field">
-      <label>PROFIL GOULOT</label>
+      <label>BOTTLENECK PROFILE</label>
       <select id="cfgProfile" onchange="toggleManual()">
-        <option value="Équilibré (4-4-4-4)">Équilibré (4-4-4-4)</option>
-        <option value="Goulot S2 (2-8-3-3)">Goulot S2 (2-8-3-3)</option>
-        <option value="Goulot S3 (4-2-6-4)">Goulot S3 (4-2-6-4)</option>
-        <option value="Goulot S4 (4-4-2-6)">Goulot S4 (4-4-2-6)</option>
-        <option value="Manuel">✏ Manuel</option>
+        <option value="Balanced (4-4-4-4)">Balanced (4-4-4-4)</option>
+        <option value="Bottleneck S2 (2-8-3-3)">Bottleneck S2 (2-8-3-3)</option>
+        <option value="Bottleneck S3 (4-2-6-4)">Bottleneck S3 (4-2-6-4)</option>
+        <option value="Bottleneck S4 (4-4-2-6)">Bottleneck S4 (4-4-2-6)</option>
+        <option value="Manuel">✏ Custom</option>
       </select>
     </div>
     <div class="setup-field">
@@ -258,7 +258,7 @@ body {
     </div>
 
     <div id="manualPanel" style="display:none;width:100%;margin-top:10px;background:var(--panel2);border:1px solid var(--cyan);padding:14px 16px;">
-      <div style="font-size:10px;letter-spacing:2px;color:var(--cyan);font-weight:700;margin-bottom:12px;text-transform:uppercase;">✏ Répartition manuelle — nombre de pièces par station</div>
+      <div style="font-size:10px;letter-spacing:2px;color:var(--cyan);font-weight:700;margin-bottom:12px;text-transform:uppercase;">✏ Custom layout — number of parts per station</div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
         <div class="setup-field">
           <label style="color:var(--s1,#e84040);">ASSY 1</label>
@@ -281,15 +281,15 @@ body {
     </div>
     <div class="setup-field">
       <label>&nbsp;</label>
-      <button class="btn btn-primary" id="btnCreate">▶ Créer la session</button>
+      <button class="btn btn-primary" id="btnCreate">▶ Create Session</button>
     </div>
     <div class="setup-field">
       <label>&nbsp;</label>
-      <button class="btn btn-danger" id="btnStop" style="display:none;">⏹ Arrêter</button>
+      <button class="btn btn-danger" id="btnStop" style="display:none;">⏹ Stop</button>
     </div>
     <div class="setup-field">
       <label>&nbsp;</label>
-      <button class="btn" id="btnResetAll" style="display:none;background:transparent;border:1px solid var(--cyan);color:var(--cyan);">↺ Reset session</button>
+      <button class="btn" id="btnResetAll" style="display:none;background:transparent;border:1px solid var(--cyan);color:var(--cyan);">↺ Reset Session</button>
     </div>
   </div>
 </div>
@@ -299,16 +299,16 @@ body {
   <div><div class="si-label">SESSION</div><div class="si-val" id="siCode">—</div></div>
   <div><div class="si-label">STATIONS</div><div class="si-val" id="siStations">—</div></div>
   <div><div class="si-label">PUZZLE</div><div class="si-val" id="siGrid" style="color:var(--cyan);">—</div></div>
-  <div><div class="si-label">STATUT</div><div class="si-val" id="siStatus">—</div></div>
-  <div><div class="si-label">DURÉE</div><div class="si-val" id="siDuration">00:00:00</div></div>
+  <div><div class="si-label">STATUS</div><div class="si-val" id="siStatus">—</div></div>
+  <div><div class="si-label">DURATION</div><div class="si-val" id="siDuration">00:00:00</div></div>
 </div>
 
 <!-- KPI ROW -->
 <div class="kpi-row" id="kpiRow">
-  <div class="kpi-card"><div class="kpi-val good" id="kpiOutput">0</div><div class="kpi-label">OUTPUT TOTAL</div></div>
-  <div class="kpi-card"><div class="kpi-val bad"  id="kpiScrap">0</div><div class="kpi-label">SCRAP TOTAL</div></div>
-  <div class="kpi-card"><div class="kpi-val"      id="kpiWip">0</div><div class="kpi-label">WIP TOTAL</div></div>
-  <div class="kpi-card"><div class="kpi-val"      id="kpiCycles">0</div><div class="kpi-label">CYCLES TOTAUX</div></div>
+  <div class="kpi-card"><div class="kpi-val good" id="kpiOutput">0</div><div class="kpi-label">TOTAL OUTPUT</div></div>
+  <div class="kpi-card"><div class="kpi-val bad"  id="kpiScrap">0</div><div class="kpi-label">TOTAL SCRAP</div></div>
+  <div class="kpi-card"><div class="kpi-val"      id="kpiWip">0</div><div class="kpi-label">TOTAL WIP</div></div>
+  <div class="kpi-card"><div class="kpi-val"      id="kpiCycles">0</div><div class="kpi-label">TOTAL CYCLES</div></div>
 </div>
 
 <!-- FLUX VISUEL -->
@@ -316,15 +316,15 @@ body {
   <!-- Généré dynamiquement -->
 </div>
 
-<!-- LIENS PARTICIPANTS -->
+<!-- LINKS PARTICIPANTS -->
 <div class="links-panel" id="linksPanel">
-  <div class="panel-title">🔗 Liens à distribuer aux participants</div>
+  <div class="panel-title">🔗 Links to Share with Participants</div>
   <table class="links-table" id="linksTable">
     <thead>
       <tr>
         <th>STATION</th>
-        <th>RÔLE</th>
-        <th>LIEN</th>
+        <th>ROLE</th>
+        <th>LINK</th>
         <th>ACTION</th>
       </tr>
     </thead>
@@ -341,16 +341,16 @@ body {
 // ── PROFILES ──────────────────────────────────────────
 const PROFILES = {
   '4x4': {
-    'Équilibré (4-4-4-4)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4,11,14],           3:[2,7,8,13],             4:[5,6,9,10]},
-    'Goulot S2 (2-8-3-3)':  {cols:4,rows:4, 1:[0,3],         2:[1,4,5,6,9,10,11,14],  3:[2,7,8],                4:[12,13,15]},
-    'Goulot S3 (4-2-6-4)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4],                 3:[2,5,6,7,8,13],         4:[9,10,11,14]},
-    'Goulot S4 (4-4-2-6)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4,11,14],           3:[2,7],                  4:[5,6,8,9,10,13]},
+    'Balanced (4-4-4-4)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4,11,14],           3:[2,7,8,13],             4:[5,6,9,10]},
+    'Bottleneck S2 (2-8-3-3)':  {cols:4,rows:4, 1:[0,3],         2:[1,4,5,6,9,10,11,14],  3:[2,7,8],                4:[12,13,15]},
+    'Bottleneck S3 (4-2-6-4)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4],                 3:[2,5,6,7,8,13],         4:[9,10,11,14]},
+    'Bottleneck S4 (4-4-2-6)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4,11,14],           3:[2,7],                  4:[5,6,8,9,10,13]},
   },
   '5x5': {
-    'Équilibré (6-6-6-7)':  {cols:5,rows:5, 1:[0,4,20,24,2,22],         2:[1,3,5,9,15,19],          3:[10,14,21,23,11,13],       4:[6,7,8,12,16,17,18]},
-    'Goulot S2 (4-10-6-5)': {cols:5,rows:5, 1:[0,4,20,24],             2:[1,2,3,5,6,7,8,9,14,19],  3:[10,11,13,15,21,23],       4:[12,16,17,18,22]},
-    'Goulot S3 (6-4-10-5)': {cols:5,rows:5, 1:[0,4,20,24,2,22],        2:[1,3,5,9],                3:[6,7,8,10,11,12,13,14,15,19], 4:[16,17,18,21,23]},
-    'Goulot S4 (6-6-4-9)':  {cols:5,rows:5, 1:[0,4,20,24,2,22],        2:[1,3,5,9,15,19],          3:[10,14,21,23],              4:[6,7,8,11,12,13,16,17,18]},
+    'Balanced (6-6-6-7)':  {cols:5,rows:5, 1:[0,4,20,24,2,22],         2:[1,3,5,9,15,19],          3:[10,14,21,23,11,13],       4:[6,7,8,12,16,17,18]},
+    'Bottleneck S2 (4-10-6-5)': {cols:5,rows:5, 1:[0,4,20,24],             2:[1,2,3,5,6,7,8,9,14,19],  3:[10,11,13,15,21,23],       4:[12,16,17,18,22]},
+    'Bottleneck S3 (6-4-10-5)': {cols:5,rows:5, 1:[0,4,20,24,2,22],        2:[1,3,5,9],                3:[6,7,8,10,11,12,13,14,15,19], 4:[16,17,18,21,23]},
+    'Bottleneck S4 (6-6-4-9)':  {cols:5,rows:5, 1:[0,4,20,24,2,22],        2:[1,3,5,9,15,19],          3:[10,14,21,23],              4:[6,7,8,11,12,13,16,17,18]},
   }
 };
 
@@ -366,7 +366,7 @@ function updateProfiles(){
   });
   // Add manual option
   const mopt = document.createElement('option');
-  mopt.value = 'Manuel'; mopt.textContent = '✏ Manuel';
+  mopt.value = 'Manuel'; mopt.textContent = '✏ Custom';
   sel.appendChild(mopt);
   if(prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
   toggleManual();
@@ -404,7 +404,7 @@ function buildManualProfile(){
   ];
   const total=counts.reduce((a,b)=>a+b,0);
   const maxPieces=cols*rows;
-  if(total!==maxPieces){ alert(`Total doit être ${maxPieces} pièces (actuellement ${total})`); return null; }
+  if(total!==maxPieces){ alert(`Total must be ${maxPieces} parts (currently ${total})`); return null; }
   // Distribute positions: fill grid row by row, assign to stations in order
   const positions={1:[],2:[],3:[],4:[]};
   // Shuffle grid indices then assign blocks
@@ -424,7 +424,7 @@ let F = {
   nbStations: 4,
   takt: 15,
   gridSize: '4x4',
-  profile: 'Équilibré (4-4-4-4)',
+  profile: 'Balanced (4-4-4-4)',
   baseUrl: '',
   running: false,
   startTime: null,
@@ -461,7 +461,7 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   document.getElementById('siCode').textContent     = F.sessionCode;
   document.getElementById('siStations').textContent = '4';
   document.getElementById('siGrid') && (document.getElementById('siGrid').textContent = F.gridSize+' — '+F.profile);
-  document.getElementById('siStatus').textContent   = '▶ EN COURS';
+  document.getElementById('siStatus').textContent   = '▶ RUNNING';
   document.getElementById('sessionInfo').classList.add('show');
   document.getElementById('btnCreate').style.display = 'none';
   document.getElementById('btnStop').style.display      = 'inline-block';
@@ -475,7 +475,7 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
 });
 
 document.getElementById('btnResetAll').addEventListener('click', ()=>{
-  if(!confirm('Réinitialiser toutes les stations (output, scrap, cycles, WIP, puzzle) ?')) return;
+  if(!confirm('Reset all stations (output, scrap, cycles, WIP, puzzle)?')) return;
   if(!db || !F.sessionCode) return;
   // Reset all station stats
   for(let i=1;i<=F.nbStations;i++){
@@ -490,17 +490,17 @@ document.getElementById('btnResetAll').addEventListener('click', ()=>{
   db.ref(`assembly_line/${F.sessionCode}/stations/s${F.nbStations}/client_output`).set(0);
   // Signal reset to all stations
   db.ref(`assembly_line/${F.sessionCode}/config/reset_signal`).set(Date.now());
-  setConn('online', `Session ${F.sessionCode} — Reset effectué ✓`);
+  setConn('online', `Session ${F.sessionCode} — Reset done ✓`);
 });
 
 document.getElementById('btnStop').addEventListener('click', ()=>{
   F.running = false;
   clearInterval(F.timerInterval);
-  document.getElementById('siStatus').textContent = '⏹ TERMINÉE';
+  document.getElementById('siStatus').textContent = '⏹ ENDED';
   document.getElementById('btnStop').style.display     = 'none';
   document.getElementById('btnResetAll').style.display  = 'none';
   document.getElementById('btnCreate').style.display    = 'inline-block';
-  setConn('offline', 'Session terminée');
+  setConn('offline', 'Session ended');
   stopSessionFirebase();
 });
 
@@ -514,8 +514,8 @@ function renderFlux(){
   // Fournisseur
   const supp = document.createElement('div');
   supp.className = 'station-card';
-  supp.innerHTML = `<div class="sc-num">ENTRÉE</div><div class="sc-name">FOURNISSEUR</div>
-    <div class="sc-status running">∞ pièces</div>`;
+  supp.innerHTML = `<div class="sc-num">INPUT</div><div class="sc-name">SUPPLIER</div>
+    <div class="sc-status running">∞ parts</div>`;
   container.appendChild(supp);
 
   F.stations.forEach((st, i)=>{
@@ -535,7 +535,7 @@ function renderFlux(){
     card.innerHTML = `
       <div class="sc-num">ASSY ${st.num} <span style="color:var(--cyan);font-size:9px;letter-spacing:1px;">${F.gridSize}×${F.gridSize}</span></div>
       <div class="sc-name" id="scName${i}">${st.name}</div>
-      <div class="sc-status idle" id="scStatus${i}">Hors ligne</div>
+      <div class="sc-status idle" id="scStatus${i}">Offline</div>
       <div class="sc-cycles" id="scCycles${i}">0</div>
       <div class="sc-wip-row">
         <span class="sc-wip-in">↓ IN: <span id="scWipIn${i}">0</span></span>
@@ -555,14 +555,14 @@ function renderFlux(){
 
   const client = document.createElement('div');
   client.className = 'station-card';
-  client.innerHTML = `<div class="sc-num">SORTIE</div><div class="sc-name">CLIENT</div>
+  client.innerHTML = `<div class="sc-num">OUTPUT</div><div class="sc-name">CUSTOMER</div>
     <div class="sc-cycles" id="clientOutput">0</div>
-    <div class="sc-status running">pièces livrées</div>`;
+    <div class="sc-status running">parts delivered</div>`;
   container.appendChild(client);
 }
 
 // ═══════════════════════════════════════════════════════════
-// LIENS PARTICIPANTS
+// LINKS PARTICIPANTS
 // ═══════════════════════════════════════════════════════════
 function renderLinks(){
   const tbody = document.getElementById('linksBody');
@@ -576,10 +576,10 @@ function renderLinks(){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>ASSY ${st.num}</strong></td>
-      <td style="color:#888;">Opérateur ${st.num}</td>
+      <td style="color:#888;">Operator ${st.num}</td>
       <td><div class="link-url" id="linkUrl${i}">${url}</div></td>
       <td>
-        <button class="btn-copy-link" onclick="copyLink(${i}, '${url}')">📋 Copier</button>
+        <button class="btn-copy-link" onclick="copyLink(${i}, '${url}')">📋 Copy</button>
       </td>`;
     tbody.appendChild(tr);
   });
@@ -589,16 +589,16 @@ function renderLinks(){
   const urlF = `${window.location.href.split('?')[0]}?session=${F.sessionCode}`;
   trF.innerHTML = `
     <td><strong style="color:var(--danger);">Formateur</strong></td>
-    <td style="color:#888;">Vue globale</td>
+    <td style="color:#888;">Global View</td>
     <td><div class="link-url">${urlF}</div></td>
-    <td><button class="btn-copy-link" onclick="copyLink(-1, '${urlF}')">📋 Copier</button></td>`;
+    <td><button class="btn-copy-link" onclick="copyLink(-1, '${urlF}')">📋 Copy</button></td>`;
   tbody.appendChild(trF);
 }
 
 function copyLink(idx, url){
   const btn = event.target;
-  function onOk(){ btn.textContent='✅ Copié !'; btn.classList.add('ok');
-    setTimeout(()=>{ btn.textContent='📋 Copier'; btn.classList.remove('ok'); },2000); }
+  function onOk(){ btn.textContent='✅ Copied!'; btn.classList.add('ok');
+    setTimeout(()=>{ btn.textContent='📋 Copy'; btn.classList.remove('ok'); },2000); }
 
   if(navigator.clipboard && window.isSecureContext){
     navigator.clipboard.writeText(url).then(onOk);
@@ -655,9 +655,9 @@ function initFirebase(){
   try {
     if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.database();
-    setConn('online', 'Firebase connecté');
+    setConn('online', 'Firebase connected');
   } catch(e){
-    setConn('offline', 'Firebase indisponible');
+    setConn('offline', 'Firebase unavailable');
     console.warn('Firebase:', e);
   }
 }
@@ -668,7 +668,7 @@ function pushSessionToFirebase(){
   const profileData = F.profile==='Manuel'
     ? F.manualProfileData
     : (PROFILES[F.gridSize] && PROFILES[F.gridSize][F.profile]
-      ? PROFILES[F.gridSize][F.profile] : PROFILES['4x4']['Équilibré (4-4-4-4)']);
+      ? PROFILES[F.gridSize][F.profile] : PROFILES['4x4']['Balanced (4-4-4-4)']);
   db.ref(`assembly_line/${F.sessionCode}/config`).set({
     nb_stations: 4,
     takt: F.takt,
@@ -711,7 +711,7 @@ function listenAllStations(){
       }
       const elStatus = document.getElementById(`scStatus${i}`);
       if(elStatus){
-        const labels = {running:'▶ En cycle', idle:'⏸ En attente', offline:'⚫ Hors ligne'};
+        const labels = {running:'▶ In Cycle', idle:'⏸ Waiting', offline:'⚫ Offline'};
         elStatus.textContent = labels[status] || '—';
         elStatus.className = `sc-status ${status}`;
       }
@@ -757,3 +757,4 @@ initFirebase();
 </script>
 </body>
 </html>
+
