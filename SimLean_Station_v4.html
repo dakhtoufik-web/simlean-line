@@ -74,22 +74,21 @@ body {
 
 /* ══ BUFFER ══ */
 .buffer-bar{
-  display:flex;gap:12px;align-items:center;
+  display:flex;gap:16px;align-items:center;
   background:rgba(0,0,0,.25);border:1px solid var(--success);
-  padding:16px;margin-bottom:16px;
-  border-radius:2px;flex-wrap:wrap;
-  min-height:130px;overflow:visible;
+  padding:20px 16px;margin-bottom:16px;
+  flex-wrap:wrap;min-height:140px;overflow:visible;
 }
 .buffer-bar-label{
   font-size:10px;letter-spacing:3px;font-weight:700;
   color:var(--success);text-transform:uppercase;
-  writing-mode:horizontal-tb;margin-right:4px;
+  margin-right:4px;flex-shrink:0;
 }
 .buffer-piece{
-  position:relative;width:90px;height:90px;
+  position:relative;width:100px;height:100px;
   cursor:grab;flex-shrink:0;overflow:visible;
   transition:transform .15s,filter .15s;
-  display:flex;align-items:center;justify-content:center;
+  display:block;
 }
 .buffer-piece:hover{transform:scale(1.08) translateY(-3px);filter:brightness(1.2);}
 .buffer-piece:active{cursor:grabbing;transform:scale(.95);}
@@ -97,9 +96,9 @@ body {
 .buffer-piece.used:hover{transform:none;filter:grayscale(1);}
 .buffer-piece.dragging{opacity:.3;}
 .buffer-piece svg{width:100%;height:100%;overflow:visible;}
-.bp-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);font-family:'Share Tech Mono',monospace;font-weight:700;font-size:18px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;z-index:10;}
-.bp-ref{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-weight:700;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;z-index:10;white-space:nowrap;}
-.bp-name{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:8px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.5px;pointer-events:none;z-index:10;white-space:nowrap;}
+.bp-num{position:absolute;top:28px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-weight:700;font-size:18px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;z-index:10;}
+.bp-ref{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;z-index:10;}
+.bp-name{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:8px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.5px;pointer-events:none;z-index:10;}
 .buffer-progress{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--success);margin-left:auto;align-self:flex-end;}
 
 /* ══ PUZZLE BOARD ══ */
@@ -319,15 +318,11 @@ const params=new URLSearchParams(window.location.search);
 const STATION=parseInt(params.get('station')||'1');
 const SESSION=params.get('session')||'demo';
 const CFG_B64=params.get('cfg')||'';
-const GRID_SIZE=parseInt(params.get('grid')||'3');
 const ASSY_NAMES={1:'ASSY 1',2:'ASSY 2',3:'ASSY 3',4:'ASSY 4',5:'ASSY 5'};
 document.getElementById('stationBadge').textContent=ASSY_NAMES[STATION]||`ASSY ${STATION}`;
-document.title=`SimLean — ${ASSY_NAMES[STATION]||'ASSY '+STATION} (${GRID_SIZE}×${GRID_SIZE})`;
 document.getElementById('sessionId').textContent=SESSION.toUpperCase();
 
 const DIFFICULTIES={easy:{grid:3,seqLen:4},medium:{grid:4,seqLen:6},hard:{grid:5,seqLen:8}};
-// Grid size from formateur overrides difficulty
-const GRID_FROM_URL = GRID_SIZE>=5?'hard':GRID_SIZE>=4?'medium':'easy';
 const COMPONENT_POOL=[
   {id:'A1',name:'Axe Ø6'},{id:'B2',name:'Bague'},{id:'C3',name:'Carter'},
   {id:'D4',name:'Douille'},{id:'E5',name:'Ecrou M8'},{id:'F6',name:'Flasque'},
@@ -339,7 +334,7 @@ const COMPONENT_POOL=[
   {id:'Y22',name:'Yoke'},{id:'Z23',name:'Circlip'},{id:'Q24',name:'Came'},
 ];
 
-let CFG={difficulty:GRID_FROM_URL,stationName:`${ASSY_NAMES[STATION]||'ASSY '+STATION} — Assemblage`,takt:15,co:30,gridComps:[],sequence:[]};
+let CFG={difficulty:'easy',stationName:`${ASSY_NAMES[STATION]||'ASSY '+STATION} — Assemblage`,takt:15,co:30,gridComps:[],sequence:[]};
 if(CFG_B64){try{const d=JSON.parse(decodeURIComponent(escape(atob(CFG_B64))));CFG.difficulty=d.d||CFG.difficulty;CFG.stationName=d.name||CFG.stationName;CFG.takt=d.t||CFG.takt;CFG.co=d.co||CFG.co;if(d.g)CFG.gridComps=d.g.map(c=>({id:c.i,name:c.n}));if(d.s)CFG.sequence=d.s;}catch(e){}}
 
 let S={
@@ -348,7 +343,7 @@ let S={
   interiorComps:[],                 // grey pieces = interior
   placedCorners:{},                 // cornerKey -> comp
   running:false,started:false,startTime:null,raf:null,errorCount:0,
-  topology:null,bufferDisplayOrder:null,
+  topology:null,
 };
 let NB_STATIONS=3,sessionStart=null,sessionInterval=null;
 
@@ -382,8 +377,6 @@ function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');e
 // ══════════════════════════════════════════════════════
 function initStation(){
   document.getElementById('stationName').textContent=CFG.stationName;
-  const gs=DIFFICULTIES[CFG.difficulty].grid;
-  document.getElementById('gridBadge').textContent=`${gs}×${gs}`;
   ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
   ['dbCO','bbCO'].forEach(id=>document.getElementById(id).textContent=CFG.co+'s');
   const cfg=DIFFICULTIES[CFG.difficulty];
@@ -394,13 +387,7 @@ function initStation(){
     S.sequence=shuffle(pool).slice(0,cfg.seqLen).map(c=>c.id);
   }
   initCycle();updateWIPDisplay();
-  setConn('waiting','Connexion Firebase...');
-  // Station 1 : activer le bouton immédiatement sans attendre Firebase
-  if(STATION===1){
-    const btn=document.getElementById('btnStart');
-    btn.disabled=false; btn.textContent='▶ Nouveau cycle';
-  }
-  initFirebase();
+  setConn('waiting','Connexion Firebase...');initFirebase();
 }
 
 function initCycle(){
@@ -429,7 +416,6 @@ function initCycle(){
   S.interiorComps=interiorFiller;
 
   S.placedCorners={};
-  S.bufferDisplayOrder=null; // force reshuffle on next render
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
   cancelAnimationFrame(S.raf);
   const td=document.getElementById('timerDisp');td.textContent='00.000';td.className='timer-val';
@@ -439,10 +425,9 @@ function initCycle(){
   renderBuffer();renderBoard();
   updateBufferProgress();
   const btn=document.getElementById('btnStart');
-  if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
-  else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
-  // Station 1 toujours active
   if(STATION===1){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
+  else if(S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
+  else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
 }
 
 // ══════════════════════════════════════════════════════
@@ -450,17 +435,13 @@ function initCycle(){
 // ══════════════════════════════════════════════════════
 function renderBuffer(){
   const bar=document.getElementById('bufferBar');
+  // Keep label
   bar.innerHTML='<div class="buffer-bar-label">BUFFER</div>';
 
+  // Flat sides for buffer pieces (standalone, no neighbors)
   const bufSides={top:1,right:-1,bottom:1,left:-1};
 
-  // Shuffle display order at each render — force visual search
-  if(!S.bufferDisplayOrder || S.bufferDisplayOrder.length!==S.cornerComps.length){
-    S.bufferDisplayOrder=shuffle([...Array(S.cornerComps.length).keys()]);
-  }
-  const displayComps=S.bufferDisplayOrder.map(i=>S.cornerComps[i]);
-
-  displayComps.forEach(comp=>{
+  S.cornerComps.forEach(comp=>{
     const placed=!!S.placedCorners[comp.cornerPos.key];
     const div=document.createElement('div');
     div.className='buffer-piece'+(placed?' used':'');
@@ -469,7 +450,7 @@ function renderBuffer(){
 
     const fill=placed?'rgba(61,232,138,.2)':'#e84040';
     const stroke=placed?'rgba(61,232,138,.4)':'#a01818';
-    div.innerHTML=makePieceSVG(bufSides,90,fill,stroke);
+    div.innerHTML=makePieceSVG(bufSides,100,fill,stroke);
 
     // Station number
     const numEl=document.createElement('span');
@@ -598,10 +579,7 @@ function renderBoard(){
 let currentDrag=null;
 
 function handleDrop(pieceId,pieceCornerKey,targetCornerKey){
-  // Auto-démarrer le cycle au premier glissement
-  if(!S.running){
-    startCycle();
-  }
+  if(!S.running){ startCycle(); }
   // The piece must go to its assigned corner
   if(pieceCornerKey===targetCornerKey){
     // Correct corner!
@@ -691,60 +669,9 @@ function finishCycle(ok){
 function validatePiece(){
   document.getElementById('validateBanner').classList.remove('show');
   S.wipOut--;updateWIPDisplay();
-  if(STATION<NB_STATIONS&&db){db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);setMsg(`📦 Envoyé → ASSY ${STATION+1} — Buffer en cours de rechargement...`,'info');}
-  else{if(db)db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);setMsg('🏁 Livré au CLIENT — Buffer en cours de rechargement...','ok');}
-  pushStats();
-  setTimeout(()=>refillBuffer(),600);
-}
-
-// Recharge le buffer sans réinitialiser les métriques session
-function refillBuffer(){
-  const cfg=DIFFICULTIES[CFG.difficulty];
-  const cols=cfg.grid,rows=cfg.grid;
-
-  const cornerPositions=[
-    {idx:0,                         key:'TL',label:'↖'},
-    {idx:cols-1,                    key:'TR',label:'↗'},
-    {idx:(rows-1)*cols,             key:'BL',label:'↙'},
-    {idx:(rows-1)*cols+(cols-1),    key:'BR',label:'↘'},
-    {idx:Math.floor(cols/2),        key:'TC',label:'↑'},
-    {idx:(rows-1)*cols+Math.floor(cols/2),key:'BC',label:'↓'},
-    {idx:Math.floor(rows/2)*cols,   key:'ML',label:'←'},
-    {idx:Math.floor(rows/2)*cols+(cols-1),key:'MR',label:'→'},
-    {idx:Math.floor(rows/2)*cols+Math.floor(cols/2),key:'MC',label:'●'},
-  ].slice(0,cols*rows);
-
-  // Nouvelles pièces mélangées pour les coins
-  const stComps=shuffle([...S.sessionComps]);
-  S.cornerComps=stComps.slice(0,4).map((c,i)=>({...c,cornerPos:cornerPositions[i]}));
-
-  // Nouveau mélange intérieur
-  const stIds=new Set(S.sessionComps.map(c=>c.id));
-  const filler=COMPONENT_POOL.filter(c=>!stIds.has(c.id));
-  const interiorCount=(cols*rows)-4;
-  const interiorFiller=shuffle(filler).slice(0,interiorCount).map((c,i)=>({...c,grey:true,greyStation:(i%4)+1}));
-  interiorFiller.forEach(p=>{if(p.greyStation===STATION)p.greyStation=p.greyStation===4?1:p.greyStation+1;});
-  S.interiorComps=interiorFiller;
-
-  // Reset cycle state only (pas les métriques)
-  S.placedCorners={};
-  S.bufferDisplayOrder=null; // force reshuffle on next render
-  S.running=false; S.started=false; S.startTime=null; S.errorCount=0;
-  cancelAnimationFrame(S.raf);
-  S.topology=generateTopology(cols,rows);
-
-  const td=document.getElementById('timerDisp');
-  td.textContent='00.000'; td.className='timer-val';
-
-  renderBuffer(); renderBoard(); updateBufferProgress();
-  setMsg('✅ Buffer rechargé — prêt pour le prochain cycle','ok');
-
-  // Activer bouton start
-  const btn=document.getElementById('btnStart');
-  if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
-  else{btn.disabled=true;btn.textContent='⏳ En attente WIP';}
-  // Station 1 toujours active
-  if(STATION===1){btn.disabled=false;btn.textContent='▶ Nouveau cycle';}
+  if(STATION<NB_STATIONS&&db){db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);setMsg(`📦 Envoyé → ASSY ${STATION+1}`,'info');}
+  else{if(db)db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);setMsg('🏁 Livré au CLIENT ✅','ok');}
+  pushStats();setTimeout(()=>initCycle(),700);
 }
 
 function updateWIPDisplay(){
