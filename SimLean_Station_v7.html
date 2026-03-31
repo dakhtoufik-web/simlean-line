@@ -540,55 +540,41 @@ function renderBuffer(){
     const comp=S.cornerComps[i];
     if(!comp)return;
     const placed=!!S.placedPositions[comp.targetPos];
-    const isActive=S.running&&!placed&&(stepIndex===S.currentStep);
-
     const div=document.createElement('div');
     div.className='buffer-piece'+(placed?' used':'');
     div.dataset.idx=i;
-
     const fill=placed?'rgba(176,200,212,.25)':METAL_FILL[STATION];
     const stroke=placed?'rgba(176,200,212,.5)':METAL_STROKE[STATION];
     const sides=S.cornerSides[comp.targetPos]||{top:0,right:0,bottom:0,left:0};
     const pad=14,vs=60+pad*2,d=piecePath(sides,60);
     div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="72" height="72" style="display:block;margin:auto;overflow:visible;pointer-events:none;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
 
-    // Numéro de station
     const numEl=document.createElement('span');
     numEl.className='bp-num';
     numEl.textContent=STATION;
     numEl.style.color=placed?'var(--success)':METAL_TEXT[STATION];
     div.appendChild(numEl);
 
-    // Indicateur d'ordre dans la gamme (visuel uniquement)
+    // Numéro d'ordre gamme (visuel uniquement)
     const stepEl=document.createElement('span');
-    stepEl.style.cssText=`position:absolute;top:2px;right:4px;font-size:9px;font-weight:700;
-      font-family:'Share Tech Mono',monospace;pointer-events:none;z-index:11;`;
+    stepEl.style.cssText=`position:absolute;top:2px;right:4px;font-size:9px;font-weight:700;font-family:'Share Tech Mono',monospace;pointer-events:none;z-index:11;`;
     stepEl.textContent=placed?'✓':(stepIndex+1);
-    stepEl.style.color=placed?'var(--success)':isActive?'#fff':'rgba(255,255,255,0.4)';
+    stepEl.style.color=placed?'var(--success)':(stepIndex===S.currentStep&&S.running)?'#fff':'rgba(255,255,255,0.4)';
     div.appendChild(stepEl);
-
-    // Mise en évidence de la pièce active
-    if(isActive){
-      div.style.boxShadow=`0 0 12px ${METAL_FILL[STATION]}, 0 0 4px #fff4`;
-      div.style.transform='scale(1.05)';
-    } else if(!placed&&S.running){
-      div.style.opacity='0.5';
-    }
 
     if(!placed){
       div.draggable=S.running;
       div.style.cursor=S.running?'grab':'not-allowed';
-      if(!S.running) div.style.opacity='0.6';
+      div.style.opacity=S.running?(stepIndex===S.currentStep?'1':'0.5'):'0.6';
       if(S.running){
         div.addEventListener('dragstart',e=>{
           div.classList.add('dragging');
-          e.dataTransfer.setData('compIdx',i);
-          e.dataTransfer.setData('stepIdx',String(stepIndex));
+          e.dataTransfer.setData('compIdx',String(i));
           e.dataTransfer.effectAllowed='move';
-          currentDrag={idx:i,comp,stepIndex};
+          currentDrag={idx:i,comp};
         });
         div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
-        div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp,stepIndex};},{passive:true});
+        div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
       } else {
         div.addEventListener('click',()=>setMsg('▶ Click "Start Cycle" to begin','err'));
       }
@@ -669,15 +655,12 @@ function handleDrop(compIdx,targetPos){
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
 
-  // Vérifier la séquence : l'index de la pièce dans le buffer = currentStep ?
+  // Séquence : la pièce droppée doit correspondre au currentStep
   const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
   const stepIndex=displayOrder.indexOf(compIdx);
-
-  if(stepIndex!==S.currentStep){
+  if(stepIndex>=0&&stepIndex!==S.currentStep){
     S.errorCount++;
-    setMsg(`❌ Follow the sequence — place part ${S.currentStep+1} first! Errors: ${S.errorCount}`,'err');
-    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
-    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
+    setMsg(`❌ Follow sequence — place part ${S.currentStep+1} first! Errors: ${S.errorCount}`,'err');
     return;
   }
 
@@ -686,7 +669,7 @@ function handleDrop(compIdx,targetPos){
     S.placedPositions[targetPos]=comp;
     S.currentStep++;
     renderBuffer();renderBoard();updateBufferProgress();
-    setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
+    setMsg(`✓ Part ${S.currentStep}/${S.myPieces.length} placed`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
   } else {
     S.errorCount++;
