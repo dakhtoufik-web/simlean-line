@@ -506,18 +506,19 @@ function initStation(){
 }
 
 function initCycle(){
-  // Topologie SVG : générée une seule fois par session/profil
-  // Elle ne change QU'au changeover, pas entre les cycles
+  // Topologie fixe par profil — régénérée si nécessaire
   if(!S.topology){
     S.topology=generateTopology();
-    S.cornerSides={};
-    (STATION_POSITIONS[STATION]||[]).forEach(pos=>{S.cornerSides[pos]=getSides(pos,S.topology);});
   }
-  // Gamme : ordre fixe (index 0,1,2,3) — pas de shuffle
+  // Toujours recalculer cornerSides avec les positions courantes
+  S.cornerSides={};
+  (STATION_POSITIONS[STATION]||[]).forEach(pos=>{
+    S.cornerSides[pos]=getSides(pos,S.topology);
+  });
   S.bufferDisplayOrder=[...Array(S.myPieces.length).keys()];
   S.cornerComps=S.myPieces.map(p=>({...p}));
   S.placedPositions={};
-  S.currentStep=0;  // reset gamme
+  S.currentStep=0;
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
   const scrapEl=document.getElementById('dbScrap');
   if(scrapEl)scrapEl.textContent='0';
@@ -654,22 +655,14 @@ function handleDrop(compIdx,targetPos){
   if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
-
-  // Séquence : la pièce droppée doit correspondre au currentStep
-  const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
-  const stepIndex=displayOrder.indexOf(compIdx);
-  if(stepIndex>=0&&stepIndex!==S.currentStep){
-    S.errorCount++;
-    setMsg(`❌ Follow sequence — place part ${S.currentStep+1} first! Errors: ${S.errorCount}`,'err');
-    return;
-  }
-
   if(comp.targetPos===targetPos){
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
     S.placedPositions[targetPos]=comp;
-    S.currentStep++;
+    // Avancer dans la gamme si c'était la bonne pièce dans l'ordre
+    const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
+    if(displayOrder.indexOf(compIdx)===S.currentStep) S.currentStep++;
     renderBuffer();renderBoard();updateBufferProgress();
-    setMsg(`✓ Part ${S.currentStep}/${S.myPieces.length} placed`,'ok');
+    setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
   } else {
     S.errorCount++;
