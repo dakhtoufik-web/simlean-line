@@ -991,21 +991,24 @@ function hexToRgb(hex){
 }
 
 function buildCoGrid(profileData){
-  const cols=COLS||4, rows=ROWS||4;
-  const myPositions=STATION_POSITIONS[STATION]||[];
+  const cols=profileData?profileData.cols||COLS:COLS;
+  const rows=profileData?profileData.rows||ROWS:ROWS;
+  // ← positions from NEW profileData, not old STATION_POSITIONS
+  const myPositions=(profileData&&(profileData[STATION]||profileData[String(STATION)]))||[];
   coGrid.targetPositions=myPositions;
   coGrid.operatorPositions=new Array(cols*rows).fill(false);
 
   const grid=document.getElementById('coGrid');
-  grid.style.gridTemplateColumns=`repeat(${cols},48px)`;
-  grid.style.gridTemplateRows=`repeat(${rows},48px)`;
+  const sz=cols>=5?36:42;
+  grid.style.gridTemplateColumns=`repeat(${cols},${sz}px)`;
+  grid.style.gridTemplateRows=`repeat(${rows},${sz}px)`;
   grid.innerHTML='';
   const c=CO_METAL[STATION]||CO_METAL[1];
 
   for(let i=0;i<cols*rows;i++){
     const cell=document.createElement('div');
     cell.className='co-cell empty';
-    cell.style.cssText=`width:48px;height:48px;`;
+    cell.style.cssText=`width:${sz}px;height:${sz}px;`;
     cell.dataset.idx=i;
     cell.addEventListener('mousedown',e=>{e.preventDefault();coGrid.painting=true;toggleCoCell(i);});
     cell.addEventListener('mouseenter',()=>{if(coGrid.painting)toggleCoCell(i);});
