@@ -756,9 +756,9 @@ function renderLinks(){
     tbody.appendChild(tr);
   });
 
-  // Lien formateur
+  // Lien formateur — hardcodé pour éviter toute confusion
   const trF = document.createElement('tr');
-  const urlF = `${window.location.href.split('?')[0]}?session=${F.sessionCode}`;
+  const urlF = `${base}/SimLean_Formateur_v3.html?session=${F.sessionCode}`;
   trF.innerHTML = `
     <td><strong style="color:var(--danger);">Formateur</strong></td>
     <td style="color:#888;">Global View</td>
