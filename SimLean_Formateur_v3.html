@@ -393,6 +393,27 @@ body {
   <div class="kpi-card"><div class="kpi-val"      id="kpiCycles">0</div><div class="kpi-label">TOTAL CYCLES</div></div>
 </div>
 
+<!-- C/O ANALYSIS PANEL -->
+<div id="coAnalysisPanel" style="display:none;background:var(--panel);border:1px solid var(--border);
+  border-radius:10px;padding:16px;margin-bottom:20px;">
+  <div class="panel-title" style="color:var(--cyan);">⏱ Changeover Analysis — C/O Times per Station</div>
+  <div id="coAnalysisTable" style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">STATION</th>
+          <th style="text-align:center;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">C/O COUNT</th>
+          <th style="text-align:center;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">LAST C/O</th>
+          <th style="text-align:center;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">AVG C/O</th>
+          <th style="text-align:center;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">BEST C/O</th>
+          <th style="text-align:left;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">HISTORY</th>
+        </tr>
+      </thead>
+      <tbody id="coAnalysisBody"></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- FLUX VISUEL -->
 <div class="flux-container" id="fluxContainer">
   <!-- Généré dynamiquement -->
@@ -869,14 +890,12 @@ function listenAllStations(){
       const output  = st.output  || 0;
       const scrap   = st.scrap   || 0;
       const status  = st.status  || 'offline';
-      const ctMoy   = st.ct_moy  || 0;
 
       totalOutput += output;
       totalScrap  += scrap;
       totalWip    += wipIn;
       totalCycles += cycles;
 
-      // Mettre à jour carte station
       const card = document.getElementById(`stCard${i}`);
       if(card){
         card.className = `station-card ${status==='running'?'active':status==='idle'?'idle':'waiting'}`;
@@ -892,24 +911,66 @@ function listenAllStations(){
       if(el(`scWipIn${i}`))   el(`scWipIn${i}`).textContent   = wipIn === 999 ? '∞' : wipIn;
       if(el(`scWipOut${i}`))  el(`scWipOut${i}`).textContent  = wipOut;
 
-      // Mettre à jour flèche WIP entre stations
       const arrowEl = document.getElementById(`arrowWip${i}`);
       if(arrowEl) arrowEl.textContent = wipIn === 999 ? '∞' : wipIn;
+
+      // C/O times per station
+      if(st.co_times) updateCoAnalysis(i+1, st.co_times);
     }
 
-    // Dernière station → client
     const lastSt = data[`s${F.nbStations}`] || {};
     const clientEl = document.getElementById('clientOutput');
     if(clientEl) clientEl.textContent = lastSt.output || 0;
     const arrowFinal = document.getElementById('arrowWipFinal');
     if(arrowFinal) arrowFinal.textContent = lastSt.output || 0;
 
-    // KPI globaux
     document.getElementById('kpiOutput').textContent  = totalOutput;
     document.getElementById('kpiScrap').textContent   = totalScrap;
     document.getElementById('kpiWip').textContent     = totalWip;
     document.getElementById('kpiCycles').textContent  = totalCycles;
   });
+}
+
+// CO analysis per station
+const coAnalysisData = {};
+function updateCoAnalysis(stNum, coTimes){
+  const times = Object.values(coTimes).map(t=>t.seconds).sort((a,b)=>a-b);
+  if(!times.length) return;
+  coAnalysisData[stNum] = times;
+  renderCoAnalysis();
+  document.getElementById('coAnalysisPanel').style.display='block';
+}
+
+function renderCoAnalysis(){
+  const tbody = document.getElementById('coAnalysisBody');
+  if(!tbody) return;
+  tbody.innerHTML='';
+  const metalColors={1:'#7a9bb5',2:'#a09070',3:'#6a7a6a',4:'#8a85a8'};
+  for(let s=1;s<=F.nbStations;s++){
+    const times = coAnalysisData[s]||[];
+    const last  = times.length ? times[times.length-1] : null;
+    const avg   = times.length ? Math.round(times.reduce((a,b)=>a+b,0)/times.length) : null;
+    const best  = times.length ? times[0] : null;
+    const color = metalColors[s]||'#888';
+    const history = times.map((t,i)=>`<span style="font-family:'Share Tech Mono',monospace;
+      background:var(--panel2);padding:2px 6px;border-radius:3px;font-size:10px;color:${
+      i===0?'var(--success)':'#888'};">${t}s</span>`).join(' ');
+    const tr = document.createElement('tr');
+    tr.innerHTML=`
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);">
+        <span style="color:${color};font-weight:700;font-size:12px;">■ ASSY ${s}</span>
+      </td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;
+        font-family:'Share Tech Mono',monospace;color:var(--muted);">${times.length||'—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;
+        font-family:'Share Tech Mono',monospace;color:var(--accent);">${last!==null?last+'s':'—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;
+        font-family:'Share Tech Mono',monospace;color:var(--cyan);">${avg!==null?avg+'s':'—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;
+        font-family:'Share Tech Mono',monospace;color:var(--success);">${best!==null?best+'s':'—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);">${history||'—'}</td>`;
+    tbody.appendChild(tr);
+  }
 }
 
 // Arrêter session dans Firebase
