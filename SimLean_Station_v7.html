@@ -494,7 +494,7 @@ function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');e
 function initStation(){
   applyProfile(DEFAULT_PROFILE);
   ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
-  ['dbCO','bbCO'].forEach(id=>document.getElementById(id).textContent=CFG.co+'s');
+  // dbCO et bbCO seront mis à jour uniquement par les vrais temps mesurés
   document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLY`;
   const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
   const segStart=(STATION-1)*4;
@@ -1195,17 +1195,15 @@ function stopChangeover(){
   document.getElementById('coOverlay').classList.remove('show');
   const totalSec=Math.round(S.coTotalMs/1000);
   const avgSec=Math.round(S.coTotalMs/S.coCount/1000);
+  // C/O TIME = total cumulé + moyenne
   document.getElementById('dbCOtime').textContent=`${totalSec}s total (avg ${avgSec}s)`;
   document.getElementById('dbCOcount').textContent=S.coCount;
-  // Mettre à jour C/O dans la data box avec le vrai temps
-  ['dbCO','bbCO'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.textContent=coSec+'s';
-  });
-  pushStats();
-  // Mettre à jour bottom bar C/O
+  // C/O = dernier temps mesuré (data box + bottom bar)
+  const dbCOel=document.getElementById('dbCO');
+  if(dbCOel){dbCOel.textContent=coSec+'s';dbCOel.className='db-val bad';}
   const bbCOel=document.getElementById('bbCO');
-  if(bbCOel) bbCOel.textContent=Math.round(S.coTotalMs/1000)+'s';
+  if(bbCOel) bbCOel.textContent=coSec+'s';
+  pushStats();
   initCycle();
   setMsg(`✅ Changeover validated in ${coSec}s — Ready to start`,'ok');
 }
