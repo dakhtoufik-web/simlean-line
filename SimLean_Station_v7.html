@@ -644,8 +644,7 @@ function renderBoard(){
           e.preventDefault();
           cell.classList.remove('drag-over');
           const idx=parseInt(e.dataTransfer.getData('compIdx'));
-          const stepIdx=parseInt(e.dataTransfer.getData('stepIdx'));
-          handleDrop(idx,flatIdx,stepIdx);
+          handleDrop(idx,flatIdx);
         });
       }
       board.appendChild(cell);
@@ -675,22 +674,10 @@ function renderBoard(){
 // ── DROP LOGIC ─────────────────────────────────────────
 let currentDrag=null;
 
-function handleDrop(compIdx,targetPos,stepIdx){
+function handleDrop(compIdx,targetPos){
   if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
-
-  // Vérifier la séquence — stepIdx transmis directement depuis dragstart/touchstart
-  const droppedStepIdx = (stepIdx!==undefined) ? stepIdx : compIdx;
-  const expectedStepIdx = S.currentStep;
-
-  if(droppedStepIdx!==expectedStepIdx){
-    S.errorCount++;
-    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
-    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
-    setMsg(`❌ Wrong sequence! Place part ${expectedStepIdx+1} first — Errors: ${S.errorCount}`,'err');
-    return;
-  }
 
   if(comp.targetPos===targetPos){
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
@@ -724,7 +711,7 @@ document.addEventListener('touchend',e=>{
   if(!S.running){currentDrag=null;setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const touch=e.changedTouches[0];
   const el=document.elementFromPoint(touch.clientX,touch.clientY);
-  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.idx,parseInt(cd.dataset.pos),currentDrag.stepIndex);}
+  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.idx,parseInt(cd.dataset.pos));}
   document.querySelectorAll('.drag-over').forEach(s=>s.classList.remove('drag-over'));
   currentDrag=null;
 });
