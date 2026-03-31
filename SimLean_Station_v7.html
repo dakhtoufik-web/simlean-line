@@ -720,7 +720,10 @@ function listenSessionConfig(){
     if(cfg.co_signal&&cfg.co_signal!==S.lastCoSignal){
       S.lastCoSignal=cfg.co_signal;
       startChangeover(cfg.co_profile_name||'New Profile', cfg.profile_data);
-    } else if(cfg.profile_data&&!cfg.co_signal){
+    } else if(!cfg.co_signal&&S.coStart){
+      // Formateur a supprimé co_signal → fin du changeover
+      stopChangeover();
+    } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart){
       // premier chargement sans C/O
       applyProfile(cfg.profile_data);
       const myPos=STATION_POSITIONS[STATION]||[];
