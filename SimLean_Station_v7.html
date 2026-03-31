@@ -579,11 +579,12 @@ function renderBuffer(){
         div.addEventListener('dragstart',e=>{
           div.classList.add('dragging');
           e.dataTransfer.setData('compIdx',i);
+          e.dataTransfer.setData('stepIdx',String(stepIndex));
           e.dataTransfer.effectAllowed='move';
-          currentDrag={idx:i,comp};
+          currentDrag={idx:i,comp,stepIndex};
         });
         div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
-        div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
+        div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp,stepIndex};},{passive:true});
       } else if(isLocked){
         // Pièce verrouillée — non draggable, grisée
         div.draggable=false;
@@ -643,7 +644,8 @@ function renderBoard(){
           e.preventDefault();
           cell.classList.remove('drag-over');
           const idx=parseInt(e.dataTransfer.getData('compIdx'));
-          handleDrop(idx,flatIdx);
+          const stepIdx=parseInt(e.dataTransfer.getData('stepIdx'));
+          handleDrop(idx,flatIdx,stepIdx);
         });
       }
       board.appendChild(cell);
@@ -673,19 +675,17 @@ function renderBoard(){
 // ── DROP LOGIC ─────────────────────────────────────────
 let currentDrag=null;
 
-function handleDrop(compIdx,targetPos){
+function handleDrop(compIdx,targetPos,stepIdx){
   if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
 
-  // Vérifier que c'est la bonne pièce dans la gamme
-  const expectedStepIdx=S.currentStep;
-  const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
-  const droppedStepIdx=displayOrder.indexOf(compIdx);
+  // Vérifier la séquence — stepIdx transmis directement depuis dragstart/touchstart
+  const droppedStepIdx = (stepIdx!==undefined) ? stepIdx : compIdx;
+  const expectedStepIdx = S.currentStep;
 
   if(droppedStepIdx!==expectedStepIdx){
-    // Mauvais ordre dans la gamme → scrap
-    S.errorCount++;S.scrap++;
+    S.errorCount++;
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
     setMsg(`❌ Wrong sequence! Place part ${expectedStepIdx+1} first — Errors: ${S.errorCount}`,'err');
@@ -693,15 +693,13 @@ function handleDrop(compIdx,targetPos){
   }
 
   if(comp.targetPos===targetPos){
-    // Bonne pièce, bonne position → avancer dans la gamme
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
     S.placedPositions[targetPos]=comp;
-    S.currentStep++;  // avancer à la pièce suivante
+    S.currentStep++;
     renderBuffer();renderBoard();updateBufferProgress();
     setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
   } else {
-    // Bonne pièce (bonne séquence) mais mauvaise position → erreur
     S.errorCount++;
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
@@ -726,7 +724,7 @@ document.addEventListener('touchend',e=>{
   if(!S.running){currentDrag=null;setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const touch=e.changedTouches[0];
   const el=document.elementFromPoint(touch.clientX,touch.clientY);
-  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.idx,parseInt(cd.dataset.pos));}
+  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.idx,parseInt(cd.dataset.pos),currentDrag.stepIndex);}
   document.querySelectorAll('.drag-over').forEach(s=>s.classList.remove('drag-over'));
   currentDrag=null;
 });
