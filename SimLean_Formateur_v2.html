@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Trainer v2</title>
+<title>SimLean Assembly Line — Trainer v3</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
 
@@ -201,6 +201,72 @@ body {
 .conn-dot.online  { background:var(--success); box-shadow:0 0 6px var(--success); }
 .conn-dot.offline { background:var(--danger); }
 .conn-dot.waiting { background:var(--accent); animation:pulse .8s infinite alternate; }
+/* CHANGEOVER PANEL */
+.co-panel {
+  background:var(--panel); border:2px solid var(--accent);
+  border-radius:10px; padding:20px; margin-bottom:20px;
+}
+.co-panel .panel-title { color:var(--accent); }
+
+/* STATION BRUSH SELECTOR */
+.brush-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+.brush-btn {
+  padding:8px 18px; border:2px solid transparent; border-radius:6px;
+  font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700;
+  letter-spacing:2px; cursor:pointer; transition:all .15s; opacity:.5;
+}
+.brush-btn.active { opacity:1; transform:scale(1.08); box-shadow:0 0 12px rgba(255,255,255,.2); }
+.brush-btn.erase { background:#222; color:#888; border-color:#444; }
+.brush-btn.erase.active { border-color:#fff; color:#fff; opacity:1; }
+
+/* GRID EDITOR */
+.grid-editor-wrap { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+.grid-editor { display:inline-grid; gap:3px; cursor:crosshair; user-select:none; }
+.ge-cell {
+  width:52px; height:52px; border:2px solid #2a3550; border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Share Tech Mono',monospace; font-size:14px; font-weight:700;
+  transition:all .1s; position:relative;
+}
+.ge-cell:hover { border-color:#fff; filter:brightness(1.3); }
+.ge-cell.unassigned { background:#1a2030; color:#3a4a60; }
+
+/* COUNTER PANEL */
+.ge-counters { display:flex; flex-direction:column; gap:8px; min-width:140px; }
+.ge-counter {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:6px; padding:8px 12px;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.ge-counter-label { font-size:11px; letter-spacing:2px; font-weight:700; }
+.ge-counter-val {
+  font-family:'Share Tech Mono',monospace; font-size:20px; font-weight:700;
+}
+.ge-total {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:6px; padding:8px 12px; text-align:center; margin-top:4px;
+}
+
+/* PRESET CHIPS */
+.preset-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+.preset-chip {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:20px; padding:4px 14px; font-size:11px; font-weight:700;
+  letter-spacing:1px; cursor:pointer; color:#888; transition:all .15s;
+}
+.preset-chip:hover { border-color:var(--accent); color:var(--accent); }
+
+/* CO ACTIVE STATE */
+.co-active-badge {
+  display:none; background:rgba(240,165,0,.15); border:1px solid var(--accent);
+  border-radius:6px; padding:4px 14px; font-size:11px; font-weight:700;
+  letter-spacing:2px; color:var(--accent); align-items:center; gap:8px;
+}
+.co-active-badge.show { display:flex; }
+.co-timer-display {
+  font-family:'Share Tech Mono',monospace; font-size:28px;
+  color:var(--cyan); min-width:80px; text-align:center;
+}
 @keyframes pulse { from{opacity:.6} to{opacity:1} }
 </style>
 </head>
@@ -348,6 +414,72 @@ body {
       <tr><td colspan="4" style="color:#555;font-size:12px;padding:16px;">Créez une session pour générer les liens.</td></tr>
     </tbody>
   </table>
+</div>
+
+<!-- CHANGEOVER PANEL -->
+<div class="co-panel" id="coPanel" style="display:none;">
+  <div class="panel-title">⚙️ Changeover — Design &amp; Push New Assembly Configuration</div>
+
+  <!-- Status bar -->
+  <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+    <div class="co-active-badge" id="coActiveBadge">
+      <span style="animation:pulse .8s infinite alternate;display:inline-block;">●</span>
+      CHANGEOVER IN PROGRESS
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:10px;letter-spacing:2px;color:#888;">C/O ELAPSED</span>
+      <div class="co-timer-display" id="coTimerDisplay">00:00</div>
+    </div>
+    <div id="coValidStatus" style="font-size:11px;font-weight:700;letter-spacing:1px;color:#888;"></div>
+  </div>
+
+  <!-- Preset chips -->
+  <div style="font-size:10px;letter-spacing:2px;color:#888;margin-bottom:8px;text-transform:uppercase;">
+    📋 Load a preset as starting point, then customize
+  </div>
+  <div class="preset-chips" id="presetChips"></div>
+
+  <!-- Brush selector -->
+  <div style="font-size:10px;letter-spacing:2px;color:#888;margin-bottom:8px;text-transform:uppercase;">
+    🖌 Select station then paint cells on the grid
+  </div>
+  <div class="brush-row" id="brushRow">
+    <button class="brush-btn" id="brush1" onclick="setBrush(1)">■ ASSY 1</button>
+    <button class="brush-btn" id="brush2" onclick="setBrush(2)">■ ASSY 2</button>
+    <button class="brush-btn" id="brush3" onclick="setBrush(3)">■ ASSY 3</button>
+    <button class="brush-btn" id="brush4" onclick="setBrush(4)">■ ASSY 4</button>
+    <button class="brush-btn erase" id="brushErase" onclick="setBrush(0)">✕ Erase</button>
+    <button class="btn btn-ghost" style="font-size:11px;padding:6px 14px;margin-left:8px;"
+      onclick="clearGrid()">🗑 Clear all</button>
+  </div>
+
+  <!-- Grid editor + counters -->
+  <div class="grid-editor-wrap">
+    <div class="grid-editor" id="gridEditor"></div>
+    <div>
+      <div class="ge-counters" id="geCounters"></div>
+      <div class="ge-total" id="geTotal" style="margin-top:8px;">
+        <div style="font-size:9px;letter-spacing:2px;color:#888;">TOTAL ASSIGNED</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:22px;color:var(--muted);" id="geTotalVal">0 / 16</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px;">
+    <button class="btn btn-primary" id="btnTriggerCO" onclick="triggerChangeover()">
+      ⚙️ Push Changeover to Stations
+    </button>
+    <button class="btn" id="btnEndCO"
+      style="display:none;background:var(--success);color:#000;"
+      onclick="endChangeover()">
+      ✅ End Changeover — Resume Production
+    </button>
+    <div style="font-size:10px;color:#888;letter-spacing:1px;max-width:300px;line-height:1.5;">
+      All cells must be assigned before pushing.<br>
+      Stations will be blocked until you click "End Changeover".
+    </div>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -506,6 +638,8 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   startDurationTimer();
   renderFlux();
   renderLinks();
+  initGridEditor();
+  document.getElementById('coPanel').style.display = 'block';
   setConn('online', `Session ${F.sessionCode} active`);
   pushSessionToFirebase();
 });
@@ -532,10 +666,12 @@ document.getElementById('btnResetAll').addEventListener('click', ()=>{
 document.getElementById('btnStop').addEventListener('click', ()=>{
   F.running = false;
   clearInterval(F.timerInterval);
+  if(coState.active) endChangeover();
   document.getElementById('siStatus').textContent = '⏹ ENDED';
   document.getElementById('btnStop').style.display     = 'none';
   document.getElementById('btnResetAll').style.display  = 'none';
   document.getElementById('btnCreate').style.display    = 'inline-block';
+  document.getElementById('coPanel').style.display      = 'none';
   setConn('offline', 'Session ended');
   stopSessionFirebase();
 });
@@ -605,7 +741,7 @@ function renderLinks(){
   tbody.innerHTML = '';
 
   const base = F.baseUrl || window.location.href.replace(/\/[^/]*(\?.*)?$/, '');
-  const stationFile = 'SimLean_Station_v5.html';
+  const stationFile = 'SimLean_Station_v7.html';
 
   F.stations.forEach((st, i)=>{
     const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}`;
@@ -782,6 +918,218 @@ function stopSessionFirebase(){
   db.ref(`assembly_line/${F.sessionCode}/config/status`).set('stopped');
 }
 
+// ═══════════════════════════════════════════════════════════
+// CHANGEOVER — GRID EDITOR VISUEL
+// ═══════════════════════════════════════════════════════════
+const ST_COLORS = {
+  1:{fill:'#7a9bb5',stroke:'#3a6080',text:'#e8f4ff',label:'ASSY 1'},
+  2:{fill:'#a09070',stroke:'#705a30',text:'#fff4e0',label:'ASSY 2'},
+  3:{fill:'#6a7a6a',stroke:'#3a4a3a',text:'#e0ede0',label:'ASSY 3'},
+  4:{fill:'#8a85a8',stroke:'#504870',text:'#f0eeff',label:'ASSY 4'},
+};
+
+let coState = {
+  active:false, startTime:null, raf:null,
+  brush:1, grid:[], cols:4, rows:4, painting:false,
+};
+
+function initBrushButtons(){
+  [1,2,3,4].forEach(s=>{
+    const btn=document.getElementById(`brush${s}`);
+    if(!btn)return;
+    btn.style.background=ST_COLORS[s].fill;
+    btn.style.borderColor=ST_COLORS[s].stroke;
+    btn.style.color=ST_COLORS[s].text;
+  });
+}
+
+function setBrush(st){
+  coState.brush=st;
+  [1,2,3,4].forEach(s=>{
+    const b=document.getElementById(`brush${s}`);
+    if(b) b.classList.remove('active');
+  });
+  const be=document.getElementById('brushErase');
+  if(be) be.classList.remove('active');
+  if(st===0){if(be)be.classList.add('active');}
+  else{const b=document.getElementById(`brush${st}`);if(b)b.classList.add('active');}
+}
+
+function paintCell(idx){
+  coState.grid[idx]=coState.brush;
+  const cells=document.querySelectorAll('.ge-cell');
+  const cell=cells[idx];
+  if(!cell)return;
+  const st=coState.brush;
+  if(st===0){
+    cell.className='ge-cell unassigned';
+    cell.style.background='';cell.style.borderColor='';cell.style.color='';cell.textContent='';
+  } else {
+    cell.className='ge-cell';
+    cell.style.background=ST_COLORS[st].fill;
+    cell.style.borderColor=ST_COLORS[st].stroke;
+    cell.style.color=ST_COLORS[st].text;
+    cell.textContent=st;
+  }
+  updateCounters();
+}
+
+function renderGridEditor(){
+  const cols=coState.cols,rows=coState.rows;
+  const ed=document.getElementById('gridEditor');
+  if(!ed)return;
+  ed.style.gridTemplateColumns=`repeat(${cols},52px)`;
+  ed.style.gridTemplateRows=`repeat(${rows},52px)`;
+  ed.innerHTML='';
+  coState.grid.forEach((st,idx)=>{
+    const cell=document.createElement('div');
+    cell.className='ge-cell'+(st===0?' unassigned':'');
+    cell.dataset.idx=idx;
+    if(st>0){
+      cell.style.background=ST_COLORS[st].fill;
+      cell.style.borderColor=ST_COLORS[st].stroke;
+      cell.style.color=ST_COLORS[st].text;
+      cell.textContent=st;
+    }
+    cell.addEventListener('mousedown',e=>{e.preventDefault();coState.painting=true;paintCell(idx);});
+    cell.addEventListener('mouseenter',()=>{if(coState.painting)paintCell(idx);});
+    ed.appendChild(cell);
+  });
+  document.addEventListener('mouseup',()=>{coState.painting=false;});
+  updateCounters();
+}
+
+function updateCounters(){
+  const total=coState.cols*coState.rows;
+  const counts={1:0,2:0,3:0,4:0};
+  coState.grid.forEach(v=>{if(v>0)counts[v]++;});
+  const assigned=Object.values(counts).reduce((a,b)=>a+b,0);
+  const el=document.getElementById('geCounters');
+  if(el){
+    el.innerHTML='';
+    [1,2,3,4].forEach(s=>{
+      const div=document.createElement('div');
+      div.className='ge-counter';
+      div.innerHTML=`<span class="ge-counter-label" style="color:${ST_COLORS[s].fill};">${ST_COLORS[s].label}</span>
+        <span class="ge-counter-val" style="color:${ST_COLORS[s].fill};">${counts[s]}</span>`;
+      el.appendChild(div);
+    });
+  }
+  const valid=assigned===total;
+  const tv=document.getElementById('geTotalVal');
+  if(tv){tv.textContent=`${assigned} / ${total}`;tv.style.color=valid?'var(--success)':'var(--danger)';}
+  const vs=document.getElementById('coValidStatus');
+  if(vs){
+    vs.textContent=valid?'✅ All cells assigned — ready to push':`⚠ ${total-assigned} cell(s) unassigned`;
+    vs.style.color=valid?'var(--success)':'var(--accent)';
+  }
+  const btn=document.getElementById('btnTriggerCO');
+  if(btn)btn.disabled=!valid;
+}
+
+function clearGrid(){
+  coState.grid=new Array(coState.cols*coState.rows).fill(0);
+  renderGridEditor();
+}
+
+function loadPreset(name){
+  const gs=F.gridSize||'4x4';
+  const p=PROFILES[gs]&&PROFILES[gs][name];
+  if(!p)return;
+  coState.cols=p.cols||4;coState.rows=p.rows||4;
+  coState.grid=new Array(coState.cols*coState.rows).fill(0);
+  [1,2,3,4].forEach(s=>{(p[s]||[]).forEach(idx=>{coState.grid[idx]=s;});});
+  renderGridEditor();
+  document.querySelectorAll('.preset-chip').forEach(c=>{c.style.borderColor='';c.style.color='';});
+  const chip=document.getElementById('chip_'+name.replace(/[\s().\-]/g,'_'));
+  if(chip){chip.style.borderColor='var(--accent)';chip.style.color='var(--accent)';}
+}
+
+function renderPresetChips(){
+  const row=document.getElementById('presetChips');
+  if(!row)return;
+  row.innerHTML='';
+  const gs=F.gridSize||'4x4';
+  Object.keys(PROFILES[gs]||{}).forEach(name=>{
+    const chip=document.createElement('div');
+    chip.className='preset-chip';
+    chip.id='chip_'+name.replace(/[\s().\-]/g,'_');
+    chip.textContent=name;
+    chip.onclick=()=>loadPreset(name);
+    row.appendChild(chip);
+  });
+}
+
+function buildProfileFromGrid(){
+  const pos={1:[],2:[],3:[],4:[]};
+  coState.grid.forEach((st,idx)=>{if(st>0)pos[st].push(idx);});
+  return {cols:coState.cols,rows:coState.rows,...pos};
+}
+
+function getGridProfileName(){
+  const c=[1,2,3,4].map(s=>coState.grid.filter(v=>v===s).length);
+  return `Custom (${c.join('-')})`;
+}
+
+function initGridEditor(){
+  const gs=F.gridSize||'4x4';
+  coState.cols=gs==='5x5'?5:4;coState.rows=coState.cols;
+  coState.grid=new Array(coState.cols*coState.rows).fill(0);
+  initBrushButtons();setBrush(1);
+  renderPresetChips();
+  const first=Object.keys(PROFILES[gs]||{})[0];
+  if(first)loadPreset(first);
+  else renderGridEditor();
+}
+
+function triggerChangeover(){
+  if(!db||!F.sessionCode){alert('Session must be active');return;}
+  const total=coState.cols*coState.rows;
+  const assigned=coState.grid.filter(v=>v>0).length;
+  if(assigned<total){alert(`All ${total} cells must be assigned (${total-assigned} remaining)`);return;}
+  if(coState.active){alert('Changeover already in progress');return;}
+  const profileData=buildProfileFromGrid();
+  const profileName=getGridProfileName();
+  coState.active=true;coState.startTime=Date.now();
+  db.ref(`assembly_line/${F.sessionCode}/config`).update({
+    co_signal:Date.now(),co_profile_name:profileName,
+    profile_data:profileData,profile:profileName,
+  });
+  document.getElementById('coActiveBadge').classList.add('show');
+  document.getElementById('btnTriggerCO').style.display='none';
+  document.getElementById('btnEndCO').style.display='inline-block';
+  document.getElementById('siGrid').textContent=F.gridSize+' — '+profileName;
+  ['gridEditor','brushRow','presetChips'].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e){e.style.pointerEvents='none';e.style.opacity='.45';}
+  });
+  cancelAnimationFrame(coState.raf);
+  function tickCO(){
+    if(!coState.active)return;
+    const e=Date.now()-coState.startTime;
+    document.getElementById('coTimerDisplay').textContent=
+      String(Math.floor(e/60000)).padStart(2,'0')+':'+String(Math.floor((e%60000)/1000)).padStart(2,'0');
+    coState.raf=requestAnimationFrame(tickCO);
+  }
+  coState.raf=requestAnimationFrame(tickCO);
+  setConn('online',`⚙️ Changeover — ${profileName}`);
+}
+
+function endChangeover(){
+  if(!db||!F.sessionCode)return;
+  coState.active=false;cancelAnimationFrame(coState.raf);
+  db.ref(`assembly_line/${F.sessionCode}/config/co_signal`).remove();
+  document.getElementById('coActiveBadge').classList.remove('show');
+  document.getElementById('btnTriggerCO').style.display='inline-block';
+  document.getElementById('btnEndCO').style.display='none';
+  document.getElementById('coTimerDisplay').textContent='00:00';
+  ['gridEditor','brushRow','presetChips'].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e){e.style.pointerEvents='';e.style.opacity='';}
+  });
+  setConn('online',`Session ${F.sessionCode} — Changeover complete ✓`);
+}
+
 // Manual inputs listeners
 ['m1','m2','m3','m4'].forEach(id=>{
   const el=document.getElementById(id);
@@ -795,5 +1143,3 @@ initFirebase();
 </script>
 </body>
 </html>
-
-
