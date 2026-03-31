@@ -1186,7 +1186,6 @@ function stopChangeover(){
 
   // Push C/O time to Firebase
   const coSec=Math.round(elapsed/1000);
-  const avgSec=Math.round(S.coTotalMs/S.coCount/1000);
   if(db){
     db.ref(`assembly_line/${SESSION}/stations/${stKey}/co_times`).push({
       round:S.coCount, seconds:coSec, timestamp:Date.now()
@@ -1194,9 +1193,14 @@ function stopChangeover(){
   }
 
   document.getElementById('coOverlay').classList.remove('show');
-  document.getElementById('dbCOtime').textContent=`${coSec}s (avg ${avgSec}s)`;
+  const totalSec=Math.round(S.coTotalMs/1000);
+  const avgSec=Math.round(S.coTotalMs/S.coCount/1000);
+  document.getElementById('dbCOtime').textContent=`${totalSec}s total (avg ${avgSec}s)`;
   document.getElementById('dbCOcount').textContent=S.coCount;
   pushStats();
+  // Mettre à jour bottom bar C/O
+  const bbCOel=document.getElementById('bbCO');
+  if(bbCOel) bbCOel.textContent=Math.round(S.coTotalMs/1000)+'s';
   initCycle();
   setMsg(`✅ Changeover validated in ${coSec}s — Ready to start`,'ok');
 }
