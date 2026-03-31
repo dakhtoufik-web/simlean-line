@@ -718,10 +718,11 @@ function listenSessionConfig(){
 
     // ── CHANGEOVER SIGNAL ─────────────────────────────────
     if(cfg.co_signal&&cfg.co_signal!==S.lastCoSignal){
+      // Nouveau signal C/O → démarrer le changeover
       S.lastCoSignal=cfg.co_signal;
-      startChangeover(cfg.co_profile_name||'New Profile', cfg.profile_data);
+      startChangeover(cfg.co_profile_name||'New Profile', cfg.profile_data, cfg.co_signal);
     } else if(!cfg.co_signal&&S.coStart){
-      // Formateur a supprimé co_signal → fin du changeover
+      // co_signal supprimé par le formateur → fin du changeover
       stopChangeover();
     } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart){
       // premier chargement sans C/O
@@ -750,13 +751,13 @@ function listenSessionConfig(){
 }
 
 // ── CHANGEOVER FUNCTIONS ───────────────────────────────
-function startChangeover(profileName, profileData){
+function startChangeover(profileName, profileData, coSignalTime){
   // Stopper le cycle en cours
   if(S.running){S.running=false;cancelAnimationFrame(S.raf);}
   document.getElementById('btnStart').disabled=true;
   document.getElementById('validateBanner').classList.remove('show');
 
-  // Reset timer overlay à zéro avant de démarrer
+  // Reset timer overlay à zéro
   cancelAnimationFrame(S.coRaf);
   S.coRaf=null;
   document.getElementById('coTimer').textContent='00:00';
@@ -764,7 +765,8 @@ function startChangeover(profileName, profileData){
   // Afficher overlay
   document.getElementById('coProfileName').textContent=`→ ${profileName}`;
   document.getElementById('coOverlay').classList.add('show');
-  S.coStart=Date.now();
+  // Utiliser le timestamp Firebase comme référence — toutes les stations synchronisées
+  S.coStart=coSignalTime||Date.now();
   S.coCount++;
   document.getElementById('dbCOcount').textContent=S.coCount;
 
