@@ -1197,6 +1197,11 @@ function stopChangeover(){
   const avgSec=Math.round(S.coTotalMs/S.coCount/1000);
   document.getElementById('dbCOtime').textContent=`${totalSec}s total (avg ${avgSec}s)`;
   document.getElementById('dbCOcount').textContent=S.coCount;
+  // Mettre à jour C/O dans la data box avec le vrai temps
+  ['dbCO','bbCO'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=coSec+'s';
+  });
   pushStats();
   // Mettre à jour bottom bar C/O
   const bbCOel=document.getElementById('bbCO');
