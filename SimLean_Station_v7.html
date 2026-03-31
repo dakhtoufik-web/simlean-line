@@ -542,8 +542,6 @@ function renderBuffer(){
     const pad=14,vs=60+pad*2,d=piecePath(sides,60);
     div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="72" height="72" style="display:block;margin:auto;overflow:visible;pointer-events:none;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
     const numEl=document.createElement('span');numEl.className='bp-num';numEl.textContent=STATION;numEl.style.color=placed?'var(--success)':METAL_TEXT[STATION];div.appendChild(numEl);
-    const refEl=document.createElement('span');refEl.className='bp-ref';refEl.textContent=comp.id;refEl.style.color=placed?'var(--success)':METAL_TEXT[STATION];div.appendChild(refEl);
-    const nameEl=document.createElement('span');nameEl.className='bp-name';nameEl.textContent=comp.name;div.appendChild(nameEl);
     if(!placed){
       div.draggable=S.running;
       div.style.cursor=S.running?'grab':'not-allowed';
@@ -584,7 +582,7 @@ function renderBoard(){
       cell.className='corner-drop'+(S.running?' pulsing':'');
       cell.style.cssText=`width:${SZ}px;height:${SZ}px;`;
       cell.dataset.pos=flatIdx;
-      cell.innerHTML=`<span class="drop-hint" style="font-size:9px;">${comp?comp.id:''}</span>`;
+      cell.innerHTML=`<span class="drop-hint" style="font-size:9px;opacity:0;"></span>`;
       if(S.running){
         cell.addEventListener('dragover',e=>{
           e.preventDefault();
@@ -635,13 +633,13 @@ function handleDrop(compIdx,targetPos){
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
     S.placedPositions[targetPos]=comp;
     renderBuffer();renderBoard();updateBufferProgress();
-    setMsg(`✓ ${comp.id} placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
+    setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
   } else {
     S.errorCount++;
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
-    setMsg(`❌ Wrong position! Expected : ${comp.id} | Errors : ${S.errorCount}`,'err');
+    setMsg(`❌ Wrong position! Errors : ${S.errorCount}`,'err');
   }
 }
 
