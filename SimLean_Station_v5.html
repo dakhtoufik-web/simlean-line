@@ -3,706 +3,1143 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Station v5.1</title>
+<title>SimLean Assembly Line — Trainer v3</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
-:root{
-  --bg:#0b0e13;--panel:#111520;--panel2:#161b26;--border:#1e2538;
-  --accent:#f0a500;--cyan:#00c2a8;--danger:#e84040;--success:#3de88a;
-  --text:#dde1ed;--muted:#ffffff;
-  --s1:#e84040;--s2:#f0a500;--s3:#3de88a;--s4:#00c2a8;
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
+
+:root {
+  --bg:      #0b0e13;
+  --panel:   #111520;
+  --panel2:  #161b26;
+  --border:  #1e2538;
+  --accent:  #f0a500;
+  --cyan:    #00c2a8;
+  --danger:  #e84040;
+  --success: #3de88a;
+  --text:    #dde1ed;
+  --muted:   #ffffff;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;
-  min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:8px;
-  background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
-  background-size:40px 40px;}
 
-.top-bar{width:100%;max-width:1060px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--accent);padding-bottom:6px;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
-.logo{font-size:13px;letter-spacing:4px;color:var(--accent);font-weight:700;}
-.logo span{color:var(--muted);}
-.session-badge{background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:11px;letter-spacing:2px;color:var(--cyan);}
-.station-badge{background:var(--accent);color:#000;border-radius:20px;padding:4px 16px;font-size:13px;font-weight:700;letter-spacing:2px;}
-.conn-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;}
-.conn-dot.online{background:var(--success);box-shadow:0 0 6px var(--success);}
-.conn-dot.offline{background:var(--danger);}
-.conn-dot.waiting{background:var(--accent);animation:pulse .8s infinite alternate;}
-@keyframes pulse{from{opacity:.6}to{opacity:1}}
+body {
+  background:var(--bg); color:var(--text);
+  font-family:'Barlow Condensed',sans-serif;
+  min-height:100vh; padding:16px;
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
+  background-size:40px 40px;
+}
 
-.chrono-bar{width:100%;max-width:1060px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;}
-.chrono-cell{background:var(--panel);border:1px solid var(--border);padding:5px 8px;text-align:center;}
-.chrono-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
-.chrono-val{font-family:'Share Tech Mono',monospace;font-size:18px;line-height:1.1;}
-.cv-clock{color:var(--cyan);}.cv-time{color:var(--accent);}
-.cv-occ{color:var(--success);}.cv-occ.low{color:var(--danger);}.cv-occ.mid{color:var(--accent);}
-.occ-bar-wrap{margin-top:4px;height:3px;background:var(--border);}
-.occ-bar-fill{height:100%;background:var(--success);transition:width .5s;}
-.occ-bar-fill.low{background:var(--danger);}.occ-bar-fill.mid{background:var(--accent);}
+/* TOP BAR */
+.top-bar {
+  display:flex; justify-content:space-between; align-items:center;
+  border-bottom:2px solid var(--accent);
+  padding-bottom:10px; margin-bottom:20px; flex-wrap:wrap; gap:8px;
+}
+.logo { font-size:13px; letter-spacing:4px; color:var(--accent); font-weight:700; }
+.logo span { color:var(--muted); }
+.badge-formateur {
+  background:var(--danger); color:#fff;
+  border-radius:20px; padding:4px 16px;
+  font-size:12px; font-weight:700; letter-spacing:3px;
+}
 
-.status-msg{width:100%;max-width:1060px;padding:5px 10px;font-size:11px;letter-spacing:1px;margin-bottom:5px;display:none;border:1px solid var(--border);background:var(--panel);}
-.status-msg.show{display:block;}
-.status-msg.ok{border-color:var(--success);color:var(--success);}
-.status-msg.err{border-color:var(--danger);color:var(--danger);}
-.status-msg.info{border-color:var(--cyan);color:var(--cyan);}
+/* SETUP PANEL */
+.setup-panel {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:20px; margin-bottom:20px;
+}
+.panel-title {
+  font-size:11px; letter-spacing:3px; color:var(--accent);
+  text-transform:uppercase; margin-bottom:16px;
+  padding-bottom:8px; border-bottom:1px solid var(--border);
+}
+.setup-row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+.setup-field { display:flex; flex-direction:column; gap:4px; }
+.setup-field label { font-size:10px; letter-spacing:2px; color:#888; }
+.setup-field input, .setup-field select {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:6px; padding:8px 12px; color:var(--text);
+  font-family:'Barlow Condensed',sans-serif; font-size:14px;
+  outline:none; min-width:120px;
+}
+.setup-field input:focus, .setup-field select:focus { border-color:var(--cyan); }
+.btn {
+  border:none; border-radius:6px; padding:10px 20px;
+  font-family:'Barlow Condensed',sans-serif; font-size:13px;
+  font-weight:700; letter-spacing:1px; cursor:pointer;
+}
+.btn-primary { background:var(--accent); color:#000; }
+.btn-primary:hover { opacity:.85; }
+.btn-danger  { background:var(--danger);  color:#fff; }
+.btn-danger:hover  { opacity:.85; }
+.btn-ghost   { background:transparent; border:1px solid var(--border); color:var(--muted); }
 
-.validate-banner{display:none;width:100%;max-width:1060px;background:rgba(61,232,138,.1);border:2px solid var(--success);padding:8px 14px;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
-.validate-banner.show{display:flex;}
-.val-text{font-size:14px;font-weight:700;color:var(--success);}
-.val-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px;}
+/* SESSION INFO */
+.session-info {
+  display:none; background:rgba(0,194,168,.08);
+  border:1px solid var(--cyan); border-radius:8px;
+  padding:12px 18px; margin-bottom:16px;
+  align-items:center; gap:20px; flex-wrap:wrap;
+}
+.session-info.show { display:flex; }
+.si-label { font-size:10px; letter-spacing:2px; color:#888; }
+.si-val   { font-size:15px; font-weight:700; color:var(--cyan);
+            font-family:'Share Tech Mono',monospace; }
+.si-url   { font-size:10px; color:#888; word-break:break-all; }
 
-.flux-row{width:100%;max-width:1060px;display:flex;align-items:stretch;gap:8px;margin-bottom:8px;}
-.wip-box{background:var(--panel);border:1px solid var(--border);padding:12px 14px;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:100px;}
-.wip-box.wip-in{border-color:var(--cyan);}.wip-box.wip-out{border-color:var(--success);}
-.wip-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
-.wip-count{font-family:'Share Tech Mono',monospace;font-size:32px;font-weight:700;line-height:1;}
-.wip-in .wip-count{color:var(--cyan);}.wip-out .wip-count{color:var(--success);}
-.wip-sub{font-size:9px;color:var(--muted);font-weight:700;}
-.flux-arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:22px;padding:0 2px;align-self:center;}
+/* FLUX VISUEL */
+.flux-container {
+  display:flex; align-items:center; gap:0;
+  overflow-x:auto; padding:10px 0; margin-bottom:20px;
+}
 
-.station-area{flex:1;background:var(--panel);border:1px solid var(--border);padding:10px 12px;}
-.station-title{font-size:11px;letter-spacing:2px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
-.section-label{font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;font-weight:700;}
+.station-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:16px; min-width:160px;
+  display:flex; flex-direction:column; gap:8px; position:relative;
+}
+.station-card.active  { border-color:var(--success); }
+.station-card.idle    { border-color:var(--border); }
+.station-card.waiting { border-color:var(--accent); }
 
-/* BUFFER */
-.buffer-bar{display:flex;gap:10px;align-items:center;background:rgba(0,0,0,.25);border:1px solid var(--success);padding:10px 12px;margin-bottom:10px;flex-wrap:wrap;min-height:90px;overflow:visible;}
-.buffer-bar-label{font-size:10px;letter-spacing:3px;font-weight:700;color:var(--success);text-transform:uppercase;margin-right:4px;flex-shrink:0;}
-.buffer-piece{position:relative;width:72px;height:72px;cursor:grab;flex-shrink:0;overflow:visible;transition:transform .15s,filter .15s;}
-.buffer-piece:hover{transform:scale(1.08) translateY(-3px);filter:brightness(1.2);}
-.buffer-piece:active{cursor:grabbing;}
-.buffer-piece.used{opacity:.15;cursor:default;filter:grayscale(1);}
-.buffer-piece.dragging{opacity:.3;}
-.bp-num{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-weight:700;font-size:15px;text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none;z-index:10;}
-.bp-ref{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:9px;text-shadow:0 1px 2px rgba(0,0,0,.9);pointer-events:none;z-index:10;}
-.bp-name{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:7px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.3px;pointer-events:none;z-index:10;}
+.sc-num {
+  font-size:10px; letter-spacing:2px; color:#888;
+}
+.sc-name {
+  font-size:13px; font-weight:700; color:var(--muted);
+  letter-spacing:1px;
+}
+.sc-status {
+  font-size:10px; padding:3px 8px; border-radius:10px;
+  width:fit-content; letter-spacing:1px;
+}
+.sc-status.running { background:rgba(61,232,138,.15); color:var(--success); }
+.sc-status.waiting { background:rgba(240,165,0,.15); color:var(--accent); }
+.sc-status.idle    { background:rgba(30,37,56,.8); color:#666; }
+.sc-status.offline { background:rgba(232,64,64,.1); color:var(--danger); }
 
-/* PUZZLE BOARD */
-.puzzle-wrap{display:flex;justify-content:flex-start;overflow-x:auto;margin-bottom:8px;}
-.puzzle-board{display:inline-grid;gap:0;}
-.puzzle-board.cols4{grid-template-columns:repeat(4,62px);grid-template-rows:repeat(4,62px);}
-.puzzle-board.cols5{grid-template-columns:repeat(5,52px);grid-template-rows:repeat(5,52px);}
+.sc-wip-row {
+  display:flex; justify-content:space-between;
+  font-size:11px; margin-top:4px;
+}
+.sc-wip-in  { color:var(--cyan); }
+.sc-wip-out { color:var(--success); }
+.sc-cycles  { font-size:22px; font-family:'Share Tech Mono',monospace;
+              color:var(--accent); text-align:center; }
 
-.puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;}
-.puzzle-board.cols4 .puzzle-cell{width:62px;height:62px;}
-.puzzle-board.cols5 .puzzle-cell{width:52px;height:52px;}
-.puzzle-cell svg{width:100%;height:100%;overflow:visible;}
-.piece-st-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;z-index:10;text-shadow:0 1px 2px rgba(0,0,0,.6);}
-.buffer-piece svg,.buffer-piece path,.buffer-piece span{pointer-events:none;}
+/* FLÈCHE FLUX */
+.flux-arrow {
+  display:flex; flex-direction:column; align-items:center;
+  padding:0 8px; position:relative; min-width:80px;
+}
+.arrow-line {
+  width:100%; height:2px; background:var(--border); position:relative;
+}
+.arrow-line::after {
+  content:'▶'; position:absolute; right:-8px; top:-9px;
+  color:var(--border); font-size:18px;
+}
+.arrow-wip {
+  margin-top:6px; background:var(--panel2);
+  border:1px solid var(--border); border-radius:4px;
+  padding:3px 10px; font-size:12px; font-family:'Share Tech Mono',monospace;
+  color:var(--accent); font-weight:700;
+}
+.arrow-label { font-size:9px; color:#555; letter-spacing:1px; margin-top:2px; }
 
-/* CORNER DROP ZONES */
-.corner-drop{position:relative;display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);background:rgba(255,255,255,.02);transition:all .2s;overflow:visible;}
-.corner-drop .drop-hint{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-weight:700;text-align:center;pointer-events:none;}
-.corner-drop.drag-over{border-color:var(--success);border-style:solid;background:rgba(61,232,138,.15);transform:scale(1.06);box-shadow:0 0 12px rgba(61,232,138,.3);}
-.corner-drop.filled{border:none;background:transparent;}
-.corner-drop.error-flash{border-color:var(--danger);border-style:solid;background:rgba(232,64,64,.12);animation:shake .35s;}
-.corner-drop.pulsing{border-color:var(--s1);border-style:solid;animation:blink .7s infinite alternate;}
-.cp-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;z-index:10;}
-.cp-ref{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;z-index:10;}
+/* KPI ROW */
+.kpi-row {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:12px; margin-bottom:20px;
+}
+.kpi-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:8px; padding:14px; text-align:center;
+}
+.kpi-val {
+  font-family:'Share Tech Mono',monospace; font-size:28px;
+  color:var(--accent); line-height:1;
+}
+.kpi-val.good { color:var(--success); }
+.kpi-val.bad  { color:var(--danger); }
+.kpi-label { font-size:10px; letter-spacing:2px; color:#666; margin-top:4px; }
 
-@keyframes popIn{0%{transform:scale(1.25);filter:brightness(1.6)}100%{transform:scale(1);filter:brightness(1)}}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
-@keyframes blink{from{opacity:.5}to{opacity:1}}
-@keyframes completeFlash{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
+/* LINKS TABLE */
+.links-panel {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:20px;
+}
+.links-table { width:100%; border-collapse:collapse; margin-top:10px; }
+.links-table th {
+  font-size:10px; letter-spacing:2px; color:#888;
+  text-align:left; padding:6px 10px; border-bottom:1px solid var(--border);
+}
+.links-table td {
+  padding:8px 10px; border-bottom:1px solid var(--border);
+  font-size:12px; vertical-align:middle;
+}
+.links-table tr:last-child td { border-bottom:none; }
+.link-url {
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  color:var(--cyan); word-break:break-all; max-width:400px;
+}
+.btn-copy-link {
+  border:none; background:var(--panel2); border:1px solid var(--border);
+  color:var(--muted); border-radius:4px; padding:4px 10px;
+  font-size:11px; cursor:pointer; font-family:'Barlow Condensed',sans-serif;
+}
+.btn-copy-link:hover { border-color:var(--cyan); }
+.btn-copy-link.ok { background:rgba(61,232,138,.1); border-color:var(--success); color:var(--success); }
 
-.btn{border:none;padding:10px 20px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .15s;}
-.btn-primary{background:var(--accent);color:#000;}.btn-primary:hover{opacity:.85;}
-.btn-primary:disabled{background:#333;color:#666;cursor:not-allowed;}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}.btn-ghost:hover{border-color:var(--cyan);}
-.ctrl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+/* CONN DOT */
+.conn-dot {
+  width:8px; height:8px; border-radius:50%; display:inline-block;
+  margin-right:4px;
+}
+.conn-dot.online  { background:var(--success); box-shadow:0 0 6px var(--success); }
+.conn-dot.offline { background:var(--danger); }
+.conn-dot.waiting { background:var(--accent); animation:pulse .8s infinite alternate; }
+/* CHANGEOVER PANEL */
+.co-panel {
+  background:var(--panel); border:2px solid var(--accent);
+  border-radius:10px; padding:20px; margin-bottom:20px;
+}
+.co-panel .panel-title { color:var(--accent); }
 
-.timer-box{background:var(--panel);border:1px solid var(--border);padding:12px 16px;text-align:center;min-width:130px;}
-.timer-val{font-family:'Share Tech Mono',monospace;font-size:30px;color:var(--accent);line-height:1;}
-.timer-val.running{color:var(--success);}.timer-val.done{color:var(--cyan);}
-.timer-sub{font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:4px;font-weight:700;}
+/* STATION BRUSH SELECTOR */
+.brush-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+.brush-btn {
+  padding:8px 18px; border:2px solid transparent; border-radius:6px;
+  font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700;
+  letter-spacing:2px; cursor:pointer; transition:all .15s; opacity:.5;
+}
+.brush-btn.active { opacity:1; transform:scale(1.08); box-shadow:0 0 12px rgba(255,255,255,.2); }
+.brush-btn.erase { background:#222; color:#888; border-color:#444; }
+.brush-btn.erase.active { border-color:#fff; color:#fff; opacity:1; }
 
-.data-box{background:var(--panel);border:1px solid var(--border);padding:12px 14px;display:flex;flex-direction:column;min-width:148px;}
-.db-title{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);font-weight:700;}
-.db-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(30,37,56,.5);}
-.db-row:last-child{border-bottom:none;}
-.db-key{font-size:10px;letter-spacing:1px;color:var(--muted);font-weight:700;text-transform:uppercase;}
-.db-val{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);font-weight:700;}
-.db-val.good{color:var(--success);}.db-val.bad{color:var(--danger);}.db-val.accent{color:var(--accent);}
-.db-divider{height:1px;background:var(--border);margin:4px 0;}
+/* GRID EDITOR */
+.grid-editor-wrap { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+.grid-editor { display:inline-grid; gap:3px; cursor:crosshair; user-select:none; }
+.ge-cell {
+  width:52px; height:52px; border:2px solid #2a3550; border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Share Tech Mono',monospace; font-size:14px; font-weight:700;
+  transition:all .1s; position:relative;
+}
+.ge-cell:hover { border-color:#fff; filter:brightness(1.3); }
+.ge-cell.unassigned { background:#1a2030; color:#3a4a60; }
 
-.bottom-bar{width:100%;max-width:1060px;display:flex;gap:0;margin-top:6px;background:var(--panel);border:1px solid var(--border);overflow:hidden;}
-.bb-cell{flex:1;padding:5px 8px;text-align:center;border-right:1px solid var(--border);}
-.bb-cell:last-child{border-right:none;}
-.bb-key{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
-.bb-val{font-size:14px;font-weight:700;color:var(--muted);font-family:'Share Tech Mono',monospace;}
-.bb-val.good{color:var(--success);}.bb-val.bad{color:var(--danger);}
+/* COUNTER PANEL */
+.ge-counters { display:flex; flex-direction:column; gap:8px; min-width:140px; }
+.ge-counter {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:6px; padding:8px 12px;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.ge-counter-label { font-size:11px; letter-spacing:2px; font-weight:700; }
+.ge-counter-val {
+  font-family:'Share Tech Mono',monospace; font-size:20px; font-weight:700;
+}
+.ge-total {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:6px; padding:8px 12px; text-align:center; margin-top:4px;
+}
+
+/* PRESET CHIPS */
+.preset-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+.preset-chip {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:20px; padding:4px 14px; font-size:11px; font-weight:700;
+  letter-spacing:1px; cursor:pointer; color:#888; transition:all .15s;
+}
+.preset-chip:hover { border-color:var(--accent); color:var(--accent); }
+
+/* CO ACTIVE STATE */
+.co-active-badge {
+  display:none; background:rgba(240,165,0,.15); border:1px solid var(--accent);
+  border-radius:6px; padding:4px 14px; font-size:11px; font-weight:700;
+  letter-spacing:2px; color:var(--accent); align-items:center; gap:8px;
+}
+.co-active-badge.show { display:flex; }
+.co-timer-display {
+  font-family:'Share Tech Mono',monospace; font-size:28px;
+  color:var(--cyan); min-width:80px; text-align:center;
+}
+@keyframes pulse { from{opacity:.6} to{opacity:1} }
 </style>
 </head>
 <body>
 
+<!-- TOP BAR -->
 <div class="top-bar">
-  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line</span></div>
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <span class="session-badge">SESSION: <span id="sessionId">—</span></span>
-    <span class="station-badge" id="stationBadge">ASSY —</span>
-    <span style="font-size:11px;color:var(--muted);font-weight:700;">
+  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Trainer v2</span></div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="font-size:11px;color:#888;">
       <span class="conn-dot waiting" id="connDot"></span>
-      <span id="connLabel">Waiting...</span>
+      <span id="connLabel">Not connected</span>
     </span>
+    <span class="badge-formateur">TRAINER</span>
   </div>
 </div>
 
-<div class="chrono-bar">
-  <div class="chrono-cell"><div class="chrono-label">⏰ Clock</div><div class="chrono-val cv-clock" id="clockDisp">--:--:--</div></div>
-  <div class="chrono-cell"><div class="chrono-label">⏱ Time on Station</div><div class="chrono-val cv-time" id="sessionTimerDisp">00:00:00</div></div>
-  <div class="chrono-cell"><div class="chrono-label">📊 Utilization Rate</div><div class="chrono-val cv-occ" id="occDisp">—</div><div class="occ-bar-wrap"><div class="occ-bar-fill" id="occBar" style="width:0%"></div></div></div>
-  <div class="chrono-cell"><div class="chrono-label">⏱ Takt Time</div><div class="chrono-val" style="color:var(--text);" id="taktDisp">—</div></div>
-</div>
-
-<div class="status-msg" id="statusMsg"></div>
-<div class="validate-banner" id="validateBanner">
-  <div><div class="val-text" id="valText">✅ Assembly completed !</div><div class="val-sub">Validate to send downstream</div></div>
-  <button class="btn" style="background:var(--success);color:#000;" id="btnValidate">→ Send Downstream</button>
-</div>
-
-<div class="flux-row">
-  <div class="wip-box wip-in"><div class="wip-label">Incoming WIP</div><div class="wip-count" id="wipIn">0</div><div class="wip-sub">parts available</div></div>
-  <div class="flux-arrow">→</div>
-
-  <div class="station-area">
-    <div class="station-title">
-      <span id="stationName">ASSY — ASSEMBLY</span>
-      <span style="font-size:11px;color:var(--muted);font-weight:700;" id="cycleCount">Cycles: 0</span>
+<!-- SETUP PANEL -->
+<div class="setup-panel">
+  <div class="panel-title">⚙ Session Configuration</div>
+  <div class="setup-row">
+    <div class="setup-field">
+      <label>SESSION CODE</label>
+      <input id="cfgSession" type="text" value="LEAN01" maxlength="8" placeholder="Ex: LEAN01">
+    </div>
+    <div class="setup-field">
+      <label>NB STATIONS</label>
+      <select id="cfgStations">
+        <option value="2">2 stations</option>
+        <option value="3" selected>3 stations</option>
+        <option value="4">4 stations</option>
+        <option value="5">5 stations</option>
+      </select>
+    </div>
+    <div class="setup-field">
+      <label>PUZZLE GRID</label>
+      <select id="cfgGridSize" onchange="updateProfiles()">
+        <option value="4x4" selected>4×4 (16 parts)</option>
+        <option value="5x5">5×5 (25 parts)</option>
+      </select>
+    </div>
+    <div class="setup-field">
+      <label>BOTTLENECK PROFILE</label>
+      <select id="cfgProfile" onchange="toggleManual()">
+        <option value="Balanced (4-4-4-4)">Balanced (4-4-4-4)</option>
+        <option value="Bottleneck S2 (2-8-3-3)">Bottleneck S2 (2-8-3-3)</option>
+        <option value="Bottleneck S3 (4-2-6-4)">Bottleneck S3 (4-2-6-4)</option>
+        <option value="Bottleneck S4 (4-4-2-6)">Bottleneck S4 (4-4-2-6)</option>
+        <option value="Manuel">✏ Custom</option>
+      </select>
+    </div>
+    <div class="setup-field">
+      <label>AVAILABLE TIME (min)</label>
+      <input id="cfgAvailTime" type="number" value="60" min="1" max="480" oninput="calcTakt()">
+    </div>
+    <div class="setup-field">
+      <label>CUSTOMER DEMAND (pcs)</label>
+      <input id="cfgDemand" type="number" value="240" min="1" max="9999" oninput="calcTakt()">
+    </div>
+    <div class="setup-field">
+      <label>TAKT TIME</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div id="taktDisplay" style="background:var(--bg);border:1px solid var(--accent);
+          color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:18px;
+          font-weight:700;padding:8px 14px;min-width:90px;text-align:center;">15s</div>
+        <div style="font-size:9px;color:#888;letter-spacing:1px;line-height:1.4;">
+          Available Time<br>÷ Customer Demand
+        </div>
+      </div>
     </div>
 
-    <div class="section-label">BUFFER — DRAG YOUR PARTS TO THEIR POSITION ↓
-      <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--success);margin-left:8px;" id="bufferProgress">0 / 4</span>
+    <div id="manualPanel" style="display:none;width:100%;margin-top:10px;background:var(--panel2);border:1px solid var(--cyan);padding:14px 16px;">
+      <div style="font-size:10px;letter-spacing:2px;color:var(--cyan);font-weight:700;margin-bottom:12px;text-transform:uppercase;">✏ Custom layout — number of parts per station</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="setup-field">
+          <label style="color:var(--s1,#e84040);">ASSY 1</label>
+          <input id="m1" type="number" min="1" max="20" value="4" style="width:70px;">
+        </div>
+        <div class="setup-field">
+          <label style="color:var(--s2,#f0a500);">ASSY 2</label>
+          <input id="m2" type="number" min="1" max="20" value="4" style="width:70px;">
+        </div>
+        <div class="setup-field">
+          <label style="color:var(--s3,#3de88a);">ASSY 3</label>
+          <input id="m3" type="number" min="1" max="20" value="4" style="width:70px;">
+        </div>
+        <div class="setup-field">
+          <label style="color:var(--s4,#00c2a8);">ASSY 4</label>
+          <input id="m4" type="number" min="1" max="20" value="4" style="width:70px;">
+        </div>
+        <div id="manualTotal" style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--muted);align-self:flex-end;padding-bottom:10px;">Total : 16 / 16 ✓</div>
+      </div>
     </div>
-    <div class="buffer-bar" id="bufferBar"><div class="buffer-bar-label">BUFFER</div></div>
+    <div class="setup-field">
+      <label>&nbsp;</label>
+      <button class="btn btn-primary" id="btnCreate">▶ Create Session</button>
+    </div>
+    <div class="setup-field">
+      <label>&nbsp;</label>
+      <button class="btn btn-danger" id="btnStop" style="display:none;">⏹ Stop</button>
+    </div>
+    <div class="setup-field">
+      <label>&nbsp;</label>
+      <button class="btn" id="btnResetAll" style="display:none;background:transparent;border:1px solid var(--cyan);color:var(--cyan);">↺ Reset Session</button>
+    </div>
+  </div>
+</div>
 
-    <div class="section-label">PRODUCT PUZZLE — <span id="puzzleLegend"></span></div>
-    <div class="puzzle-wrap"><div class="puzzle-board cols4" id="puzzleBoard"></div></div>
+<!-- SESSION INFO -->
+<div class="session-info" id="sessionInfo">
+  <div><div class="si-label">SESSION</div><div class="si-val" id="siCode">—</div></div>
+  <div><div class="si-label">STATIONS</div><div class="si-val" id="siStations">—</div></div>
+  <div><div class="si-label">PUZZLE</div><div class="si-val" id="siGrid" style="color:var(--cyan);">—</div></div>
+  <div><div class="si-label">STATUS</div><div class="si-val" id="siStatus">—</div></div>
+  <div><div class="si-label">DURATION</div><div class="si-val" id="siDuration">00:00:00</div></div>
+  <div><div class="si-label">TAKT TIME</div><div class="si-val" style="color:var(--success);" id="siTakt">—</div></div>
+</div>
 
-    <div class="ctrl-row" style="margin-top:12px;">
-      <button class="btn btn-primary" id="btnStart" disabled>▶ Start Cycle</button>
-      <button class="btn btn-ghost" style="font-size:11px;" id="btnReset">↺ Reset</button>
-      <div class="timer-box" style="margin-left:auto;">
-        <div class="timer-val" id="timerDisp">00.000</div>
-        <div class="timer-sub">Cycle Time (s)</div>
+<!-- KPI ROW -->
+<div class="kpi-row" id="kpiRow">
+  <div class="kpi-card"><div class="kpi-val good" id="kpiOutput">0</div><div class="kpi-label">TOTAL OUTPUT</div></div>
+  <div class="kpi-card"><div class="kpi-val bad"  id="kpiScrap">0</div><div class="kpi-label">TOTAL SCRAP</div></div>
+  <div class="kpi-card"><div class="kpi-val"      id="kpiWip">0</div><div class="kpi-label">TOTAL WIP</div></div>
+  <div class="kpi-card"><div class="kpi-val"      id="kpiCycles">0</div><div class="kpi-label">TOTAL CYCLES</div></div>
+</div>
+
+<!-- FLUX VISUEL -->
+<div class="flux-container" id="fluxContainer">
+  <!-- Généré dynamiquement -->
+</div>
+
+<!-- LINKS PARTICIPANTS -->
+<div class="links-panel" id="linksPanel">
+  <div class="panel-title">🔗 Links to Share with Participants</div>
+  <table class="links-table" id="linksTable">
+    <thead>
+      <tr>
+        <th>STATION</th>
+        <th>ROLE</th>
+        <th>LINK</th>
+        <th>ACTION</th>
+      </tr>
+    </thead>
+    <tbody id="linksBody">
+      <tr><td colspan="4" style="color:#555;font-size:12px;padding:16px;">Créez une session pour générer les liens.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- CHANGEOVER PANEL -->
+<div class="co-panel" id="coPanel" style="display:none;">
+  <div class="panel-title">⚙️ Changeover — Design &amp; Push New Assembly Configuration</div>
+
+  <!-- Status bar -->
+  <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+    <div class="co-active-badge" id="coActiveBadge">
+      <span style="animation:pulse .8s infinite alternate;display:inline-block;">●</span>
+      CHANGEOVER IN PROGRESS
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:10px;letter-spacing:2px;color:#888;">C/O ELAPSED</span>
+      <div class="co-timer-display" id="coTimerDisplay">00:00</div>
+    </div>
+    <div id="coValidStatus" style="font-size:11px;font-weight:700;letter-spacing:1px;color:#888;"></div>
+  </div>
+
+  <!-- Preset chips -->
+  <div style="font-size:10px;letter-spacing:2px;color:#888;margin-bottom:8px;text-transform:uppercase;">
+    📋 Load a preset as starting point, then customize
+  </div>
+  <div class="preset-chips" id="presetChips"></div>
+
+  <!-- Brush selector -->
+  <div style="font-size:10px;letter-spacing:2px;color:#888;margin-bottom:8px;text-transform:uppercase;">
+    🖌 Select station then paint cells on the grid
+  </div>
+  <div class="brush-row" id="brushRow">
+    <button class="brush-btn" id="brush1" onclick="setBrush(1)">■ ASSY 1</button>
+    <button class="brush-btn" id="brush2" onclick="setBrush(2)">■ ASSY 2</button>
+    <button class="brush-btn" id="brush3" onclick="setBrush(3)">■ ASSY 3</button>
+    <button class="brush-btn" id="brush4" onclick="setBrush(4)">■ ASSY 4</button>
+    <button class="brush-btn erase" id="brushErase" onclick="setBrush(0)">✕ Erase</button>
+    <button class="btn btn-ghost" style="font-size:11px;padding:6px 14px;margin-left:8px;"
+      onclick="clearGrid()">🗑 Clear all</button>
+  </div>
+
+  <!-- Grid editor + counters -->
+  <div class="grid-editor-wrap">
+    <div class="grid-editor" id="gridEditor"></div>
+    <div>
+      <div class="ge-counters" id="geCounters"></div>
+      <div class="ge-total" id="geTotal" style="margin-top:8px;">
+        <div style="font-size:9px;letter-spacing:2px;color:#888;">TOTAL ASSIGNED</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:22px;color:var(--muted);" id="geTotalVal">0 / 16</div>
       </div>
     </div>
   </div>
 
-  <div class="flux-arrow">→</div>
-  <div class="wip-box wip-out"><div class="wip-label">Outgoing WIP</div><div class="wip-count" id="wipOut">0</div><div class="wip-sub">parts produced</div></div>
-
-  <div class="data-box">
-    <div class="db-title"><span style="color:var(--accent);margin-right:4px;">▌</span>DATA BOX</div>
-    <div class="db-row"><span class="db-key">ACTUAL C/T</span><span class="db-val" id="dbCTact">—</span></div>
-    <div class="db-row"><span class="db-key">AVG C/T</span><span class="db-val" id="dbCTmoy">—</span></div>
-    <div class="db-row"><span class="db-key">MIN C/T</span><span class="db-val" id="dbCTmin">—</span></div>
-    <div class="db-divider"></div>
-    <div class="db-row"><span class="db-key">TAKT TIME</span><span class="db-val accent" id="dbTakt">—</span></div>
-    <div class="db-row"><span class="db-key">C/O</span><span class="db-val accent" id="dbCO">—</span></div>
-    <div class="db-divider"></div>
-    <div class="db-row"><span class="db-key">AVAIL %</span><span class="db-val good" id="dbDispo">100%</span></div>
-    <div class="db-row"><span class="db-key">OUTPUT</span><span class="db-val good" id="dbOutput">0</span></div>
-    <div class="db-row"><span class="db-key">ERRORS</span><span class="db-val bad" id="dbScrap">0</span></div>
-    <div class="db-row"><span class="db-key">FTY %</span><span class="db-val good" id="dbFTY">—</span></div>
+  <!-- Actions -->
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px;">
+    <button class="btn btn-primary" id="btnTriggerCO" onclick="triggerChangeover()">
+      ⚙️ Push Changeover to Stations
+    </button>
+    <button class="btn" id="btnEndCO"
+      style="display:none;background:var(--success);color:#000;"
+      onclick="endChangeover()">
+      ✅ End Changeover — Resume Production
+    </button>
+    <div style="font-size:10px;color:#888;letter-spacing:1px;max-width:300px;line-height:1.5;">
+      All cells must be assigned before pushing.<br>
+      Stations will be blocked until you click "End Changeover".
+    </div>
   </div>
-</div>
-
-<div class="bottom-bar">
-  <div class="bb-cell"><div class="bb-key">AVG C/T</div><div class="bb-val" id="bbCT">—</div></div>
-  <div class="bb-cell"><div class="bb-key">TAKT</div><div class="bb-val" id="bbTakt">—</div></div>
-  <div class="bb-cell"><div class="bb-key">C/O</div><div class="bb-val" id="bbCO">—</div></div>
-  <div class="bb-cell"><div class="bb-key">AVAIL</div><div class="bb-val good" id="bbDispo">100%</div></div>
-  <div class="bb-cell"><div class="bb-key">OUTPUT</div><div class="bb-val good" id="bbOutput">0</div></div>
-  <div class="bb-cell"><div class="bb-key">FTY %</div><div class="bb-val good" id="bbFTY">—</div></div>
-  <div class="bb-cell"><div class="bb-key">WIP IN</div><div class="bb-val" id="bbWipIn">0</div></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-let COLS=4, ROWS=4;
-let PIECE_MAP=[];
-let STATION_POSITIONS={ 1:[0,3,12,15], 2:[1,4,11,14], 3:[2,7,8,13], 4:[5,6,9,10] };
-const DEFAULT_PROFILE={cols:4,rows:4,1:[0,3,12,15],2:[1,4,11,14],3:[2,7,8,13],4:[5,6,9,10]};
-
-function applyProfile(profileData){
-  const p=profileData||DEFAULT_PROFILE;
-  COLS=p.cols||4; ROWS=p.rows||4;
-  STATION_POSITIONS={1:p[1]||p['1']||[],2:p[2]||p['2']||[],3:p[3]||p['3']||[],4:p[4]||p['4']||[]};
-  PIECE_MAP=new Array(COLS*ROWS).fill(0);
-  for(let st=1;st<=4;st++){(STATION_POSITIONS[st]||[]).forEach(idx=>{PIECE_MAP[idx]=st;});}
-  const board=document.getElementById('puzzleBoard');
-  if(board) board.className=`puzzle-board cols${COLS}`;
-}
-
-const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8'};
-const ST_STROKE={1:'#a01818',2:'#a06000',3:'#20a050',4:'#007a6a'};
-const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000'};
-
-const COMPONENT_POOL=[
-  {id:'A1',name:'Shaft Ø6'},{id:'B2',name:'Bushing'},{id:'C3',name:'Housing'},
-  {id:'D4',name:'Sleeve'},{id:'E5',name:'Nut M8'},{id:'F6',name:'Flange'},
-  {id:'G7',name:'Pin'},{id:'H8',name:'Hex M10'},{id:'J9',name:'Gasket'},
-  {id:'K10',name:'Spring'},{id:'L11',name:'Lever'},{id:'M12',name:'Coupling'},
-  {id:'N13',name:'Nut Block'},{id:'P14',name:'Pivot'},{id:'R15',name:'Washer'},
-  {id:'S16',name:'Ring'},{id:'T17',name:'Rod Ø4'},{id:'U18',name:'Unit'},
-  {id:'V19',name:'Screw M6'},{id:'W20',name:'Cap'},{id:'X21',name:'Bracket'},
-  {id:'Y22',name:'Yoke'},{id:'Z23',name:'Circlip'},{id:'Q24',name:'Cam'},
-];
-
-const params=new URLSearchParams(window.location.search);
-const STATION=parseInt(params.get('station')||'1');
-const SESSION=params.get('session')||'demo';
-const ASSY_NAMES={1:'ASSY 1',2:'ASSY 2',3:'ASSY 3',4:'ASSY 4'};
-document.getElementById('stationBadge').textContent=ASSY_NAMES[STATION]||`ASSY ${STATION}`;
-document.getElementById('stationBadge').style.background=ST_COLOR[STATION]||'var(--accent)';
-document.getElementById('stationBadge').style.color=ST_TEXT[STATION]||'#000';
-document.getElementById('sessionId').textContent=SESSION.toUpperCase();
-
-const legendEl=document.getElementById('puzzleLegend');
-for(let s=1;s<=4;s++){
-  const sp=document.createElement('span');
-  sp.style.cssText=`color:${ST_COLOR[s]};margin-right:12px;font-weight:700;`;
-  sp.textContent=`■ ASSY ${s}`;
-  legendEl.appendChild(sp);
-}
-
-let CFG={takt:15,co:30};
-
-let S={
-  wipIn:0,wipOut:0,cycles:0,output:0,scrap:0,history:[],
-  myPieces:[],cornerComps:[],placedPositions:{},puzzleState:{},
-  running:false,started:false,startTime:null,raf:null,errorCount:0,
-  topology:null,cornerSides:{},bufferDisplayOrder:null,lastResetSignal:null,inheritedState:{},fty:0,
+// ═══════════════════════════════════════════════════════════
+// ── PROFILES ──────────────────────────────────────────
+const PROFILES = {
+  '4x4': {
+    'Balanced (4-4-4-4)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4,11,14],           3:[2,7,8,13],             4:[5,6,9,10]},
+    'Bottleneck S2 (2-8-3-3)':  {cols:4,rows:4, 1:[0,3],         2:[1,4,5,6,9,10,11,14],  3:[2,7,8],                4:[12,13,15]},
+    'Bottleneck S3 (4-2-6-4)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4],                 3:[2,5,6,7,8,13],         4:[9,10,11,14]},
+    'Bottleneck S4 (4-4-2-6)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4,11,14],           3:[2,7],                  4:[5,6,8,9,10,13]},
+  },
+  '5x5': {
+    'Balanced (6-6-6-7)':  {cols:5,rows:5, 1:[0,4,20,24,2,22],         2:[1,3,5,9,15,19],          3:[10,14,21,23,11,13],       4:[6,7,8,12,16,17,18]},
+    'Bottleneck S2 (4-10-6-5)': {cols:5,rows:5, 1:[0,4,20,24],             2:[1,2,3,5,6,7,8,9,14,19],  3:[10,11,13,15,21,23],       4:[12,16,17,18,22]},
+    'Bottleneck S3 (6-4-10-5)': {cols:5,rows:5, 1:[0,4,20,24,2,22],        2:[1,3,5,9],                3:[6,7,8,10,11,12,13,14,15,19], 4:[16,17,18,21,23]},
+    'Bottleneck S4 (6-6-4-9)':  {cols:5,rows:5, 1:[0,4,20,24,2,22],        2:[1,3,5,9,15,19],          3:[10,14,21,23],              4:[6,7,8,11,12,13,16,17,18]},
+  }
 };
-let NB_STATIONS=4,sessionStart=null,sessionInterval=null,db=null;
 
-// ── SVG ENGINE ──────────────────────────────────────────
-function generateTopology(){
-  const h=[],v=[];
-  for(let r=0;r<ROWS-1;r++){h[r]=[];for(let c=0;c<COLS;c++)h[r][c]=Math.random()>.5?1:-1;}
-  for(let r=0;r<ROWS;r++){v[r]=[];for(let c=0;c<COLS-1;c++)v[r][c]=Math.random()>.5?1:-1;}
-  return{h,v};
-}
-function getSides(flatIdx,topo,cols,rows){
-  cols=cols||COLS;rows=rows||ROWS;
-  const row=Math.floor(flatIdx/cols),col=flatIdx%cols;
-  const{h,v}=topo;
-  return{
-    top:   row===0      ?0:h[row-1][col],
-    bottom:row===rows-1 ?0:-h[row][col],
-    left:  col===0      ?0:v[row][col-1],
-    right: col===cols-1 ?0:-v[row][col],
-  };
-}
-function piecePath(sides,SZ){
-  const T=SZ*.18,W=SZ*.28,C=SZ/2;
-  function tab(from,to,dir,out){
-    const dx=to[0]-from[0],dy=to[1]-from[1],len=Math.sqrt(dx*dx+dy*dy);
-    const ux=dx/len,uy=dy/len,px=-uy*dir,py=ux*dir,m=out*T;
-    const p=(a,b)=>`${a.toFixed(1)},${b.toFixed(1)}`;
-    const x1=from[0]+ux*(C-W)+px*m*.3,y1=from[1]+uy*(C-W)+py*m*.3;
-    const x2=from[0]+ux*(C-W)+px*m,  y2=from[1]+uy*(C-W)+py*m;
-    const x3=from[0]+ux*(C+W)+px*m,  y3=from[1]+uy*(C+W)+py*m;
-    const x4=from[0]+ux*(C+W)+px*m*.3,y4=from[1]+uy*(C+W)+py*m*.3;
-    return `L${p(x1,y1)} L${p(x2,y2)} L${p(x3,y3)} L${p(x4,y4)} L${p(to[0],to[1])}`;
+function calcTakt(){
+  const availMin = parseFloat(document.getElementById('cfgAvailTime').value) || 60;
+  const demand   = parseFloat(document.getElementById('cfgDemand').value)    || 1;
+  const taktSec  = Math.round((availMin * 60) / demand);
+  F.takt = taktSec;
+  const display = document.getElementById('taktDisplay');
+  if(display){
+    display.textContent = taktSec >= 60
+      ? `${Math.floor(taktSec/60)}m ${taktSec%60}s`
+      : `${taktSec}s`;
+    // Color feedback
+    display.style.borderColor = taktSec < 5 ? 'var(--danger)' : taktSec < 10 ? 'var(--accent)' : 'var(--success)';
+    display.style.color       = taktSec < 5 ? 'var(--danger)' : taktSec < 10 ? 'var(--accent)' : 'var(--success)';
   }
-  let d=`M0,0 `;
-  d+=sides.top===0?`L${SZ},0 `:tab([0,0],[SZ,0],-1,sides.top);
-  d+=sides.right===0?`L${SZ},${SZ} `:tab([SZ,0],[SZ,SZ],1,sides.right);
-  d+=sides.bottom===0?`L0,${SZ} `:tab([SZ,SZ],[0,SZ],1,sides.bottom);
-  d+=sides.left===0?`L0,0 `:tab([0,SZ],[0,0],-1,sides.left);
-  return d+'Z';
-}
-function makeSVG(sides,sz,fill,stroke){
-  const pad=sz*.2,vs=sz+pad*2,d=piecePath(sides,sz);
-  return `<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;width:100%;height:100%;display:block;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  // Update takt info line
+  const info = document.getElementById('taktInfo');
+  if(info) info.textContent = `= ${availMin}min × 60 ÷ ${demand} pcs`;
 }
 
-// ── CLOCK ──────────────────────────────────────────────
-function tickClock(){const n=new Date();document.getElementById('clockDisp').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');}
-setInterval(tickClock,1000);tickClock();
-function startSessionTimer(){
-  if(sessionStart)return;sessionStart=Date.now();
-  setInterval(()=>{
-    const e=Date.now()-sessionStart;
-    document.getElementById('sessionTimerDisp').textContent=[Math.floor(e/3600000),Math.floor((e%3600000)/60000),Math.floor((e%60000)/1000)].map(x=>String(x).padStart(2,'0')).join(':');
-    const prod=S.history.reduce((a,b)=>a+b,0);
-    const pct=Math.min(Math.round((prod/e)*100),100)||0;
-    document.getElementById('occDisp').textContent=pct+'%';
-    document.getElementById('occDisp').className='chrono-val cv-occ '+(pct<40?'low':pct<70?'mid':'');
-    document.getElementById('occBar').className='occ-bar-fill '+(pct<40?'low':pct<70?'mid':'');
-    document.getElementById('occBar').style.width=pct+'%';
-  },1000);
-}
-function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
-function fmt(ms){return(ms/1000).toFixed(3).padStart(6,'0');}
-function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');el.textContent=txt;el.className=`status-msg show ${type}`;if(!txt)el.classList.remove('show');}
-
-// ── INIT ───────────────────────────────────────────────
-function initStation(){
-  applyProfile(DEFAULT_PROFILE);
-  ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
-  ['dbCO','bbCO'].forEach(id=>document.getElementById(id).textContent=CFG.co+'s');
-  document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLY`;
-  const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
-  const segStart=(STATION-1)*4;
-  S.myPieces=myPositions.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
-  initCycle();
-  updateWIPDisplay();
-  setConn('waiting','Connecting to Firebase...');
-  initFirebase();
-}
-
-function initCycle(){
-  S.topology=generateTopology();
-  S.cornerSides={};
-  (STATION_POSITIONS[STATION]||[]).forEach(pos=>{S.cornerSides[pos]=getSides(pos,S.topology);});
-  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]);
-  S.cornerComps=S.myPieces.map(p=>({...p}));
-  S.placedPositions={};
-  S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
-  const scrapEl=document.getElementById('dbScrap');
-  if(scrapEl)scrapEl.textContent='0';
-  cancelAnimationFrame(S.raf);
-  const td=document.getElementById('timerDisp');td.textContent='00.000';td.className='timer-val';
-  document.getElementById('validateBanner').classList.remove('show');
-  setMsg('');
-  renderBuffer();renderBoard();updateBufferProgress();
-  const btn=document.getElementById('btnStart');
-  if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
-  else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
-}
-
-// ── RENDER BUFFER ──────────────────────────────────────
-function renderBuffer(){
-  const bar=document.getElementById('bufferBar');
-  bar.innerHTML=`<div class="buffer-bar-label">BUFFER</div>${!S.running?'<div style="font-size:9px;letter-spacing:1px;color:var(--danger);font-weight:700;text-transform:uppercase;align-self:center;margin-left:4px;">🔒 Start Cycle First</div>':''}`;
-  const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
-  displayOrder.forEach(i=>{
-    const comp=S.cornerComps[i];
-    if(!comp)return;
-    const placed=!!S.placedPositions[comp.targetPos];
-    const div=document.createElement('div');
-    div.className='buffer-piece'+(placed?' used':'');
-    div.dataset.idx=i;
-    const fill=placed?'rgba(61,232,138,.2)':ST_COLOR[STATION];
-    const stroke=placed?'rgba(61,232,138,.4)':ST_STROKE[STATION];
-    const sides=S.cornerSides[comp.targetPos]||{top:0,right:0,bottom:0,left:0};
-    const pad=14,vs=60+pad*2,d=piecePath(sides,60);
-    div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="72" height="72" style="display:block;margin:auto;overflow:visible;pointer-events:none;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
-    const numEl=document.createElement('span');numEl.className='bp-num';numEl.textContent=STATION;numEl.style.color=ST_TEXT[STATION];div.appendChild(numEl);
-    const refEl=document.createElement('span');refEl.className='bp-ref';refEl.textContent=comp.id;refEl.style.color=placed?'var(--success)':ST_TEXT[STATION];div.appendChild(refEl);
-    const nameEl=document.createElement('span');nameEl.className='bp-name';nameEl.textContent=comp.name;div.appendChild(nameEl);
-    if(!placed){
-      div.draggable=S.running;
-      div.style.cursor=S.running?'grab':'not-allowed';
-      div.style.opacity=S.running?'1':'0.6';
-      if(S.running){
-        div.addEventListener('dragstart',e=>{div.classList.add('dragging');e.dataTransfer.setData('compIdx',i);e.dataTransfer.effectAllowed='move';currentDrag={idx:i,comp};});
-        div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
-        div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
-      } else {
-        div.addEventListener('click',()=>setMsg('▶ Click "Start Cycle" to begin','err'));
-      }
-    }
-    bar.appendChild(div);
+function updateProfiles(){
+  const gridSize = document.getElementById('cfgGridSize').value;
+  const sel = document.getElementById('cfgProfile');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  Object.keys(PROFILES[gridSize]).forEach(p=>{
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    sel.appendChild(opt);
   });
+  // Add manual option
+  const mopt = document.createElement('option');
+  mopt.value = 'Manuel'; mopt.textContent = '✏ Custom';
+  sel.appendChild(mopt);
+  if(prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
+  toggleManual();
 }
 
-// ── RENDER BOARD — FIXED v5.1 ──────────────────────────
-// Corrections :
-// 1. corner-drop : width/height explicites = zone de drop correctement positionnée
-// 2. dragover : e.dataTransfer.dropEffect='move' = drop garanti par le navigateur
-// 3. pièces posées : animation popIn pour confirmer le placement
-// 4. pièces autres stations : opacité 50% (vs 35%) + gris plus clair
-function renderBoard(){
-  const board=document.getElementById('puzzleBoard');
-  board.innerHTML='';
-  const SZ=COLS===5?52:62;
-  for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
-    const sides=getSides(flatIdx,S.topology);
-    const ownerStation=PIECE_MAP[flatIdx];
-    const isMyPos=(STATION_POSITIONS[STATION]||[]).includes(flatIdx);
-    const alreadyPlaced=!!S.placedPositions[flatIdx];
-    const prevPlaced=S.inheritedState&&S.inheritedState[flatIdx];
+function toggleManual(){
+  const isManual = document.getElementById('cfgProfile').value === 'Manuel';
+  document.getElementById('manualPanel').style.display = isManual ? 'block' : 'none';
+  if(isManual) updateManualTotal();
+}
 
-    if(isMyPos&&!alreadyPlaced){
-      // ZONE DE DROP — dimensions explicites obligatoires
-      const comp=S.cornerComps.find(c=>c.targetPos===flatIdx);
-      const cell=document.createElement('div');
-      cell.className='corner-drop'+(S.running?' pulsing':'');
-      cell.style.cssText=`width:${SZ}px;height:${SZ}px;`;
-      cell.dataset.pos=flatIdx;
-      cell.innerHTML=`<span class="drop-hint" style="font-size:9px;">${comp?comp.id:''}</span>`;
-      if(S.running){
-        cell.addEventListener('dragover',e=>{
-          e.preventDefault();
-          e.dataTransfer.dropEffect='move';
-          cell.classList.add('drag-over');
-          cell.classList.remove('pulsing');
-        });
-        cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
-        cell.addEventListener('drop',e=>{
-          e.preventDefault();
-          cell.classList.remove('drag-over');
-          const idx=parseInt(e.dataTransfer.getData('compIdx'));
-          handleDrop(idx,flatIdx);
-        });
-      }
-      board.appendChild(cell);
-    } else {
-      // PIÈCE PLACÉE ou autre station
-      const stNum=alreadyPlaced?STATION:(prevPlaced||ownerStation);
-      const fill=alreadyPlaced?ST_COLOR[STATION]:(prevPlaced?ST_COLOR[prevPlaced]:'#3a4560');
-      const stroke=alreadyPlaced?ST_STROKE[STATION]:(prevPlaced?ST_STROKE[prevPlaced]:'#2a3450');
-      const cell=document.createElement('div');
-      cell.className='puzzle-cell';
-      cell.style.cssText=`width:${SZ}px;height:${SZ}px;${alreadyPlaced?'animation:popIn .25s ease both;':''}`;
-      cell.innerHTML=makeSVG(sides,SZ,fill,stroke);
-      cell.querySelector('svg').style.pointerEvents='none';
-      if(!alreadyPlaced&&!prevPlaced){
-        cell.querySelector('svg').style.filter='opacity(.5) grayscale(.3)';
-      }
-      const numEl=document.createElement('span');
-      numEl.className='piece-st-num';
-      numEl.style.cssText=`font-size:${SZ*.2}px;color:${(alreadyPlaced||prevPlaced)?ST_TEXT[stNum]:'#6a7590'};`;
-      numEl.textContent=stNum;
-      cell.appendChild(numEl);
-      board.appendChild(cell);
-    }
+function updateManualTotal(){
+  const gridSize = document.getElementById('cfgGridSize').value;
+  const maxPieces = gridSize==='5x5' ? 25 : 16;
+  const v1=parseInt(document.getElementById('m1').value)||0;
+  const v2=parseInt(document.getElementById('m2').value)||0;
+  const v3=parseInt(document.getElementById('m3').value)||0;
+  const v4=parseInt(document.getElementById('m4').value)||0;
+  const total=v1+v2+v3+v4;
+  const ok = total===maxPieces;
+  const el=document.getElementById('manualTotal');
+  el.textContent=`Total : ${total} / ${maxPieces} ${ok?'✓':'✗'}`;
+  el.style.color=ok?'var(--success)':'var(--danger)';
+}
+
+function buildManualProfile(){
+  const gridSize = document.getElementById('cfgGridSize').value;
+  const cols = gridSize==='5x5' ? 5 : 4;
+  const rows = cols;
+  const counts=[
+    parseInt(document.getElementById('m1').value)||0,
+    parseInt(document.getElementById('m2').value)||0,
+    parseInt(document.getElementById('m3').value)||0,
+    parseInt(document.getElementById('m4').value)||0,
+  ];
+  const total=counts.reduce((a,b)=>a+b,0);
+  const maxPieces=cols*rows;
+  if(total!==maxPieces){ alert(`Total must be ${maxPieces} parts (currently ${total})`); return null; }
+  // Distribute positions: fill grid row by row, assign to stations in order
+  const positions={1:[],2:[],3:[],4:[]};
+  // Shuffle grid indices then assign blocks
+  const allIdx=[...Array(maxPieces).keys()];
+  // Shuffle for random distribution
+  for(let i=allIdx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[allIdx[i],allIdx[j]]=[allIdx[j],allIdx[i]];}
+  let cursor=0;
+  for(let st=1;st<=4;st++){
+    positions[st]=allIdx.slice(cursor,cursor+counts[st-1]);
+    cursor+=counts[st-1];
   }
+  return {cols,rows,...positions};
 }
 
-// ── DROP LOGIC ─────────────────────────────────────────
-let currentDrag=null;
+let F = {
+  sessionCode: '',
+  nbStations: 4,
+  takt: 15,
+  gridSize: '4x4',
+  profile: 'Balanced (4-4-4-4)',
+  baseUrl: '',
+  running: false,
+  startTime: null,
+  timerInterval: null,
+  stations: [],
+};
 
-function handleDrop(compIdx,targetPos){
-  if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
-  const comp=S.cornerComps[compIdx];
-  if(!comp)return;
-  if(comp.targetPos===targetPos){
-    if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
-    S.placedPositions[targetPos]=comp;
-    renderBuffer();renderBoard();updateBufferProgress();
-    setMsg(`✓ ${comp.id} placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
-    if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
-  } else {
-    S.errorCount++;
-    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
-    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
-    setMsg(`❌ Wrong position! Expected : ${comp.id} | Errors : ${S.errorCount}`,'err');
+// ═══════════════════════════════════════════════════════════
+// CRÉER SESSION
+// ═══════════════════════════════════════════════════════════
+document.getElementById('btnCreate').addEventListener('click', ()=>{
+  F.sessionCode = document.getElementById('cfgSession').value.trim().toUpperCase() || 'LEAN01';
+  F.nbStations  = 4; // always 4 stations for puzzle
+  calcTakt(); // compute takt from available time + demand
+  F.gridSize    = document.getElementById('cfgGridSize').value;
+  F.profile     = document.getElementById('cfgProfile').value;
+  if(F.profile==='Manuel'){
+    const mp=buildManualProfile();
+    if(!mp)return; // validation failed
+    F.manualProfileData=mp;
   }
-}
+  F.baseUrl     = 'https://dakhtoufik-web.github.io/simlean-line';
 
-function updateBufferProgress(){
-  const placed=Object.keys(S.placedPositions).length;
-  document.getElementById('bufferProgress').textContent=`${placed} / ${S.myPieces.length}`;
-}
+  // Init stations locales
+  F.stations = Array.from({length: F.nbStations}, (_,i)=>({
+    num: i+1, wipIn:0, wipOut:0, cycles:0, output:0, scrap:0, status:'idle',
+    name: `ASSY ${i+1}`
+  }));
 
-document.addEventListener('touchmove',e=>{
-  if(!currentDrag)return;
-  const touch=e.touches[0];
-  document.querySelectorAll('.corner-drop.drag-over').forEach(s=>s.classList.remove('drag-over'));
-  const el=document.elementFromPoint(touch.clientX,touch.clientY);
-  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)cd.classList.add('drag-over');}
-},{passive:true});
-document.addEventListener('touchend',e=>{
-  if(!currentDrag)return;
-  if(!S.running){currentDrag=null;setMsg('▶ Click "Start Cycle" to begin','err');return;}
-  const touch=e.changedTouches[0];
-  const el=document.elementFromPoint(touch.clientX,touch.clientY);
-  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.idx,parseInt(cd.dataset.pos));}
-  document.querySelectorAll('.drag-over').forEach(s=>s.classList.remove('drag-over'));
-  currentDrag=null;
+  F.running = true;
+  F.startTime = Date.now();
+
+  // Afficher session info
+  document.getElementById('siCode').textContent     = F.sessionCode;
+  document.getElementById('siStations').textContent = '4';
+  document.getElementById('siTakt') && (document.getElementById('siTakt').textContent = F.takt+'s');
+  document.getElementById('siGrid') && (document.getElementById('siGrid').textContent = F.gridSize+' — '+F.profile);
+  document.getElementById('siStatus').textContent   = '▶ RUNNING';
+  document.getElementById('sessionInfo').classList.add('show');
+  document.getElementById('btnCreate').style.display = 'none';
+  document.getElementById('btnStop').style.display      = 'inline-block';
+  document.getElementById('btnResetAll').style.display  = 'inline-block';
+
+  startDurationTimer();
+  renderFlux();
+  renderLinks();
+  initGridEditor();
+  document.getElementById('coPanel').style.display = 'block';
+  setConn('online', `Session ${F.sessionCode} active`);
+  pushSessionToFirebase();
 });
 
-// ── CYCLE ──────────────────────────────────────────────
-function startCycle(){
-  if(S.running)return;
-  if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
-  startSessionTimer();
-  if(STATION>1&&db){
-    db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).limitToFirst(1).once('value',snap=>{
-      if(snap.exists()){
-        const key=Object.keys(snap.val())[0];
-        S.inheritedState=snap.val()[key]||{};
-        db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}/${key}`).remove();
-      } else {
-        S.inheritedState={};
-      }
-      db.ref(`assembly_line/${SESSION}/stations/s${STATION}/wip_in`).transaction(v=>Math.max(0,(v||0)-1));
-      _doStartCycle();
+document.getElementById('btnResetAll').addEventListener('click', ()=>{
+  if(!confirm('Reset all stations (output, scrap, cycles, WIP, puzzle)?')) return;
+  if(!db || !F.sessionCode) return;
+  // Reset all station stats
+  for(let i=1;i<=F.nbStations;i++){
+    db.ref(`assembly_line/${F.sessionCode}/stations/s${i}`).update({
+      cycles:0,output:0,scrap:0,wip_out:0,wip_in:i===1?999:0,ct_moy:0,status:'idle'
     });
+  }
+  // Reset puzzle state + queues
+  db.ref(`assembly_line/${F.sessionCode}/puzzle_state`).remove();
+  db.ref(`assembly_line/${F.sessionCode}/puzzle_queue`).remove();
+  // Reset client output
+  db.ref(`assembly_line/${F.sessionCode}/stations/s${F.nbStations}/client_output`).set(0);
+  // Signal reset to all stations
+  db.ref(`assembly_line/${F.sessionCode}/config/reset_signal`).set(Date.now());
+  setConn('online', `Session ${F.sessionCode} — Reset done ✓`);
+});
+
+document.getElementById('btnStop').addEventListener('click', ()=>{
+  F.running = false;
+  clearInterval(F.timerInterval);
+  if(coState.active) endChangeover();
+  document.getElementById('siStatus').textContent = '⏹ ENDED';
+  document.getElementById('btnStop').style.display     = 'none';
+  document.getElementById('btnResetAll').style.display  = 'none';
+  document.getElementById('btnCreate').style.display    = 'inline-block';
+  document.getElementById('coPanel').style.display      = 'none';
+  setConn('offline', 'Session ended');
+  stopSessionFirebase();
+});
+
+// ═══════════════════════════════════════════════════════════
+// FLUX VISUEL
+// ═══════════════════════════════════════════════════════════
+function renderFlux(){
+  const container = document.getElementById('fluxContainer');
+  container.innerHTML = '';
+
+  // Fournisseur
+  const supp = document.createElement('div');
+  supp.className = 'station-card';
+  supp.innerHTML = `<div class="sc-num">INPUT</div><div class="sc-name">SUPPLIER</div>
+    <div class="sc-status running">∞ parts</div>`;
+  container.appendChild(supp);
+
+  F.stations.forEach((st, i)=>{
+    // Flèche + WIP entrant
+    const arrow = document.createElement('div');
+    arrow.className = 'flux-arrow';
+    arrow.innerHTML = `
+      <div class="arrow-line"></div>
+      <div class="arrow-wip" id="arrowWip${i}">${st.wipIn}</div>
+      <div class="arrow-label">WIP</div>`;
+    container.appendChild(arrow);
+
+    // Carte station
+    const card = document.createElement('div');
+    card.className = `station-card ${st.status}`;
+    card.id = `stCard${i}`;
+    card.innerHTML = `
+      <div class="sc-num">ASSY ${st.num} <span style="color:var(--cyan);font-size:9px;letter-spacing:1px;">${F.gridSize}×${F.gridSize}</span></div>
+      <div class="sc-name" id="scName${i}">${st.name}</div>
+      <div class="sc-status idle" id="scStatus${i}">Offline</div>
+      <div class="sc-cycles" id="scCycles${i}">0</div>
+      <div class="sc-wip-row">
+        <span class="sc-wip-in">↓ IN: <span id="scWipIn${i}">0</span></span>
+        <span class="sc-wip-out">OUT: <span id="scWipOut${i}">0</span> ↑</span>
+      </div>`;
+    container.appendChild(card);
+  });
+
+  // Flèche finale + Client
+  const arrowFinal = document.createElement('div');
+  arrowFinal.className = 'flux-arrow';
+  arrowFinal.innerHTML = `
+    <div class="arrow-line"></div>
+    <div class="arrow-wip" id="arrowWipFinal">0</div>
+    <div class="arrow-label">EXPÉDIÉ</div>`;
+  container.appendChild(arrowFinal);
+
+  const client = document.createElement('div');
+  client.className = 'station-card';
+  client.innerHTML = `<div class="sc-num">OUTPUT</div><div class="sc-name">CUSTOMER</div>
+    <div class="sc-cycles" id="clientOutput">0</div>
+    <div class="sc-status running">parts delivered</div>`;
+  container.appendChild(client);
+}
+
+// ═══════════════════════════════════════════════════════════
+// LINKS PARTICIPANTS
+// ═══════════════════════════════════════════════════════════
+function renderLinks(){
+  const tbody = document.getElementById('linksBody');
+  tbody.innerHTML = '';
+
+  const base = F.baseUrl || window.location.href.replace(/\/[^/]*(\?.*)?$/, '');
+  const stationFile = 'SimLean_Station_v7.html';
+
+  F.stations.forEach((st, i)=>{
+    const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>ASSY ${st.num}</strong></td>
+      <td style="color:#888;">Operator ${st.num}</td>
+      <td><div class="link-url" id="linkUrl${i}">${url}</div></td>
+      <td>
+        <button class="btn-copy-link" onclick="copyLink(${i}, '${url}')">📋 Copy</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Lien formateur
+  const trF = document.createElement('tr');
+  const urlF = `${window.location.href.split('?')[0]}?session=${F.sessionCode}`;
+  trF.innerHTML = `
+    <td><strong style="color:var(--danger);">Formateur</strong></td>
+    <td style="color:#888;">Global View</td>
+    <td><div class="link-url">${urlF}</div></td>
+    <td><button class="btn-copy-link" onclick="copyLink(-1, '${urlF}')">📋 Copy</button></td>`;
+  tbody.appendChild(trF);
+}
+
+function copyLink(idx, url){
+  const btn = event.target;
+  function onOk(){ btn.textContent='✅ Copied!'; btn.classList.add('ok');
+    setTimeout(()=>{ btn.textContent='📋 Copy'; btn.classList.remove('ok'); },2000); }
+
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(url).then(onOk);
   } else {
-    S.inheritedState={};
-    _doStartCycle();
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); onOk();
   }
 }
 
-function _doStartCycle(){
-  S.running=true;
-  document.getElementById('timerDisp').classList.add('running');
-  setMsg('▶ Drag your parts to their positions on the puzzle','ok');
-  document.getElementById('btnStart').disabled=true;
-  renderBuffer();renderBoard();
-}
-function runTimer(){
-  const el=document.getElementById('timerDisp');
-  function tick(){if(!S.running)return;el.textContent=fmt(performance.now()-S.startTime);S.raf=requestAnimationFrame(tick);}
-  S.raf=requestAnimationFrame(tick);
-}
-function finishCycle(ok){
-  S.running=false;cancelAnimationFrame(S.raf);
-  const elapsed=S.startTime?performance.now()-S.startTime:0;
-  document.getElementById('timerDisp').classList.remove('running');
-  document.getElementById('timerDisp').classList.add('done');
-  S.cycles++;
-  if(ok){
-    S.output++;S.wipOut++;S.history.push(elapsed);
-    if(S.errorCount===0) S.fty++;
-    const isLast=(STATION===NB_STATIONS);
-    if(isLast){
-      showCompletePuzzle();
-      document.getElementById('valText').textContent='🏆 PUZZLE COMPLETE — Finished Product!';
-    } else {
-      document.getElementById('valText').textContent=`✅ ASSY ${STATION} done — Puzzle → ASSY ${STATION+1}`;
-    }
-    setMsg(`✅ Assembly completed in ${fmt(elapsed)}s`,'ok');
-    document.getElementById('validateBanner').classList.add('show');
-    document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
-    updateStats();updateWIPDisplay();pushStats();
-  } else {
-    setTimeout(()=>initCycle(),700);
-  }
+// ═══════════════════════════════════════════════════════════
+// TIMER SESSION
+// ═══════════════════════════════════════════════════════════
+function startDurationTimer(){
+  F.timerInterval = setInterval(()=>{
+    const elapsed = Date.now() - F.startTime;
+    const h = String(Math.floor(elapsed/3600000)).padStart(2,'0');
+    const m = String(Math.floor((elapsed%3600000)/60000)).padStart(2,'0');
+    const s = String(Math.floor((elapsed%60000)/1000)).padStart(2,'0');
+    document.getElementById('siDuration').textContent = `${h}:${m}:${s}`;
+  }, 1000);
 }
 
-function showCompletePuzzle(){
-  const board=document.getElementById('puzzleBoard');
-  board.innerHTML='';
-  const SZ=COLS===5?52:62;
-  for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
-    const sides=getSides(flatIdx,S.topology);
-    const stNum=PIECE_MAP[flatIdx];
-    const cell=document.createElement('div');
-    cell.className='puzzle-cell';
-    cell.style.cssText=`width:${SZ}px;height:${SZ}px;animation:popIn .3s ease ${(flatIdx*.03).toFixed(2)}s both;`;
-    cell.innerHTML=makeSVG(sides,SZ,ST_COLOR[stNum],ST_STROKE[stNum]);
-    const numEl=document.createElement('span');
-    numEl.className='piece-st-num';
-    numEl.style.cssText=`font-size:${SZ*.2}px;color:${ST_TEXT[stNum]};`;
-    numEl.textContent=stNum;
-    cell.appendChild(numEl);
-    board.appendChild(cell);
-  }
+// ═══════════════════════════════════════════════════════════
+// CONNEXION
+// ═══════════════════════════════════════════════════════════
+function setConn(state, label){
+  document.getElementById('connDot').className = 'conn-dot ' + state;
+  document.getElementById('connLabel').textContent = label;
 }
 
-function validatePiece(){
-  document.getElementById('validateBanner').classList.remove('show');
-  S.wipOut--;updateWIPDisplay();
-  if(db){
-    const cumulative={...S.inheritedState};
-    Object.keys(S.placedPositions).forEach(pos=>{cumulative[pos]=STATION;});
-    if(STATION<NB_STATIONS){
-      db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION+1}`).push(cumulative);
-      db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);
-      setMsg(`📦 Puzzle → ASSY ${STATION+1}`,'info');
-    } else {
-      db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);
-      setMsg('🏁 Produit livré au CLIENT ✅','ok');
-    }
-  } else {
-    setMsg('🏁 Produit livré au CLIENT ✅','ok');
-  }
-  pushStats();
-  setTimeout(()=>{S.inheritedState={};initCycle();},700);
-}
+// ═══════════════════════════════════════════════════════════
+// TODO: Firebase listeners — mise à jour des cartes stations
+// updateStationCard(idx, data) { ... }
+// ═══════════════════════════════════════════════════════════
 
-function updateWIPDisplay(){
-  document.getElementById('wipIn').textContent=S.wipIn===999?'∞':S.wipIn;
-  document.getElementById('wipOut').textContent=S.wipOut;
-  document.getElementById('bbWipIn').textContent=S.wipIn===999?'∞':S.wipIn;
-  document.getElementById('bbOutput').textContent=S.output;
-  const btn=document.getElementById('btnStart');
-  if(!S.running){
-    if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
-    else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
-  }
-}
-function updateStats(){
-  if(!S.history.length)return;
-  const last=S.history[S.history.length-1],moy=S.history.reduce((a,b)=>a+b,0)/S.history.length,min=Math.min(...S.history),taktMs=CFG.takt*1000;
-  document.getElementById('dbCTact').textContent=(last/1000).toFixed(3)+'s';
-  document.getElementById('dbCTact').className='db-val '+(last<=taktMs?'good':'bad');
-  document.getElementById('dbCTmoy').textContent=(moy/1000).toFixed(3)+'s';
-  document.getElementById('dbCTmin').textContent=(min/1000).toFixed(3)+'s';
-  document.getElementById('bbCT').textContent=(moy/1000).toFixed(1)+'s';
-  document.getElementById('dbOutput').textContent=S.output;
-  document.getElementById('dbScrap').textContent=S.errorCount;
-  const ftyPct=S.output>0?Math.round((S.fty/S.output)*100):100;
-  const ftyEl=document.getElementById('dbFTY');
-  if(ftyEl){ftyEl.textContent=ftyPct+'%';ftyEl.className='db-val '+(ftyPct>=95?'good':ftyPct>=80?'accent':'bad');}
-  const ftyBbEl=document.getElementById('bbFTY');
-  if(ftyBbEl){ftyBbEl.textContent=ftyPct+'%';ftyBbEl.className='bb-val '+(ftyPct>=95?'good':ftyPct>=80?'accent':'bad');}
-  const dispo=S.cycles>0?Math.round((S.output/S.cycles)*100):100,dc=dispo>=80?'good':dispo>=60?'accent':'bad';
-  document.getElementById('dbDispo').textContent=dispo+'%';document.getElementById('dbDispo').className='db-val '+dc;
-  document.getElementById('bbDispo').textContent=dispo+'%';document.getElementById('bbDispo').className='bb-val '+dc;
-}
+// ═══════════════════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyDIE-YJ68VQkMj60n1vklQWei9-32Dv-Oo",
+  authDomain: "keeplean-beergame.firebaseapp.com",
+  databaseURL: "https://keeplean-beergame-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "keeplean-beergame",
+  storageBucket: "keeplean-beergame.firebasestorage.app",
+  messagingSenderId: "731779808067",
+  appId: "1:731779808067:web:e4312b55afe16e72b6cdf6"
+};
 
-// ── FIREBASE ───────────────────────────────────────────
-const firebaseConfig={apiKey:"AIzaSyDIE-YJ68VQkMj60n1vklQWei9-32Dv-Oo",authDomain:"keeplean-beergame.firebaseapp.com",databaseURL:"https://keeplean-beergame-default-rtdb.europe-west1.firebasedatabase.app",projectId:"keeplean-beergame",storageBucket:"keeplean-beergame.firebasestorage.app",messagingSenderId:"731779808067",appId:"1:731779808067:web:e4312b55afe16e72b6cdf6"};
-const stKey=`s${STATION}`;
-function setConn(s,l){document.getElementById('connDot').className='conn-dot '+s;document.getElementById('connLabel').textContent=l;}
+let db = null;
+
 function initFirebase(){
-  try{
-    if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
-    db=firebase.database();
-    listenWipIn();listenSessionConfig();pushStats();
-    setConn('online',`${ASSY_NAMES[STATION]} connected`);
-    if(STATION===1){S.wipIn=999;updateWIPDisplay();}
-  }catch(e){
-    setConn('offline','Local mode');
-    if(STATION===1){S.wipIn=999;document.getElementById('btnStart').disabled=false;document.getElementById('btnStart').textContent='▶ Start Cycle';}
+  try {
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    setConn('online', 'Firebase connected');
+  } catch(e){
+    setConn('offline', 'Firebase unavailable');
+    console.warn('Firebase:', e);
   }
 }
-function listenWipIn(){
-  db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).on('value',snap=>{
-    if(STATION>1){S.wipIn=snap.val()||0;updateWIPDisplay();}
+
+// Écrire config session dans Firebase
+function pushSessionToFirebase(){
+  if(!db) return;
+  const profileData = F.profile==='Manuel'
+    ? F.manualProfileData
+    : (PROFILES[F.gridSize] && PROFILES[F.gridSize][F.profile]
+      ? PROFILES[F.gridSize][F.profile] : PROFILES['4x4']['Balanced (4-4-4-4)']);
+  db.ref(`assembly_line/${F.sessionCode}/config`).set({
+    nb_stations: 4,
+    takt: F.takt,
+    grid_size: F.gridSize,
+    profile: F.profile,
+    profile_data: profileData,
+    status: 'running',
+    created_at: Date.now()
   });
-}
-function listenSessionConfig(){
-  db.ref(`assembly_line/${SESSION}/config`).on('value',snap=>{
-    const cfg=snap.val();if(!cfg)return;
-    if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}
-    if(cfg.nb_stations)NB_STATIONS=cfg.nb_stations;
-    if(cfg.profile_data){
-      applyProfile(cfg.profile_data);
-      const myPos=STATION_POSITIONS[STATION]||[];
-      const segStart=([0,4,8,12,16])[STATION-1]||((STATION-1)*4);
-      S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
-      initCycle();
-    }
-    if(cfg.status==='stopped'){setMsg('⏹ Session stopped','err');document.getElementById('btnStart').disabled=true;}
-    if(cfg.reset_signal&&cfg.reset_signal!==S.lastResetSignal){
-      S.lastResetSignal=cfg.reset_signal;
-      S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
-      S.history=[];S.inheritedState={};S.fty=0;
-      if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
-      updateWIPDisplay();updateStats();
-      document.getElementById('cycleCount').textContent='Cycles: 0';
-      initCycle();
-      setMsg('↺ Session reset by trainer','info');
-    }
-  });
-}
-function pushStats(){
-  if(!db)return;
-  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',name:`${ASSY_NAMES[STATION]} — Assemblage`,last_updated:Date.now()});
+  // Init WIP entrant de la station 1 à ∞ (on utilise -1 = infini)
+  db.ref(`assembly_line/${F.sessionCode}/stations/s1/wip_in`).set(999);
+  listenAllStations();
 }
 
-document.getElementById('btnStart').addEventListener('click',startCycle);
-document.getElementById('btnValidate').addEventListener('click',validatePiece);
-document.getElementById('btnReset').addEventListener('click',()=>{S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.history=[];S.puzzleState={};updateWIPDisplay();initCycle();setMsg('Session reset','info');});
+// Écoute toutes les stations en temps réel
+function listenAllStations(){
+  db.ref(`assembly_line/${F.sessionCode}/stations`).on('value', snap=>{
+    const data = snap.val() || {};
+    let totalOutput=0, totalScrap=0, totalWip=0, totalCycles=0;
 
-initStation();
+    for(let i=0; i<F.nbStations; i++){
+      const st = data[`s${i+1}`] || {};
+      const wipIn   = st.wip_in  || 0;
+      const wipOut  = st.wip_out || 0;
+      const cycles  = st.cycles  || 0;
+      const output  = st.output  || 0;
+      const scrap   = st.scrap   || 0;
+      const status  = st.status  || 'offline';
+      const ctMoy   = st.ct_moy  || 0;
+
+      totalOutput += output;
+      totalScrap  += scrap;
+      totalWip    += wipIn;
+      totalCycles += cycles;
+
+      // Mettre à jour carte station
+      const card = document.getElementById(`stCard${i}`);
+      if(card){
+        card.className = `station-card ${status==='running'?'active':status==='idle'?'idle':'waiting'}`;
+      }
+      const elStatus = document.getElementById(`scStatus${i}`);
+      if(elStatus){
+        const labels = {running:'▶ In Cycle', idle:'⏸ Waiting', offline:'⚫ Offline'};
+        elStatus.textContent = labels[status] || '—';
+        elStatus.className = `sc-status ${status}`;
+      }
+      const el = (id) => document.getElementById(id);
+      if(el(`scCycles${i}`))  el(`scCycles${i}`).textContent  = cycles;
+      if(el(`scWipIn${i}`))   el(`scWipIn${i}`).textContent   = wipIn === 999 ? '∞' : wipIn;
+      if(el(`scWipOut${i}`))  el(`scWipOut${i}`).textContent  = wipOut;
+
+      // Mettre à jour flèche WIP entre stations
+      const arrowEl = document.getElementById(`arrowWip${i}`);
+      if(arrowEl) arrowEl.textContent = wipIn === 999 ? '∞' : wipIn;
+    }
+
+    // Dernière station → client
+    const lastSt = data[`s${F.nbStations}`] || {};
+    const clientEl = document.getElementById('clientOutput');
+    if(clientEl) clientEl.textContent = lastSt.output || 0;
+    const arrowFinal = document.getElementById('arrowWipFinal');
+    if(arrowFinal) arrowFinal.textContent = lastSt.output || 0;
+
+    // KPI globaux
+    document.getElementById('kpiOutput').textContent  = totalOutput;
+    document.getElementById('kpiScrap').textContent   = totalScrap;
+    document.getElementById('kpiWip').textContent     = totalWip;
+    document.getElementById('kpiCycles').textContent  = totalCycles;
+  });
+}
+
+// Arrêter session dans Firebase
+function stopSessionFirebase(){
+  if(!db || !F.sessionCode) return;
+  db.ref(`assembly_line/${F.sessionCode}/config/status`).set('stopped');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHANGEOVER — GRID EDITOR VISUEL
+// ═══════════════════════════════════════════════════════════
+const ST_COLORS = {
+  1:{fill:'#7a9bb5',stroke:'#3a6080',text:'#e8f4ff',label:'ASSY 1'},
+  2:{fill:'#a09070',stroke:'#705a30',text:'#fff4e0',label:'ASSY 2'},
+  3:{fill:'#6a7a6a',stroke:'#3a4a3a',text:'#e0ede0',label:'ASSY 3'},
+  4:{fill:'#8a85a8',stroke:'#504870',text:'#f0eeff',label:'ASSY 4'},
+};
+
+let coState = {
+  active:false, startTime:null, raf:null,
+  brush:1, grid:[], cols:4, rows:4, painting:false,
+};
+
+function initBrushButtons(){
+  [1,2,3,4].forEach(s=>{
+    const btn=document.getElementById(`brush${s}`);
+    if(!btn)return;
+    btn.style.background=ST_COLORS[s].fill;
+    btn.style.borderColor=ST_COLORS[s].stroke;
+    btn.style.color=ST_COLORS[s].text;
+  });
+}
+
+function setBrush(st){
+  coState.brush=st;
+  [1,2,3,4].forEach(s=>{
+    const b=document.getElementById(`brush${s}`);
+    if(b) b.classList.remove('active');
+  });
+  const be=document.getElementById('brushErase');
+  if(be) be.classList.remove('active');
+  if(st===0){if(be)be.classList.add('active');}
+  else{const b=document.getElementById(`brush${st}`);if(b)b.classList.add('active');}
+}
+
+function paintCell(idx){
+  coState.grid[idx]=coState.brush;
+  const cells=document.querySelectorAll('.ge-cell');
+  const cell=cells[idx];
+  if(!cell)return;
+  const st=coState.brush;
+  if(st===0){
+    cell.className='ge-cell unassigned';
+    cell.style.background='';cell.style.borderColor='';cell.style.color='';cell.textContent='';
+  } else {
+    cell.className='ge-cell';
+    cell.style.background=ST_COLORS[st].fill;
+    cell.style.borderColor=ST_COLORS[st].stroke;
+    cell.style.color=ST_COLORS[st].text;
+    cell.textContent=st;
+  }
+  updateCounters();
+}
+
+function renderGridEditor(){
+  const cols=coState.cols,rows=coState.rows;
+  const ed=document.getElementById('gridEditor');
+  if(!ed)return;
+  ed.style.gridTemplateColumns=`repeat(${cols},52px)`;
+  ed.style.gridTemplateRows=`repeat(${rows},52px)`;
+  ed.innerHTML='';
+  coState.grid.forEach((st,idx)=>{
+    const cell=document.createElement('div');
+    cell.className='ge-cell'+(st===0?' unassigned':'');
+    cell.dataset.idx=idx;
+    if(st>0){
+      cell.style.background=ST_COLORS[st].fill;
+      cell.style.borderColor=ST_COLORS[st].stroke;
+      cell.style.color=ST_COLORS[st].text;
+      cell.textContent=st;
+    }
+    cell.addEventListener('mousedown',e=>{e.preventDefault();coState.painting=true;paintCell(idx);});
+    cell.addEventListener('mouseenter',()=>{if(coState.painting)paintCell(idx);});
+    ed.appendChild(cell);
+  });
+  document.addEventListener('mouseup',()=>{coState.painting=false;});
+  updateCounters();
+}
+
+function updateCounters(){
+  const total=coState.cols*coState.rows;
+  const counts={1:0,2:0,3:0,4:0};
+  coState.grid.forEach(v=>{if(v>0)counts[v]++;});
+  const assigned=Object.values(counts).reduce((a,b)=>a+b,0);
+  const el=document.getElementById('geCounters');
+  if(el){
+    el.innerHTML='';
+    [1,2,3,4].forEach(s=>{
+      const div=document.createElement('div');
+      div.className='ge-counter';
+      div.innerHTML=`<span class="ge-counter-label" style="color:${ST_COLORS[s].fill};">${ST_COLORS[s].label}</span>
+        <span class="ge-counter-val" style="color:${ST_COLORS[s].fill};">${counts[s]}</span>`;
+      el.appendChild(div);
+    });
+  }
+  const valid=assigned===total;
+  const tv=document.getElementById('geTotalVal');
+  if(tv){tv.textContent=`${assigned} / ${total}`;tv.style.color=valid?'var(--success)':'var(--danger)';}
+  const vs=document.getElementById('coValidStatus');
+  if(vs){
+    vs.textContent=valid?'✅ All cells assigned — ready to push':`⚠ ${total-assigned} cell(s) unassigned`;
+    vs.style.color=valid?'var(--success)':'var(--accent)';
+  }
+  const btn=document.getElementById('btnTriggerCO');
+  if(btn)btn.disabled=!valid;
+}
+
+function clearGrid(){
+  coState.grid=new Array(coState.cols*coState.rows).fill(0);
+  renderGridEditor();
+}
+
+function loadPreset(name){
+  const gs=F.gridSize||'4x4';
+  const p=PROFILES[gs]&&PROFILES[gs][name];
+  if(!p)return;
+  coState.cols=p.cols||4;coState.rows=p.rows||4;
+  coState.grid=new Array(coState.cols*coState.rows).fill(0);
+  [1,2,3,4].forEach(s=>{(p[s]||[]).forEach(idx=>{coState.grid[idx]=s;});});
+  renderGridEditor();
+  document.querySelectorAll('.preset-chip').forEach(c=>{c.style.borderColor='';c.style.color='';});
+  const chip=document.getElementById('chip_'+name.replace(/[\s().\-]/g,'_'));
+  if(chip){chip.style.borderColor='var(--accent)';chip.style.color='var(--accent)';}
+}
+
+function renderPresetChips(){
+  const row=document.getElementById('presetChips');
+  if(!row)return;
+  row.innerHTML='';
+  const gs=F.gridSize||'4x4';
+  Object.keys(PROFILES[gs]||{}).forEach(name=>{
+    const chip=document.createElement('div');
+    chip.className='preset-chip';
+    chip.id='chip_'+name.replace(/[\s().\-]/g,'_');
+    chip.textContent=name;
+    chip.onclick=()=>loadPreset(name);
+    row.appendChild(chip);
+  });
+}
+
+function buildProfileFromGrid(){
+  const pos={1:[],2:[],3:[],4:[]};
+  coState.grid.forEach((st,idx)=>{if(st>0)pos[st].push(idx);});
+  return {cols:coState.cols,rows:coState.rows,...pos};
+}
+
+function getGridProfileName(){
+  const c=[1,2,3,4].map(s=>coState.grid.filter(v=>v===s).length);
+  return `Custom (${c.join('-')})`;
+}
+
+function initGridEditor(){
+  const gs=F.gridSize||'4x4';
+  coState.cols=gs==='5x5'?5:4;coState.rows=coState.cols;
+  coState.grid=new Array(coState.cols*coState.rows).fill(0);
+  initBrushButtons();setBrush(1);
+  renderPresetChips();
+  const first=Object.keys(PROFILES[gs]||{})[0];
+  if(first)loadPreset(first);
+  else renderGridEditor();
+}
+
+function triggerChangeover(){
+  if(!db||!F.sessionCode){alert('Session must be active');return;}
+  const total=coState.cols*coState.rows;
+  const assigned=coState.grid.filter(v=>v>0).length;
+  if(assigned<total){alert(`All ${total} cells must be assigned (${total-assigned} remaining)`);return;}
+  if(coState.active){alert('Changeover already in progress');return;}
+  const profileData=buildProfileFromGrid();
+  const profileName=getGridProfileName();
+  coState.active=true;coState.startTime=Date.now();
+  db.ref(`assembly_line/${F.sessionCode}/config`).update({
+    co_signal:Date.now(),co_profile_name:profileName,
+    profile_data:profileData,profile:profileName,
+  });
+  document.getElementById('coActiveBadge').classList.add('show');
+  document.getElementById('btnTriggerCO').style.display='none';
+  document.getElementById('btnEndCO').style.display='inline-block';
+  document.getElementById('siGrid').textContent=F.gridSize+' — '+profileName;
+  ['gridEditor','brushRow','presetChips'].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e){e.style.pointerEvents='none';e.style.opacity='.45';}
+  });
+  cancelAnimationFrame(coState.raf);
+  function tickCO(){
+    if(!coState.active)return;
+    const e=Date.now()-coState.startTime;
+    document.getElementById('coTimerDisplay').textContent=
+      String(Math.floor(e/60000)).padStart(2,'0')+':'+String(Math.floor((e%60000)/1000)).padStart(2,'0');
+    coState.raf=requestAnimationFrame(tickCO);
+  }
+  coState.raf=requestAnimationFrame(tickCO);
+  setConn('online',`⚙️ Changeover — ${profileName}`);
+}
+
+function endChangeover(){
+  if(!db||!F.sessionCode)return;
+  coState.active=false;cancelAnimationFrame(coState.raf);
+  db.ref(`assembly_line/${F.sessionCode}/config/co_signal`).remove();
+  document.getElementById('coActiveBadge').classList.remove('show');
+  document.getElementById('btnTriggerCO').style.display='inline-block';
+  document.getElementById('btnEndCO').style.display='none';
+  document.getElementById('coTimerDisplay').textContent='00:00';
+  ['gridEditor','brushRow','presetChips'].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e){e.style.pointerEvents='';e.style.opacity='';}
+  });
+  setConn('online',`Session ${F.sessionCode} — Changeover complete ✓`);
+}
+
+// Manual inputs listeners
+['m1','m2','m3','m4'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('input',updateManualTotal);
+});
+
+// Compute initial takt
+calcTakt();
+// Init Firebase au chargement
+initFirebase();
 </script>
 </body>
 </html>
