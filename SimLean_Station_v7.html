@@ -131,24 +131,134 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .bb-val.good{color:var(--success);}.bb-val.bad{color:var(--danger);}
 
 /* ── CHANGEOVER OVERLAY ── */
-.co-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:18px;}
+.co-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;
+  flex-direction:column;align-items:center;overflow-y:auto;padding:20px 16px;}
 .co-overlay.show{display:flex;}
-.co-title{font-size:28px;font-weight:900;letter-spacing:6px;color:var(--accent);text-transform:uppercase;}
-.co-sub{font-size:13px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
-.co-timer{font-family:'Share Tech Mono',monospace;font-size:72px;color:var(--cyan);line-height:1;}
-.co-badge{background:var(--accent);color:#000;padding:6px 24px;font-size:13px;font-weight:700;letter-spacing:2px;margin-top:8px;}
-.co-profile-name{font-size:16px;color:var(--success);font-weight:700;letter-spacing:2px;margin-top:4px;}
+.co-overlay-inner{width:100%;max-width:900px;display:flex;flex-direction:column;gap:14px;}
+
+/* Header */
+.co-header{display:flex;justify-content:space-between;align-items:center;
+  border-bottom:2px solid var(--accent);padding-bottom:10px;flex-wrap:wrap;gap:10px;}
+.co-title{font-size:22px;font-weight:900;letter-spacing:5px;color:var(--accent);text-transform:uppercase;}
+.co-timer-wrap{display:flex;flex-direction:column;align-items:center;}
+.co-timer{font-family:'Share Tech Mono',monospace;font-size:52px;color:var(--cyan);line-height:1;}
+.co-timer-label{font-size:9px;letter-spacing:2px;color:#888;margin-top:2px;}
+
+/* Work Order document */
+.wo-doc{background:#111820;border:1px solid var(--accent);padding:14px 18px;}
+.wo-header{display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.wo-logo{font-size:11px;letter-spacing:4px;color:var(--accent);font-weight:700;}
+.wo-ref{font-size:10px;color:#888;text-align:right;line-height:1.6;}
+.wo-title{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:8px;}
+.wo-bom{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-top:8px;}
+.wo-bom-item{background:var(--panel2);border:1px solid var(--border);padding:6px 10px;
+  display:flex;align-items:center;gap:8px;}
+.wo-bom-icon{width:28px;height:28px;border-radius:3px;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+.wo-bom-text{display:flex;flex-direction:column;}
+.wo-bom-ref{font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);}
+.wo-bom-name{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;}
+
+/* Mini grid for operator */
+.co-grid-section{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;}
+.co-grid-label{font-size:10px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:8px;font-weight:700;}
+.co-grid{display:inline-grid;gap:3px;cursor:crosshair;user-select:none;}
+.co-cell{display:flex;align-items:center;justify-content:center;
+  border:2px solid #2a3550;border-radius:3px;font-family:'Share Tech Mono',monospace;
+  font-size:13px;font-weight:700;transition:all .1s;position:relative;}
+.co-cell.empty{background:#141c28;color:#2a3a50;}
+.co-cell.filled{border-color:transparent;}
+.co-cell.correct{border-color:var(--success)!important;box-shadow:0 0 8px rgba(61,232,138,.4);}
+.co-cell.wrong{border-color:var(--danger)!important;animation:shake .3s;}
+
+/* Progress & validation */
+.co-progress{background:var(--panel);border:1px solid var(--border);padding:12px 16px;}
+.co-prog-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.co-prog-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.co-prog-bar{height:100%;background:var(--accent);transition:width .3s;border-radius:3px;}
+.co-prog-bar.complete{background:var(--success);}
+.btn-co-validate{display:none;width:100%;padding:14px;font-family:'Barlow Condensed',sans-serif;
+  font-size:16px;font-weight:900;letter-spacing:3px;border:none;cursor:pointer;
+  background:var(--success);color:#000;text-transform:uppercase;transition:all .2s;}
+.btn-co-validate.show{display:block;}
+.btn-co-validate:hover{filter:brightness(1.1);}
+.co-error-msg{font-size:11px;color:var(--danger);letter-spacing:1px;min-height:16px;margin-top:4px;}
 </style>
 </head>
 <body>
 
-<!-- CHANGEOVER OVERLAY -->
+<!-- CHANGEOVER OVERLAY — WORK ORDER + GRID -->
 <div class="co-overlay" id="coOverlay">
-  <div class="co-title">⚙️ Changeover</div>
-  <div class="co-sub">New configuration loading — prepare your station</div>
-  <div class="co-timer" id="coTimer">00:00</div>
-  <div class="co-profile-name" id="coProfileName"></div>
-  <div class="co-badge">Wait for trainer signal to restart</div>
+  <div class="co-overlay-inner">
+
+    <!-- Header -->
+    <div class="co-header">
+      <div>
+        <div class="co-title">⚙️ Changeover</div>
+        <div style="font-size:11px;letter-spacing:2px;color:#888;margin-top:4px;">
+          Read the Work Order → configure your grid → validate
+        </div>
+      </div>
+      <div class="co-timer-wrap">
+        <div class="co-timer" id="coTimer">00:00</div>
+        <div class="co-timer-label">C/O TIME</div>
+      </div>
+    </div>
+
+    <!-- Work Order Document -->
+    <div class="wo-doc">
+      <div class="wo-header">
+        <div>
+          <div class="wo-logo">KEEPLEAN — PRODUCTION ORDER</div>
+          <div style="font-size:11px;color:var(--cyan);margin-top:4px;" id="woStation">ASSY — —</div>
+        </div>
+        <div class="wo-ref">
+          <div id="woRef" style="color:var(--accent);font-weight:700;font-size:12px;">WO-——</div>
+          <div id="woDate" style="font-size:10px;color:#666;"></div>
+          <div id="woSession" style="font-size:10px;color:#666;"></div>
+        </div>
+      </div>
+      <div class="wo-title">📋 Bill of Materials — Your Assembly Task</div>
+      <div style="font-size:10px;color:#888;margin-bottom:6px;letter-spacing:1px;">
+        Place the following parts in the positions indicated on your grid:
+      </div>
+      <div class="wo-bom" id="woBom"></div>
+    </div>
+
+    <!-- Grid Configuration -->
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+      <div>
+        <div class="co-grid-label">🖌 Configure your assembly grid</div>
+        <div style="font-size:10px;color:#888;margin-bottom:8px;">
+          Click each position that belongs to your station
+        </div>
+        <div class="co-grid" id="coGrid"></div>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <div class="co-grid-label">📊 Progress</div>
+        <div class="co-progress">
+          <div class="co-prog-row">
+            <span style="font-size:11px;color:#888;letter-spacing:1px;">PARTS PLACED</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--muted);"
+              id="coProgVal">0 / 0</span>
+          </div>
+          <div class="co-prog-bar-wrap">
+            <div class="co-prog-bar" id="coProgBar" style="width:0%"></div>
+          </div>
+          <div class="co-error-msg" id="coErrorMsg"></div>
+          <div style="margin-top:10px;font-size:10px;color:#888;line-height:1.6;" id="coBomHint"></div>
+        </div>
+        <div style="margin-top:10px;">
+          <button class="btn-co-validate" id="btnCoValidate" onclick="validateChangeover()">
+            ✅ Validate Changeover
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <div class="top-bar">
@@ -751,26 +861,38 @@ function listenSessionConfig(){
 }
 
 // ── CHANGEOVER FUNCTIONS ───────────────────────────────
+
+// Metal colors for grid cells
+const CO_METAL={1:{fill:'#7a9bb5',stroke:'#3a6080',text:'#e8f4ff'},
+                2:{fill:'#a09070',stroke:'#705a30',text:'#fff4e0'},
+                3:{fill:'#6a7a6a',stroke:'#3a4a3a',text:'#e0ede0'},
+                4:{fill:'#8a85a8',stroke:'#504870',text:'#f0eeff'}};
+
+let coGrid={cells:[], targetPositions:[], operatorPositions:[], painting:false};
+
 function startChangeover(profileName, profileData, coSignalTime){
-  // Stopper le cycle en cours
   if(S.running){S.running=false;cancelAnimationFrame(S.raf);}
   document.getElementById('btnStart').disabled=true;
   document.getElementById('validateBanner').classList.remove('show');
 
-  // Reset timer overlay à zéro
+  // Reset timer
   cancelAnimationFrame(S.coRaf);
   S.coRaf=null;
   document.getElementById('coTimer').textContent='00:00';
-
-  // Afficher overlay
-  document.getElementById('coProfileName').textContent=`→ ${profileName}`;
-  document.getElementById('coOverlay').classList.add('show');
-  // Utiliser le timestamp Firebase comme référence — toutes les stations synchronisées
   S.coStart=coSignalTime||Date.now();
   S.coCount++;
   document.getElementById('dbCOcount').textContent=S.coCount;
 
-  // Timer C/O — repart de zéro à chaque changeover
+  // Build WO document
+  buildWorkOrder(profileName, profileData);
+
+  // Build interactive mini-grid
+  buildCoGrid(profileData);
+
+  // Show overlay
+  document.getElementById('coOverlay').classList.add('show');
+
+  // Start timer
   function tickCO(){
     if(!S.coStart)return;
     const e=Date.now()-S.coStart;
@@ -781,34 +903,193 @@ function startChangeover(profileName, profileData, coSignalTime){
   }
   S.coRaf=requestAnimationFrame(tickCO);
 
-  // Appliquer le nouveau profil après 500ms (laisser le temps de voir l'overlay)
-  setTimeout(()=>{
-    if(profileData){
-      applyProfile(profileData);
-      const myPos=STATION_POSITIONS[STATION]||[];
-      const segStart=([0,4,8,12,16])[STATION-1]||((STATION-1)*4);
-      S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
-      S.inheritedState={};
-      renderBuffer();renderBoard();
+  // Apply profile to station (pieces update)
+  if(profileData){
+    applyProfile(profileData);
+    const myPos=STATION_POSITIONS[STATION]||[];
+    const segStart=([0,4,8,12,16])[STATION-1]||((STATION-1)*4);
+    S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
+    S.inheritedState={};
+  }
+  setMsg(`⚙️ Changeover — Read your Work Order and configure your grid`,'info');
+}
+
+function buildWorkOrder(profileName, profileData){
+  const now=new Date();
+  document.getElementById('woStation').textContent=
+    `${ASSY_NAMES[STATION]||'ASSY '+STATION} — ${profileName}`;
+  document.getElementById('woRef').textContent=
+    `WO-${SESSION}-${String(S.coCount).padStart(2,'0')}`;
+  document.getElementById('woDate').textContent=
+    now.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'})+
+    ' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('woSession').textContent=`Session: ${SESSION.toUpperCase()}`;
+
+  // Build BOM from my pieces
+  const myPos=(profileData&&STATION_POSITIONS[STATION])||[];
+  const segStart=([0,4,8,12,16])[STATION-1]||((STATION-1)*4);
+  const myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
+
+  const bom=document.getElementById('woBom');
+  bom.innerHTML='';
+  const c=CO_METAL[STATION]||CO_METAL[1];
+  myPieces.forEach(p=>{
+    const item=document.createElement('div');
+    item.className='wo-bom-item';
+    item.innerHTML=`
+      <div class="wo-bom-icon" style="background:${c.fill};color:${c.text};">${STATION}</div>
+      <div class="wo-bom-text">
+        <div class="wo-bom-ref">${p.id}</div>
+        <div class="wo-bom-name">${p.name}</div>
+      </div>`;
+    bom.appendChild(item);
+  });
+
+  // Hint text
+  const hint=document.getElementById('coBomHint');
+  hint.innerHTML=`<b style="color:var(--accent);">Your task:</b><br>
+    Assign <b style="color:var(--muted);">${myPos.length} cells</b> on the grid below.<br>
+    Click each cell that belongs to <b style="color:${c.fill};">${ASSY_NAMES[STATION]||'ASSY '+STATION}</b>.`;
+}
+
+function buildCoGrid(profileData){
+  const cols=COLS||4, rows=ROWS||4;
+  const myPositions=STATION_POSITIONS[STATION]||[];
+  coGrid.targetPositions=myPositions;
+  coGrid.operatorPositions=new Array(cols*rows).fill(false);
+
+  const grid=document.getElementById('coGrid');
+  grid.style.gridTemplateColumns=`repeat(${cols},48px)`;
+  grid.style.gridTemplateRows=`repeat(${rows},48px)`;
+  grid.innerHTML='';
+  const c=CO_METAL[STATION]||CO_METAL[1];
+
+  for(let i=0;i<cols*rows;i++){
+    const cell=document.createElement('div');
+    cell.className='co-cell empty';
+    cell.style.cssText=`width:48px;height:48px;`;
+    cell.dataset.idx=i;
+    cell.addEventListener('mousedown',e=>{e.preventDefault();coGrid.painting=true;toggleCoCell(i);});
+    cell.addEventListener('mouseenter',()=>{if(coGrid.painting)toggleCoCell(i);});
+    grid.appendChild(cell);
+  }
+  document.addEventListener('mouseup',()=>{coGrid.painting=false;});
+
+  document.getElementById('coProgVal').textContent=`0 / ${myPositions.length}`;
+  document.getElementById('coProgBar').style.width='0%';
+  document.getElementById('coProgBar').className='co-prog-bar';
+  document.getElementById('coErrorMsg').textContent='';
+  document.getElementById('btnCoValidate').classList.remove('show');
+  updateCoProgress();
+}
+
+function toggleCoCell(idx){
+  const c=CO_METAL[STATION]||CO_METAL[1];
+  const cells=document.querySelectorAll('.co-cell');
+  const cell=cells[idx];
+  if(!cell)return;
+  coGrid.operatorPositions[idx]=!coGrid.operatorPositions[idx];
+  if(coGrid.operatorPositions[idx]){
+    cell.className='co-cell filled';
+    cell.style.background=c.fill;
+    cell.style.borderColor=c.stroke;
+    cell.style.color=c.text;
+    cell.textContent=STATION;
+  } else {
+    cell.className='co-cell empty';
+    cell.style.background='';
+    cell.style.borderColor='';
+    cell.style.color='';
+    cell.textContent='';
+  }
+  updateCoProgress();
+}
+
+function updateCoProgress(){
+  const target=coGrid.targetPositions;
+  const placed=coGrid.operatorPositions.filter(Boolean).length;
+  const needed=target.length;
+  const pct=needed>0?Math.round((placed/needed)*100):0;
+
+  document.getElementById('coProgVal').textContent=`${placed} / ${needed}`;
+  document.getElementById('coProgBar').style.width=pct+'%';
+
+  const complete=placed===needed;
+  document.getElementById('coProgBar').className='co-prog-bar'+(complete?' complete':'');
+
+  if(placed>needed){
+    document.getElementById('coErrorMsg').textContent=
+      `⚠ Too many cells selected (${placed-needed} extra)`;
+    document.getElementById('btnCoValidate').classList.remove('show');
+  } else {
+    document.getElementById('coErrorMsg').textContent='';
+    if(complete) document.getElementById('btnCoValidate').classList.add('show');
+    else document.getElementById('btnCoValidate').classList.remove('show');
+  }
+}
+
+function validateChangeover(){
+  // Check operator grid vs target
+  const target=new Set(coGrid.targetPositions);
+  const operator=new Set(
+    coGrid.operatorPositions.map((v,i)=>v?i:null).filter(i=>i!==null)
+  );
+  const cells=document.querySelectorAll('.co-cell');
+
+  let errors=0;
+  // Check each operator selection
+  operator.forEach(idx=>{
+    if(!target.has(idx)){
+      errors++;
+      cells[idx].classList.add('wrong');
+      setTimeout(()=>cells[idx].classList.remove('wrong'),500);
     }
-    setMsg(`⚙️ Changeover in progress — profile: ${profileName}`,'info');
-  },500);
+  });
+  // Check each target
+  target.forEach(idx=>{
+    if(operator.has(idx)){
+      cells[idx].classList.add('correct');
+    } else {
+      errors++;
+    }
+  });
+
+  if(errors>0){
+    document.getElementById('coErrorMsg').textContent=
+      `❌ ${errors} error(s) — check your grid and retry`;
+    setTimeout(()=>{
+      document.querySelectorAll('.co-cell.correct').forEach(c=>c.classList.remove('correct'));
+    },800);
+    return;
+  }
+
+  // All correct — stop C/O timer and report
+  stopChangeover();
 }
 
 function stopChangeover(){
   if(!S.coStart)return;
   const elapsed=Date.now()-S.coStart;
-  S.coStart=null;  // reset immédiat pour éviter double appel
+  S.coStart=null;
   cancelAnimationFrame(S.coRaf);
   S.coRaf=null;
   S.coTotalMs+=elapsed;
-  document.getElementById('coOverlay').classList.remove('show');
-  // Afficher le temps C/O réel (dernier C/O) + moyenne
-  const lastSec=Math.round(elapsed/1000);
+
+  // Push C/O time to Firebase
+  const coSec=Math.round(elapsed/1000);
   const avgSec=Math.round(S.coTotalMs/S.coCount/1000);
-  document.getElementById('dbCOtime').textContent=`${lastSec}s (avg ${avgSec}s)`;
+  if(db){
+    db.ref(`assembly_line/${SESSION}/stations/${stKey}/co_times`).push({
+      round:S.coCount, seconds:coSec, timestamp:Date.now()
+    });
+  }
+
+  document.getElementById('coOverlay').classList.remove('show');
+  document.getElementById('dbCOtime').textContent=`${coSec}s (avg ${avgSec}s)`;
+  document.getElementById('dbCOcount').textContent=S.coCount;
+  pushStats();
   initCycle();
-  setMsg('✅ Changeover complete — Ready to start','ok');
+  setMsg(`✅ Changeover validated in ${coSec}s — Ready to start`,'ok');
 }
 
 function pushStats(){
