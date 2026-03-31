@@ -424,6 +424,7 @@ let S={
   running:false,started:false,startTime:null,raf:null,errorCount:0,
   topology:null,cornerSides:{},bufferDisplayOrder:null,lastResetSignal:null,inheritedState:{},fty:0,
   coCount:0,coTotalMs:0,lastCoSignal:null,coStart:null,coRaf:null,
+  currentStep:0,  // gamme d'assemblage — index de la pièce courante
 };
 let NB_STATIONS=4,sessionStart=null,sessionInterval=null,db=null;
 
@@ -505,12 +506,18 @@ function initStation(){
 }
 
 function initCycle(){
-  S.topology=generateTopology();
-  S.cornerSides={};
-  (STATION_POSITIONS[STATION]||[]).forEach(pos=>{S.cornerSides[pos]=getSides(pos,S.topology);});
-  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]);
+  // Topologie SVG : générée une seule fois par session/profil
+  // Elle ne change QU'au changeover, pas entre les cycles
+  if(!S.topology){
+    S.topology=generateTopology();
+    S.cornerSides={};
+    (STATION_POSITIONS[STATION]||[]).forEach(pos=>{S.cornerSides[pos]=getSides(pos,S.topology);});
+  }
+  // Gamme : ordre fixe (index 0,1,2,3) — pas de shuffle
+  S.bufferDisplayOrder=[...Array(S.myPieces.length).keys()];
   S.cornerComps=S.myPieces.map(p=>({...p}));
   S.placedPositions={};
+  S.currentStep=0;  // reset gamme
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
   const scrapEl=document.getElementById('dbScrap');
   if(scrapEl)scrapEl.textContent='0';
@@ -529,28 +536,69 @@ function renderBuffer(){
   const bar=document.getElementById('bufferBar');
   bar.innerHTML=`<div class="buffer-bar-label">BUFFER</div>${!S.running?'<div style="font-size:9px;letter-spacing:1px;color:var(--danger);font-weight:700;text-transform:uppercase;align-self:center;margin-left:4px;">🔒 Start Cycle First</div>':''}`;
   const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
-  displayOrder.forEach(i=>{
+  displayOrder.forEach((i,stepIndex)=>{
     const comp=S.cornerComps[i];
     if(!comp)return;
     const placed=!!S.placedPositions[comp.targetPos];
+    const isActive=S.running&&!placed&&(stepIndex===S.currentStep);
+    const isLocked=S.running&&!placed&&(stepIndex!==S.currentStep);
+
     const div=document.createElement('div');
     div.className='buffer-piece'+(placed?' used':'');
     div.dataset.idx=i;
+
     const fill=placed?'rgba(176,200,212,.25)':METAL_FILL[STATION];
     const stroke=placed?'rgba(176,200,212,.5)':METAL_STROKE[STATION];
     const sides=S.cornerSides[comp.targetPos]||{top:0,right:0,bottom:0,left:0};
     const pad=14,vs=60+pad*2,d=piecePath(sides,60);
     div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="72" height="72" style="display:block;margin:auto;overflow:visible;pointer-events:none;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
-    const numEl=document.createElement('span');numEl.className='bp-num';numEl.textContent=STATION;numEl.style.color=placed?'var(--success)':METAL_TEXT[STATION];div.appendChild(numEl);
+
+    // Numéro de station
+    const numEl=document.createElement('span');
+    numEl.className='bp-num';
+    numEl.textContent=STATION;
+    numEl.style.color=placed?'var(--success)':METAL_TEXT[STATION];
+    div.appendChild(numEl);
+
+    // Indicateur d'ordre dans la gamme
+    const stepEl=document.createElement('span');
+    stepEl.style.cssText=`position:absolute;top:2px;right:4px;font-size:9px;font-weight:700;
+      font-family:'Share Tech Mono',monospace;pointer-events:none;z-index:11;`;
+    stepEl.textContent=placed?'✓':(stepIndex+1);
+    stepEl.style.color=placed?'var(--success)':isActive?'#fff':'rgba(255,255,255,0.3)';
+    div.appendChild(stepEl);
+
     if(!placed){
-      div.draggable=S.running;
-      div.style.cursor=S.running?'grab':'not-allowed';
-      div.style.opacity=S.running?'1':'0.6';
-      if(S.running){
-        div.addEventListener('dragstart',e=>{div.classList.add('dragging');e.dataTransfer.setData('compIdx',i);e.dataTransfer.effectAllowed='move';currentDrag={idx:i,comp};});
+      if(isActive){
+        // Pièce active — draggable + surbrillance
+        div.draggable=true;
+        div.style.cursor='grab';
+        div.style.opacity='1';
+        div.style.boxShadow=`0 0 12px ${METAL_FILL[STATION]}, 0 0 4px #fff4`;
+        div.style.transform='scale(1.05)';
+        div.addEventListener('dragstart',e=>{
+          div.classList.add('dragging');
+          e.dataTransfer.setData('compIdx',i);
+          e.dataTransfer.effectAllowed='move';
+          currentDrag={idx:i,comp};
+        });
         div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
         div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
+      } else if(isLocked){
+        // Pièce verrouillée — non draggable, grisée
+        div.draggable=false;
+        div.style.cursor='not-allowed';
+        div.style.opacity='0.3';
+        div.style.filter='grayscale(0.8)';
+        div.addEventListener('click',()=>setMsg(`⏳ Follow the assembly sequence — place part ${S.currentStep+1} first`,'err'));
+        div.addEventListener('touchstart',()=>{
+          setMsg(`⏳ Follow the assembly sequence — place part ${S.currentStep+1} first`,'err');
+        },{passive:true});
       } else {
+        // Avant démarrage
+        div.draggable=false;
+        div.style.cursor='not-allowed';
+        div.style.opacity='0.6';
         div.addEventListener('click',()=>setMsg('▶ Click "Start Cycle" to begin','err'));
       }
     }
@@ -629,17 +677,35 @@ function handleDrop(compIdx,targetPos){
   if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
+
+  // Vérifier que c'est la bonne pièce dans la gamme
+  const expectedStepIdx=S.currentStep;
+  const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
+  const droppedStepIdx=displayOrder.indexOf(compIdx);
+
+  if(droppedStepIdx!==expectedStepIdx){
+    // Mauvais ordre dans la gamme → scrap
+    S.errorCount++;S.scrap++;
+    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
+    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
+    setMsg(`❌ Wrong sequence! Place part ${expectedStepIdx+1} first — Errors: ${S.errorCount}`,'err');
+    return;
+  }
+
   if(comp.targetPos===targetPos){
+    // Bonne pièce, bonne position → avancer dans la gamme
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
     S.placedPositions[targetPos]=comp;
+    S.currentStep++;  // avancer à la pièce suivante
     renderBuffer();renderBoard();updateBufferProgress();
     setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
   } else {
+    // Bonne pièce (bonne séquence) mais mauvaise position → erreur
     S.errorCount++;
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
-    setMsg(`❌ Wrong position! Errors : ${S.errorCount}`,'err');
+    setMsg(`❌ Wrong position! Errors: ${S.errorCount}`,'err');
   }
 }
 
@@ -847,6 +913,7 @@ function listenSessionConfig(){
       stopChangeover();
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
       S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;
+      S.topology=null;S.cornerSides={};
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
       updateWIPDisplay();updateStats();
       document.getElementById('cycleCount').textContent='Cycles: 0';
@@ -909,6 +976,9 @@ function startChangeover(profileName, profileData, coSignalTime){
     const segStart=([0,4,8,12,16])[STATION-1]||((STATION-1)*4);
     S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
     S.inheritedState={};
+    // Forcer régénération des formes pour la nouvelle configuration
+    S.topology=null;
+    S.cornerSides={};
   }
   setMsg(`⚙️ Changeover — Read your Work Order and configure your grid`,'info');
 }
