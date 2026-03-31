@@ -625,18 +625,20 @@ let F = {
 // ═══════════════════════════════════════════════════════════
 document.getElementById('btnCreate').addEventListener('click', ()=>{
   F.sessionCode = document.getElementById('cfgSession').value.trim().toUpperCase() || 'LEAN01';
-  F.nbStations  = 4; // always 4 stations for puzzle
-  calcTakt(); // compute takt from available time + demand
+  F.nbStations  = parseInt(document.getElementById('cfgStations').value) || 4;
+  // Clamp to 2-4 (grid profiles support max 4)
+  F.nbStations  = Math.min(4, Math.max(2, F.nbStations));
+  calcTakt();
   F.gridSize    = document.getElementById('cfgGridSize').value;
   F.profile     = document.getElementById('cfgProfile').value;
   if(F.profile==='Manuel'){
     const mp=buildManualProfile();
-    if(!mp)return; // validation failed
+    if(!mp)return;
     F.manualProfileData=mp;
   }
-  F.baseUrl     = 'https://dakhtoufik-web.github.io/simlean-line';
+  F.baseUrl = 'https://dakhtoufik-web.github.io/simlean-line';
 
-  // Init stations locales
+  // Init stations
   F.stations = Array.from({length: F.nbStations}, (_,i)=>({
     num: i+1, wipIn:0, wipOut:0, cycles:0, output:0, scrap:0, status:'idle',
     name: `ASSY ${i+1}`
@@ -645,9 +647,8 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   F.running = true;
   F.startTime = Date.now();
 
-  // Afficher session info
   document.getElementById('siCode').textContent     = F.sessionCode;
-  document.getElementById('siStations').textContent = '4';
+  document.getElementById('siStations').textContent = F.nbStations;
   document.getElementById('siTakt') && (document.getElementById('siTakt').textContent = F.takt+'s');
   document.getElementById('siGrid') && (document.getElementById('siGrid').textContent = F.gridSize+' — '+F.profile);
   document.getElementById('siStatus').textContent   = '▶ RUNNING';
@@ -661,7 +662,7 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   renderLinks();
   document.getElementById('coPanel').style.display = 'block';
   initGridEditor();
-  setConn('online', `Session ${F.sessionCode} active`);
+  setConn('online', `Session ${F.sessionCode} active — ${F.nbStations} stations`);
   pushSessionToFirebase();
 });
 
@@ -863,7 +864,7 @@ function pushSessionToFirebase(){
     : (PROFILES[F.gridSize] && PROFILES[F.gridSize][F.profile]
       ? PROFILES[F.gridSize][F.profile] : PROFILES['4x4']['Balanced (4-4-4-4)']);
   db.ref(`assembly_line/${F.sessionCode}/config`).set({
-    nb_stations: 4,
+    nb_stations: F.nbStations,
     takt: F.takt,
     grid_size: F.gridSize,
     profile: F.profile,
@@ -998,9 +999,14 @@ function initBrushButtons(){
   [1,2,3,4].forEach(s=>{
     const btn=document.getElementById(`brush${s}`);
     if(!btn)return;
-    btn.style.background=ST_COLORS[s].fill;
-    btn.style.borderColor=ST_COLORS[s].stroke;
-    btn.style.color=ST_COLORS[s].text;
+    if(s<=F.nbStations){
+      btn.style.background=ST_COLORS[s].fill;
+      btn.style.borderColor=ST_COLORS[s].stroke;
+      btn.style.color=ST_COLORS[s].text;
+      btn.style.display='';
+    } else {
+      btn.style.display='none';
+    }
   });
 }
 
@@ -1204,3 +1210,5 @@ initFirebase();
 </script>
 </body>
 </html>
+
+
