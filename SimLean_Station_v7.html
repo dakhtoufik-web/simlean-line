@@ -756,6 +756,11 @@ function startChangeover(profileName, profileData){
   document.getElementById('btnStart').disabled=true;
   document.getElementById('validateBanner').classList.remove('show');
 
+  // Reset timer overlay à zéro avant de démarrer
+  cancelAnimationFrame(S.coRaf);
+  S.coRaf=null;
+  document.getElementById('coTimer').textContent='00:00';
+
   // Afficher overlay
   document.getElementById('coProfileName').textContent=`→ ${profileName}`;
   document.getElementById('coOverlay').classList.add('show');
@@ -763,9 +768,9 @@ function startChangeover(profileName, profileData){
   S.coCount++;
   document.getElementById('dbCOcount').textContent=S.coCount;
 
-  // Timer C/O
-  cancelAnimationFrame(S.coRaf);
+  // Timer C/O — repart de zéro à chaque changeover
   function tickCO(){
+    if(!S.coStart)return;
     const e=Date.now()-S.coStart;
     const m=Math.floor(e/60000),s=Math.floor((e%60000)/1000);
     document.getElementById('coTimer').textContent=
@@ -791,13 +796,15 @@ function startChangeover(profileName, profileData){
 function stopChangeover(){
   if(!S.coStart)return;
   const elapsed=Date.now()-S.coStart;
-  S.coTotalMs+=elapsed;
-  S.coStart=null;
+  S.coStart=null;  // reset immédiat pour éviter double appel
   cancelAnimationFrame(S.coRaf);
+  S.coRaf=null;
+  S.coTotalMs+=elapsed;
   document.getElementById('coOverlay').classList.remove('show');
-  // Afficher le temps C/O dans la data box
-  const avg=Math.round(S.coTotalMs/S.coCount/1000);
-  document.getElementById('dbCOtime').textContent=avg+'s avg';
+  // Afficher le temps C/O réel (dernier C/O) + moyenne
+  const lastSec=Math.round(elapsed/1000);
+  const avgSec=Math.round(S.coTotalMs/S.coCount/1000);
+  document.getElementById('dbCOtime').textContent=`${lastSec}s (avg ${avgSec}s)`;
   initCycle();
   setMsg('✅ Changeover complete — Ready to start','ok');
 }
