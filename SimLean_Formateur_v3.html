@@ -638,7 +638,8 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   startDurationTimer();
   renderFlux();
   renderLinks();
-  initGridEditor();
+  // Délai pour s'assurer que le DOM du panel est rendu avant d'initialiser la grille
+  setTimeout(()=>{ initGridEditor(); }, 100);
   document.getElementById('coPanel').style.display = 'block';
   setConn('online', `Session ${F.sessionCode} active`);
   pushSessionToFirebase();
