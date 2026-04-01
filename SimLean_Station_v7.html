@@ -515,7 +515,7 @@ function initCycle(){
   (STATION_POSITIONS[STATION]||[]).forEach(pos=>{
     S.cornerSides[pos]=getSides(pos,S.topology);
   });
-  S.bufferDisplayOrder=[...Array(S.myPieces.length).keys()];
+  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]); // ordre aléatoire = recherche dans la caisse
   S.cornerComps=S.myPieces.map(p=>({...p}));
   S.placedPositions={};
   S.currentStep=0;
@@ -564,10 +564,11 @@ function renderBuffer(){
     div.appendChild(stepEl);
 
     if(!placed){
-      div.draggable=S.running;
-      div.style.cursor=S.running?'grab':'not-allowed';
-      div.style.opacity=S.running?(stepIndex===S.currentStep?'1':'0.5'):'0.6';
-      if(S.running){
+      const isCurrentStep=(stepIndex===S.currentStep);
+      div.draggable=S.running&&isCurrentStep;
+      div.style.cursor=S.running?(isCurrentStep?'grab':'not-allowed'):'not-allowed';
+      div.style.opacity=S.running?(isCurrentStep?'1':'0.35'):'0.6';
+      if(S.running&&isCurrentStep){
         div.addEventListener('dragstart',e=>{
           div.classList.add('dragging');
           e.dataTransfer.setData('compIdx',String(i));
@@ -576,6 +577,8 @@ function renderBuffer(){
         });
         div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
         div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
+      } else if(S.running&&!isCurrentStep){
+        div.addEventListener('click',()=>setMsg(`⚠ Respectez la gamme — posez d'abord la pièce n°${S.currentStep+1}`,'err'));
       } else {
         div.addEventListener('click',()=>setMsg('▶ Click "Start Cycle" to begin','err'));
       }
@@ -655,12 +658,20 @@ function handleDrop(compIdx,targetPos){
   if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
+  // Gamme stricte : vérifier que c'est la pièce du currentStep
+  const displayOrder=S.bufferDisplayOrder||[...Array(S.myPieces.length).keys()];
+  if(displayOrder.indexOf(compIdx)!==S.currentStep){
+    S.errorCount++;
+    setMsg(`⚠ Respectez la gamme — posez d'abord la pièce n°${S.currentStep+1} (erreurs: ${S.errorCount})`,'err');
+    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
+    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
+    return;
+  }
   if(comp.targetPos===targetPos){
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
     S.placedPositions[targetPos]=comp;
-    // Avancer dans la gamme si c'était la bonne pièce dans l'ordre
-    const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
-    if(displayOrder.indexOf(compIdx)===S.currentStep) S.currentStep++;
+    // Gamme stricte garantie par le guard ci-dessus → avancer
+    S.currentStep++;
     renderBuffer();renderBoard();updateBufferProgress();
     setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
