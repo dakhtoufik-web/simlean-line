@@ -294,22 +294,19 @@ body {
     </div>
     <div class="setup-field">
       <label>NB STATIONS</label>
-      <select id="cfgStations">
-        <option value="2">2 stations</option>
-        <option value="3" selected>3 stations</option>
-        <option value="4">4 stations</option>
+      <select id="cfgStations" onchange="updateStationGridOptions()">
+        <option value="4" selected>4 stations</option>
         <option value="5">5 stations</option>
+        <option value="6">6 stations</option>
       </select>
     </div>
     <div class="setup-field">
       <label>PUZZLE GRID</label>
       <select id="cfgGridSize" onchange="updateProfiles()">
-        <option value="4x4" selected>4×4 (16 parts)</option>
-        <option value="5x5">5×5 (25 parts)</option>
       </select>
     </div>
     <div class="setup-field">
-      <label>BOTTLENECK PROFILE</label>
+      <label>PROFIL</label>
       <select id="cfgProfile" onchange="toggleManual()">
         <option value="Balanced (4-4-4-4)">Balanced (4-4-4-4)</option>
         <option value="Bottleneck S2 (2-8-3-3)">Bottleneck S2 (2-8-3-3)</option>
@@ -340,25 +337,7 @@ body {
 
     <div id="manualPanel" style="display:none;width:100%;margin-top:10px;background:var(--panel2);border:1px solid var(--cyan);padding:14px 16px;">
       <div style="font-size:10px;letter-spacing:2px;color:var(--cyan);font-weight:700;margin-bottom:12px;text-transform:uppercase;">✏ Custom layout — number of parts per station</div>
-      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
-        <div class="setup-field">
-          <label style="color:var(--s1,#e84040);">ASSY 1</label>
-          <input id="m1" type="number" min="1" max="20" value="4" style="width:70px;">
-        </div>
-        <div class="setup-field">
-          <label style="color:var(--s2,#f0a500);">ASSY 2</label>
-          <input id="m2" type="number" min="1" max="20" value="4" style="width:70px;">
-        </div>
-        <div class="setup-field">
-          <label style="color:var(--s3,#3de88a);">ASSY 3</label>
-          <input id="m3" type="number" min="1" max="20" value="4" style="width:70px;">
-        </div>
-        <div class="setup-field">
-          <label style="color:var(--s4,#00c2a8);">ASSY 4</label>
-          <input id="m4" type="number" min="1" max="20" value="4" style="width:70px;">
-        </div>
-        <div id="manualTotal" style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--muted);align-self:flex-end;padding-bottom:10px;">Total : 16 / 16 ✓</div>
-      </div>
+      <div id="manualInputsRow" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;"></div>
     </div>
     <div class="setup-field">
       <label>&nbsp;</label>
@@ -391,27 +370,6 @@ body {
   <div class="kpi-card"><div class="kpi-val bad"  id="kpiScrap">0</div><div class="kpi-label">TOTAL SCRAP</div></div>
   <div class="kpi-card"><div class="kpi-val"      id="kpiWip">0</div><div class="kpi-label">TOTAL WIP</div></div>
   <div class="kpi-card"><div class="kpi-val"      id="kpiCycles">0</div><div class="kpi-label">TOTAL CYCLES</div></div>
-</div>
-
-<!-- C/O ANALYSIS PANEL -->
-<div id="coAnalysisPanel" style="display:none;background:var(--panel);border:1px solid var(--border);
-  border-radius:10px;padding:16px;margin-bottom:20px;">
-  <div class="panel-title" style="color:var(--cyan);">⏱ Changeover Analysis — C/O Times per Station</div>
-  <div id="coAnalysisTable" style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:12px;">
-      <thead>
-        <tr>
-          <th style="text-align:left;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">STATION</th>
-          <th style="text-align:center;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">C/O COUNT</th>
-          <th style="text-align:center;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">LAST C/O</th>
-          <th style="text-align:center;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">AVG C/O</th>
-          <th style="text-align:center;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">BEST C/O</th>
-          <th style="text-align:left;padding:6px 10px;font-size:10px;letter-spacing:2px;color:#888;border-bottom:1px solid var(--border);">HISTORY</th>
-        </tr>
-      </thead>
-      <tbody id="coAnalysisBody"></tbody>
-    </table>
-  </div>
 </div>
 
 <!-- FLUX VISUEL -->
@@ -465,13 +423,6 @@ body {
     🖌 Select station then paint cells on the grid
   </div>
   <div class="brush-row" id="brushRow">
-    <button class="brush-btn" id="brush1" onclick="setBrush(1)">■ ASSY 1</button>
-    <button class="brush-btn" id="brush2" onclick="setBrush(2)">■ ASSY 2</button>
-    <button class="brush-btn" id="brush3" onclick="setBrush(3)">■ ASSY 3</button>
-    <button class="brush-btn" id="brush4" onclick="setBrush(4)">■ ASSY 4</button>
-    <button class="brush-btn erase" id="brushErase" onclick="setBrush(0)">✕ Erase</button>
-    <button class="btn btn-ghost" style="font-size:11px;padding:6px 14px;margin-left:8px;"
-      onclick="clearGrid()">🗑 Clear all</button>
   </div>
 
   <!-- Grid editor + counters -->
@@ -507,21 +458,88 @@ body {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
-// ── PROFILES ──────────────────────────────────────────
-const PROFILES = {
-  '4x4': {
-    'Balanced (4-4-4-4)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4,11,14],           3:[2,7,8,13],             4:[5,6,9,10]},
-    'Bottleneck S2 (2-8-3-3)':  {cols:4,rows:4, 1:[0,3],         2:[1,4,5,6,9,10,11,14],  3:[2,7,8],                4:[12,13,15]},
-    'Bottleneck S3 (4-2-6-4)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4],                 3:[2,5,6,7,8,13],         4:[9,10,11,14]},
-    'Bottleneck S4 (4-4-2-6)':  {cols:4,rows:4, 1:[0,3,12,15],   2:[1,4,11,14],           3:[2,7],                  4:[5,6,8,9,10,13]},
-  },
-  '5x5': {
-    'Balanced (6-6-6-7)':  {cols:5,rows:5, 1:[0,4,20,24,2,22],         2:[1,3,5,9,15,19],          3:[10,14,21,23,11,13],       4:[6,7,8,12,16,17,18]},
-    'Bottleneck S2 (4-10-6-5)': {cols:5,rows:5, 1:[0,4,20,24],             2:[1,2,3,5,6,7,8,9,14,19],  3:[10,11,13,15,21,23],       4:[12,16,17,18,22]},
-    'Bottleneck S3 (6-4-10-5)': {cols:5,rows:5, 1:[0,4,20,24,2,22],        2:[1,3,5,9],                3:[6,7,8,10,11,12,13,14,15,19], 4:[16,17,18,21,23]},
-    'Bottleneck S4 (6-6-4-9)':  {cols:5,rows:5, 1:[0,4,20,24,2,22],        2:[1,3,5,9,15,19],          3:[10,14,21,23],              4:[6,7,8,11,12,13,16,17,18]},
-  }
+// ── PROFILES & CONFIGURATION ──────────────────────────
+// ── Grilles disponibles par nombre de stations ──────────────────
+const GRID_OPTIONS = {
+  4: [{v:'4x4',l:'4×4 (16 pièces)'},{v:'4x5',l:'4×5 (20 pièces)'},{v:'4x6',l:'4×6 (24 pièces)'}],
+  5: [{v:'5x5',l:'5×5 (25 pièces)'},{v:'5x6',l:'5×6 (30 pièces)'},{v:'5x7',l:'5×7 (35 pièces)'}],
+  6: [{v:'6x5',l:'6×5 (30 pièces)'},{v:'6x6',l:'6×6 (36 pièces)'},{v:'6x7',l:'6×7 (42 pièces)'}],
 };
+
+function parseGridSize(gs){
+  const [n,m]=gs.split('x').map(Number);
+  return {N:n,M:m,rows:n,cols:m,total:n*m};
+}
+
+function generateProfile(N,M,dist){
+  // Collecte les indices en ordre diagonal → bonne dispersion visuelle
+  const byDiag=[];
+  for(let d=0;d<N+M-1;d++){
+    for(let r=0;r<N;r++){const c=d-r;if(c>=0&&c<M)byDiag.push(r*M+c);}
+  }
+  const positions={};
+  let cursor=0;
+  for(let s=1;s<=N;s++){
+    positions[s]=byDiag.slice(cursor,cursor+dist[s-1]).sort((a,b)=>a-b);
+    cursor+=dist[s-1];
+  }
+  return {cols:M,rows:N,...positions};
+}
+
+function getProfiles(gridSize){
+  const {N,M}=parseGridSize(gridSize);
+  const T=N*M;
+  const profiles={};
+
+  // Balanced
+  const balDist=Array(N).fill(M);
+  profiles[`Balanced (${balDist.join('-')})`]=generateProfile(N,M,balDist);
+
+  // Helper : distribution avec goulot d'étranglement
+  function bkDist(bkIdx,ratio){
+    const bkCount=Math.round(M*(1+ratio));
+    const rem=T-bkCount;
+    const each=Math.floor(rem/(N-1));
+    const d=Array(N).fill(each);
+    d[bkIdx]=bkCount;
+    let diff=T-d.reduce((a,b)=>a+b,0);
+    for(let i=0;i<N&&diff!==0;i++){if(i!==bkIdx){d[i]+=diff>0?1:-1;diff+=diff>0?-1:1;}}
+    return d;
+  }
+
+  if(N>=3){
+    const d2=bkDist(1,0.6);
+    profiles[`Bottleneck S2 (${d2.join('-')})`]=generateProfile(N,M,d2);
+  }
+  if(N>=4){
+    const dN=bkDist(N-2,0.6);
+    profiles[`Bottleneck S${N-1} (${dN.join('-')})`]=generateProfile(N,M,dN);
+  }
+  if(N>=5){
+    const dM=bkDist(Math.floor(N/2),0.6);
+    profiles[`Bottleneck S${Math.floor(N/2)+1} (${dM.join('-')})`]=generateProfile(N,M,dM);
+  }
+  if(N>=6){
+    const dL=bkDist(N-1,0.6);
+    profiles[`Bottleneck S${N} (${dL.join('-')})`]=generateProfile(N,M,dL);
+  }
+
+  return profiles;
+}
+
+function updateStationGridOptions(){
+  const N=parseInt(document.getElementById('cfgStations').value);
+  const sel=document.getElementById('cfgGridSize');
+  const prev=sel.value;
+  sel.innerHTML='';
+  (GRID_OPTIONS[N]||[]).forEach(o=>{
+    const opt=document.createElement('option');
+    opt.value=o.v;opt.textContent=o.l;
+    sel.appendChild(opt);
+  });
+  if(sel.querySelector(`option[value="${prev}"]`)) sel.value=prev;
+  updateProfiles();
+}
 
 function calcTakt(){
   const availMin = parseFloat(document.getElementById('cfgAvailTime').value) || 60;
@@ -543,21 +561,23 @@ function calcTakt(){
 }
 
 function updateProfiles(){
-  const gridSize = document.getElementById('cfgGridSize').value;
-  const sel = document.getElementById('cfgProfile');
-  const prev = sel.value;
-  sel.innerHTML = '';
-  Object.keys(PROFILES[gridSize]).forEach(p=>{
-    const opt = document.createElement('option');
-    opt.value = p; opt.textContent = p;
+  const gridSize=document.getElementById('cfgGridSize').value;
+  if(!gridSize)return;
+  const sel=document.getElementById('cfgProfile');
+  const prev=sel.value;
+  sel.innerHTML='';
+  const profiles=getProfiles(gridSize);
+  Object.keys(profiles).forEach(p=>{
+    const opt=document.createElement('option');
+    opt.value=p;opt.textContent=p;
     sel.appendChild(opt);
   });
-  // Add manual option
-  const mopt = document.createElement('option');
-  mopt.value = 'Manuel'; mopt.textContent = '✏ Custom';
+  const mopt=document.createElement('option');
+  mopt.value='Manuel';mopt.textContent='✏ Custom';
   sel.appendChild(mopt);
-  if(prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
+  if(prev&&sel.querySelector(`option[value="${prev}"]`)) sel.value=prev;
   toggleManual();
+  renderManualInputs();
 }
 
 function toggleManual(){
@@ -566,44 +586,49 @@ function toggleManual(){
   if(isManual) updateManualTotal();
 }
 
+function renderManualInputs(){
+  const N=parseInt(document.getElementById('cfgStations').value)||4;
+  const gs=document.getElementById('cfgGridSize').value||'4x4';
+  const {M}=parseGridSize(gs);
+  const row=document.getElementById('manualInputsRow');
+  if(!row)return;
+  row.innerHTML='';
+  const colors=['#e84040','#f0a500','#3de88a','#00c2a8','#c07de0','#80cc44'];
+  for(let s=1;s<=N;s++){
+    const div=document.createElement('div');div.className='setup-field';
+    div.innerHTML=`<label style="color:${colors[s-1]};">ASSY ${s}</label>
+      <input id="m${s}" type="number" min="1" max="30" value="${M}" style="width:70px;" oninput="updateManualTotal()">`;
+    row.appendChild(div);
+  }
+  const totDiv=document.createElement('div');totDiv.id='manualTotal';
+  totDiv.style.cssText="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--muted);align-self:flex-end;padding-bottom:10px;";
+  totDiv.textContent=`Total : ${N*M} / ${N*M} ✓`;
+  row.appendChild(totDiv);
+}
+
 function updateManualTotal(){
-  const gridSize = document.getElementById('cfgGridSize').value;
-  const maxPieces = gridSize==='5x5' ? 25 : 16;
-  const v1=parseInt(document.getElementById('m1').value)||0;
-  const v2=parseInt(document.getElementById('m2').value)||0;
-  const v3=parseInt(document.getElementById('m3').value)||0;
-  const v4=parseInt(document.getElementById('m4').value)||0;
-  const total=v1+v2+v3+v4;
-  const ok = total===maxPieces;
+  const N=parseInt(document.getElementById('cfgStations').value)||4;
+  const gs=document.getElementById('cfgGridSize').value||'4x4';
+  const {total}=parseGridSize(gs);
+  let sum=0;
+  for(let s=1;s<=N;s++){const el=document.getElementById(`m${s}`);if(el)sum+=parseInt(el.value)||0;}
+  const ok=sum===total;
   const el=document.getElementById('manualTotal');
-  el.textContent=`Total : ${total} / ${maxPieces} ${ok?'✓':'✗'}`;
-  el.style.color=ok?'var(--success)':'var(--danger)';
+  if(el){el.textContent=`Total : ${sum} / ${total} ${ok?'✓':'✗'}`;el.style.color=ok?'var(--success)':'var(--danger)';}
 }
 
 function buildManualProfile(){
-  const gridSize = document.getElementById('cfgGridSize').value;
-  const cols = gridSize==='5x5' ? 5 : 4;
-  const rows = cols;
-  const counts=[
-    parseInt(document.getElementById('m1').value)||0,
-    parseInt(document.getElementById('m2').value)||0,
-    parseInt(document.getElementById('m3').value)||0,
-    parseInt(document.getElementById('m4').value)||0,
-  ];
-  const total=counts.reduce((a,b)=>a+b,0);
-  const maxPieces=cols*rows;
-  if(total!==maxPieces){ alert(`Total must be ${maxPieces} parts (currently ${total})`); return null; }
-  // Distribute positions: fill grid row by row, assign to stations in order
-  const positions={1:[],2:[],3:[],4:[]};
-  // Shuffle grid indices then assign blocks
-  const allIdx=[...Array(maxPieces).keys()];
-  // Shuffle for random distribution
+  const N=parseInt(document.getElementById('cfgStations').value)||4;
+  const gs=document.getElementById('cfgGridSize').value||'4x4';
+  const {cols,rows,total}=parseGridSize(gs);
+  const counts=[];
+  for(let s=1;s<=N;s++)counts.push(parseInt(document.getElementById(`m${s}`)?.value)||0);
+  const sum=counts.reduce((a,b)=>a+b,0);
+  if(sum!==total){alert(`Total must be ${total} parts (currently ${sum})`);return null;}
+  const allIdx=[...Array(total).keys()];
   for(let i=allIdx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[allIdx[i],allIdx[j]]=[allIdx[j],allIdx[i]];}
-  let cursor=0;
-  for(let st=1;st<=4;st++){
-    positions[st]=allIdx.slice(cursor,cursor+counts[st-1]);
-    cursor+=counts[st-1];
-  }
+  const positions={};let cursor=0;
+  for(let s=1;s<=N;s++){positions[s]=allIdx.slice(cursor,cursor+counts[s-1]);cursor+=counts[s-1];}
   return {cols,rows,...positions};
 }
 
@@ -625,20 +650,18 @@ let F = {
 // ═══════════════════════════════════════════════════════════
 document.getElementById('btnCreate').addEventListener('click', ()=>{
   F.sessionCode = document.getElementById('cfgSession').value.trim().toUpperCase() || 'LEAN01';
-  F.nbStations  = parseInt(document.getElementById('cfgStations').value) || 4;
-  // Clamp to 2-4 (grid profiles support max 4)
-  F.nbStations  = Math.min(4, Math.max(2, F.nbStations));
-  calcTakt();
+  F.nbStations  = parseInt(document.getElementById('cfgStations').value);
+  calcTakt(); // compute takt from available time + demand
   F.gridSize    = document.getElementById('cfgGridSize').value;
   F.profile     = document.getElementById('cfgProfile').value;
   if(F.profile==='Manuel'){
     const mp=buildManualProfile();
-    if(!mp)return;
+    if(!mp)return; // validation failed
     F.manualProfileData=mp;
   }
-  F.baseUrl = 'https://dakhtoufik-web.github.io/simlean-line';
+  F.baseUrl     = 'https://dakhtoufik-web.github.io/simlean-line';
 
-  // Init stations
+  // Init stations locales
   F.stations = Array.from({length: F.nbStations}, (_,i)=>({
     num: i+1, wipIn:0, wipOut:0, cycles:0, output:0, scrap:0, status:'idle',
     name: `ASSY ${i+1}`
@@ -647,8 +670,9 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   F.running = true;
   F.startTime = Date.now();
 
+  // Afficher session info
   document.getElementById('siCode').textContent     = F.sessionCode;
-  document.getElementById('siStations').textContent = F.nbStations;
+  document.getElementById('siStations').textContent = F.nbStations + ' stations';
   document.getElementById('siTakt') && (document.getElementById('siTakt').textContent = F.takt+'s');
   document.getElementById('siGrid') && (document.getElementById('siGrid').textContent = F.gridSize+' — '+F.profile);
   document.getElementById('siStatus').textContent   = '▶ RUNNING';
@@ -660,9 +684,9 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   startDurationTimer();
   renderFlux();
   renderLinks();
-  document.getElementById('coPanel').style.display = 'block';
   initGridEditor();
-  setConn('online', `Session ${F.sessionCode} active — ${F.nbStations} stations`);
+  document.getElementById('coPanel').style.display = 'block';
+  setConn('online', `Session ${F.sessionCode} active`);
   pushSessionToFirebase();
 });
 
@@ -727,7 +751,7 @@ function renderFlux(){
     card.className = `station-card ${st.status}`;
     card.id = `stCard${i}`;
     card.innerHTML = `
-      <div class="sc-num">ASSY ${st.num} <span style="color:var(--cyan);font-size:9px;letter-spacing:1px;">${F.gridSize}×${F.gridSize}</span></div>
+      <div class="sc-num">ASSY ${st.num} <span style="color:var(--cyan);font-size:9px;letter-spacing:1px;">${F.gridSize}</span></div>
       <div class="sc-name" id="scName${i}">${st.name}</div>
       <div class="sc-status idle" id="scStatus${i}">Offline</div>
       <div class="sc-cycles" id="scCycles${i}">0</div>
@@ -847,12 +871,15 @@ let db = null;
 
 function initFirebase(){
   try {
+    if(typeof firebase === 'undefined')
+      throw new Error('Firebase SDK non chargé — vérifier la connexion réseau');
     if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.database();
-    setConn('online', 'Firebase connected');
+    setConn('online', 'Firebase connecté');
   } catch(e){
-    setConn('offline', 'Firebase unavailable');
-    console.warn('Firebase:', e);
+    db = null;
+    setConn('offline', 'Firebase indisponible — mode local');
+    console.warn('Firebase init:', e.message);
   }
 }
 
@@ -861,8 +888,7 @@ function pushSessionToFirebase(){
   if(!db) return;
   const profileData = F.profile==='Manuel'
     ? F.manualProfileData
-    : (PROFILES[F.gridSize] && PROFILES[F.gridSize][F.profile]
-      ? PROFILES[F.gridSize][F.profile] : PROFILES['4x4']['Balanced (4-4-4-4)']);
+    : (getProfiles(F.gridSize)[F.profile] || Object.values(getProfiles(F.gridSize))[0]);
   db.ref(`assembly_line/${F.sessionCode}/config`).set({
     nb_stations: F.nbStations,
     takt: F.takt,
@@ -891,12 +917,14 @@ function listenAllStations(){
       const output  = st.output  || 0;
       const scrap   = st.scrap   || 0;
       const status  = st.status  || 'offline';
+      const ctMoy   = st.ct_moy  || 0;
 
       totalOutput += output;
       totalScrap  += scrap;
       totalWip    += wipIn;
       totalCycles += cycles;
 
+      // Mettre à jour carte station
       const card = document.getElementById(`stCard${i}`);
       if(card){
         card.className = `station-card ${status==='running'?'active':status==='idle'?'idle':'waiting'}`;
@@ -912,66 +940,24 @@ function listenAllStations(){
       if(el(`scWipIn${i}`))   el(`scWipIn${i}`).textContent   = wipIn === 999 ? '∞' : wipIn;
       if(el(`scWipOut${i}`))  el(`scWipOut${i}`).textContent  = wipOut;
 
+      // Mettre à jour flèche WIP entre stations
       const arrowEl = document.getElementById(`arrowWip${i}`);
       if(arrowEl) arrowEl.textContent = wipIn === 999 ? '∞' : wipIn;
-
-      // C/O times per station
-      if(st.co_times) updateCoAnalysis(i+1, st.co_times);
     }
 
+    // Dernière station → client
     const lastSt = data[`s${F.nbStations}`] || {};
     const clientEl = document.getElementById('clientOutput');
     if(clientEl) clientEl.textContent = lastSt.output || 0;
     const arrowFinal = document.getElementById('arrowWipFinal');
     if(arrowFinal) arrowFinal.textContent = lastSt.output || 0;
 
+    // KPI globaux
     document.getElementById('kpiOutput').textContent  = totalOutput;
     document.getElementById('kpiScrap').textContent   = totalScrap;
     document.getElementById('kpiWip').textContent     = totalWip;
     document.getElementById('kpiCycles').textContent  = totalCycles;
   });
-}
-
-// CO analysis per station
-const coAnalysisData = {};
-function updateCoAnalysis(stNum, coTimes){
-  const times = Object.values(coTimes).map(t=>t.seconds).sort((a,b)=>a-b);
-  if(!times.length) return;
-  coAnalysisData[stNum] = times;
-  renderCoAnalysis();
-  document.getElementById('coAnalysisPanel').style.display='block';
-}
-
-function renderCoAnalysis(){
-  const tbody = document.getElementById('coAnalysisBody');
-  if(!tbody) return;
-  tbody.innerHTML='';
-  const metalColors={1:'#7a9bb5',2:'#a09070',3:'#6a7a6a',4:'#8a85a8'};
-  for(let s=1;s<=F.nbStations;s++){
-    const times = coAnalysisData[s]||[];
-    const last  = times.length ? times[times.length-1] : null;
-    const avg   = times.length ? Math.round(times.reduce((a,b)=>a+b,0)/times.length) : null;
-    const best  = times.length ? times[0] : null;
-    const color = metalColors[s]||'#888';
-    const history = times.map((t,i)=>`<span style="font-family:'Share Tech Mono',monospace;
-      background:var(--panel2);padding:2px 6px;border-radius:3px;font-size:10px;color:${
-      i===0?'var(--success)':'#888'};">${t}s</span>`).join(' ');
-    const tr = document.createElement('tr');
-    tr.innerHTML=`
-      <td style="padding:7px 10px;border-bottom:1px solid var(--border);">
-        <span style="color:${color};font-weight:700;font-size:12px;">■ ASSY ${s}</span>
-      </td>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;
-        font-family:'Share Tech Mono',monospace;color:var(--muted);">${times.length||'—'}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;
-        font-family:'Share Tech Mono',monospace;color:var(--accent);">${last!==null?last+'s':'—'}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;
-        font-family:'Share Tech Mono',monospace;color:var(--cyan);">${avg!==null?avg+'s':'—'}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;
-        font-family:'Share Tech Mono',monospace;color:var(--success);">${best!==null?best+'s':'—'}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--border);">${history||'—'}</td>`;
-    tbody.appendChild(tr);
-  }
 }
 
 // Arrêter session dans Firebase
@@ -988,6 +974,8 @@ const ST_COLORS = {
   2:{fill:'#a09070',stroke:'#705a30',text:'#fff4e0',label:'ASSY 2'},
   3:{fill:'#6a7a6a',stroke:'#3a4a3a',text:'#e0ede0',label:'ASSY 3'},
   4:{fill:'#8a85a8',stroke:'#504870',text:'#f0eeff',label:'ASSY 4'},
+  5:{fill:'#b57a9b',stroke:'#803060',text:'#ffe8f4',label:'ASSY 5'},
+  6:{fill:'#7ab580',stroke:'#307840',text:'#e8ffe8',label:'ASSY 6'},
 };
 
 let coState = {
@@ -996,28 +984,36 @@ let coState = {
 };
 
 function initBrushButtons(){
-  [1,2,3,4].forEach(s=>{
-    const btn=document.getElementById(`brush${s}`);
-    if(!btn)return;
-    if(s<=F.nbStations){
-      btn.style.background=ST_COLORS[s].fill;
-      btn.style.borderColor=ST_COLORS[s].stroke;
-      btn.style.color=ST_COLORS[s].text;
-      btn.style.display='';
-    } else {
-      btn.style.display='none';
-    }
-  });
+  const brushRow=document.getElementById('brushRow');
+  brushRow.innerHTML='';
+  const nSt=F.nbStations||4;
+  for(let s=1;s<=nSt;s++){
+    const btn=document.createElement('button');
+    btn.className='brush-btn';btn.id=`brush${s}`;
+    btn.style.background=ST_COLORS[s].fill;
+    btn.style.borderColor=ST_COLORS[s].stroke;
+    btn.style.color=ST_COLORS[s].text;
+    btn.innerHTML=`■ ASSY ${s}`;
+    btn.onclick=(()=>{const ss=s;return ()=>setBrush(ss);})();
+    brushRow.appendChild(btn);
+  }
+  const eraseBtn=document.createElement('button');
+  eraseBtn.className='brush-btn erase';eraseBtn.id='brushErase';
+  eraseBtn.innerHTML='✕ Erase';eraseBtn.onclick=()=>setBrush(0);
+  brushRow.appendChild(eraseBtn);
+  const clearBtn=document.createElement('button');
+  clearBtn.className='btn btn-ghost';
+  clearBtn.style.cssText='font-size:11px;padding:6px 14px;margin-left:8px;';
+  clearBtn.innerHTML='🗑 Clear all';clearBtn.onclick=clearGrid;
+  brushRow.appendChild(clearBtn);
 }
 
 function setBrush(st){
   coState.brush=st;
-  [1,2,3,4].forEach(s=>{
-    const b=document.getElementById(`brush${s}`);
-    if(b) b.classList.remove('active');
-  });
+  const nSt=F.nbStations||4;
+  for(let s=1;s<=nSt;s++){const b=document.getElementById(`brush${s}`);if(b)b.classList.remove('active');}
   const be=document.getElementById('brushErase');
-  if(be) be.classList.remove('active');
+  if(be)be.classList.remove('active');
   if(st===0){if(be)be.classList.add('active');}
   else{const b=document.getElementById(`brush${st}`);if(b)b.classList.add('active');}
 }
@@ -1067,29 +1063,26 @@ function renderGridEditor(){
 }
 
 function updateCounters(){
+  const nSt=F.nbStations||4;
   const total=coState.cols*coState.rows;
-  const counts={1:0,2:0,3:0,4:0};
-  coState.grid.forEach(v=>{if(v>0)counts[v]++;});
+  const counts={};for(let s=1;s<=nSt;s++)counts[s]=0;
+  coState.grid.forEach(v=>{if(v>0&&v<=nSt)counts[v]++;});
   const assigned=Object.values(counts).reduce((a,b)=>a+b,0);
   const el=document.getElementById('geCounters');
   if(el){
     el.innerHTML='';
-    [1,2,3,4].forEach(s=>{
-      const div=document.createElement('div');
-      div.className='ge-counter';
+    for(let s=1;s<=nSt;s++){
+      const div=document.createElement('div');div.className='ge-counter';
       div.innerHTML=`<span class="ge-counter-label" style="color:${ST_COLORS[s].fill};">${ST_COLORS[s].label}</span>
         <span class="ge-counter-val" style="color:${ST_COLORS[s].fill};">${counts[s]}</span>`;
       el.appendChild(div);
-    });
+    }
   }
   const valid=assigned===total;
   const tv=document.getElementById('geTotalVal');
   if(tv){tv.textContent=`${assigned} / ${total}`;tv.style.color=valid?'var(--success)':'var(--danger)';}
   const vs=document.getElementById('coValidStatus');
-  if(vs){
-    vs.textContent=valid?'✅ All cells assigned — ready to push':`⚠ ${total-assigned} cell(s) unassigned`;
-    vs.style.color=valid?'var(--success)':'var(--accent)';
-  }
+  if(vs){vs.textContent=valid?'✅ All cells assigned — ready to push':`⚠ ${total-assigned} cell(s) unassigned`;vs.style.color=valid?'var(--success)':'var(--accent)';}
   const btn=document.getElementById('btnTriggerCO');
   if(btn)btn.disabled=!valid;
 }
@@ -1101,11 +1094,13 @@ function clearGrid(){
 
 function loadPreset(name){
   const gs=F.gridSize||'4x4';
-  const p=PROFILES[gs]&&PROFILES[gs][name];
+  const profiles=getProfiles(gs);
+  const p=profiles[name];
   if(!p)return;
   coState.cols=p.cols||4;coState.rows=p.rows||4;
   coState.grid=new Array(coState.cols*coState.rows).fill(0);
-  [1,2,3,4].forEach(s=>{(p[s]||[]).forEach(idx=>{coState.grid[idx]=s;});});
+  const nSt=F.nbStations||4;
+  for(let s=1;s<=nSt;s++){(p[s]||[]).forEach(idx=>{coState.grid[idx]=s;});}
   renderGridEditor();
   document.querySelectorAll('.preset-chip').forEach(c=>{c.style.borderColor='';c.style.color='';});
   const chip=document.getElementById('chip_'+name.replace(/[\s().\-]/g,'_'));
@@ -1117,7 +1112,8 @@ function renderPresetChips(){
   if(!row)return;
   row.innerHTML='';
   const gs=F.gridSize||'4x4';
-  Object.keys(PROFILES[gs]||{}).forEach(name=>{
+  const profiles=getProfiles(gs);
+  Object.keys(profiles).forEach(name=>{
     const chip=document.createElement('div');
     chip.className='preset-chip';
     chip.id='chip_'+name.replace(/[\s().\-]/g,'_');
@@ -1128,23 +1124,27 @@ function renderPresetChips(){
 }
 
 function buildProfileFromGrid(){
-  const pos={1:[],2:[],3:[],4:[]};
-  coState.grid.forEach((st,idx)=>{if(st>0)pos[st].push(idx);});
+  const nSt=F.nbStations||4;
+  const pos={};for(let s=1;s<=nSt;s++)pos[s]=[];
+  coState.grid.forEach((st,idx)=>{if(st>0&&st<=nSt)pos[st].push(idx);});
   return {cols:coState.cols,rows:coState.rows,...pos};
 }
 
 function getGridProfileName(){
-  const c=[1,2,3,4].map(s=>coState.grid.filter(v=>v===s).length);
+  const nSt=F.nbStations||4;
+  const c=[];for(let s=1;s<=nSt;s++)c.push(coState.grid.filter(v=>v===s).length);
   return `Custom (${c.join('-')})`;
 }
 
 function initGridEditor(){
   const gs=F.gridSize||'4x4';
-  coState.cols=gs==='5x5'?5:4;coState.rows=coState.cols;
-  coState.grid=new Array(coState.cols*coState.rows).fill(0);
+  const {cols,rows}=parseGridSize(gs);
+  coState.cols=cols;coState.rows=rows;
+  coState.grid=new Array(cols*rows).fill(0);
   initBrushButtons();setBrush(1);
   renderPresetChips();
-  const first=Object.keys(PROFILES[gs]||{})[0];
+  const profiles=getProfiles(gs);
+  const first=Object.keys(profiles)[0];
   if(first)loadPreset(first);
   else renderGridEditor();
 }
@@ -1197,12 +1197,8 @@ function endChangeover(){
   setConn('online',`Session ${F.sessionCode} — Changeover complete ✓`);
 }
 
-// Manual inputs listeners
-['m1','m2','m3','m4'].forEach(id=>{
-  const el=document.getElementById(id);
-  if(el) el.addEventListener('input',updateManualTotal);
-});
-
+// Init options grille selon nb stations
+updateStationGridOptions();
 // Compute initial takt
 calcTakt();
 // Init Firebase au chargement
@@ -1210,5 +1206,3 @@ initFirebase();
 </script>
 </body>
 </html>
-
-
