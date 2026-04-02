@@ -583,7 +583,13 @@ function renderBuffer(){
           e.dataTransfer.effectAllowed='move';
           currentDrag={idx:i,comp};
         });
-        div.addEventListener('dragend',()=>{div.classList.remove('dragging');currentDrag=null;});
+        div.addEventListener('dragend',()=>{
+          // Toujours re-rendre le buffer après un drag (succès ou échec)
+          // → garantit que la pièce réapparaît si le drop a échoué ou a été annulé
+          div.classList.remove('dragging');
+          currentDrag=null;
+          renderBuffer();
+        });
         div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
       } else if(S.running&&!isCurrentStep){
         div.addEventListener('click',()=>setMsg(`⚠ Respectez la gamme — posez d'abord la pièce n°${S.currentStep+1}`,'err'));
@@ -673,6 +679,7 @@ function handleDrop(compIdx,targetPos){
     setMsg(`⚠ Respectez la gamme — posez d'abord la pièce n°${S.currentStep+1} (erreurs: ${S.errorCount})`,'err');
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
+    renderBuffer(); // pièce toujours visible après erreur gamme
     return;
   }
   if(comp.targetPos===targetPos){
@@ -688,6 +695,7 @@ function handleDrop(compIdx,targetPos){
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
     setMsg(`❌ Wrong position! Errors: ${S.errorCount}`,'err');
+    renderBuffer(); // pièce toujours visible après mauvaise position
   }
 }
 
