@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Trainer v3</title>
+<title>SimLean Assembly Line — Trainer v4</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
 
@@ -274,7 +274,7 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Trainer v2</span></div>
+  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Trainer v4</span></div>
   <div style="display:flex;gap:10px;align-items:center;">
     <span style="font-size:11px;color:#888;">
       <span class="conn-dot waiting" id="connDot"></span>
@@ -787,7 +787,7 @@ function renderLinks(){
   tbody.innerHTML = '';
 
   const base = F.baseUrl || window.location.href.replace(/\/[^/]*(\?.*)?$/, '');
-  const stationFile = 'SimLean_Station_v7.html';
+  const stationFile = 'SimLean_Station_v8.html';
 
   F.stations.forEach((st, i)=>{
     const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}`;
@@ -804,7 +804,7 @@ function renderLinks(){
 
   // Lien formateur — hardcodé pour éviter toute confusion
   const trF = document.createElement('tr');
-  const urlF = `${base}/SimLean_Formateur_v3.html?session=${F.sessionCode}`;
+  const urlF = `${base}/SimLean_Formateur_v4.html?session=${F.sessionCode}`;
   trF.innerHTML = `
     <td><strong style="color:var(--danger);">Formateur</strong></td>
     <td style="color:#888;">Global View</td>
