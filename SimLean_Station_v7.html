@@ -79,11 +79,15 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .puzzle-wrap{display:flex;justify-content:flex-start;overflow-x:auto;margin-bottom:8px;}
 .puzzle-board{display:inline-grid;gap:0;}
 .puzzle-board.cols4{grid-template-columns:repeat(4,62px);grid-template-rows:repeat(4,62px);}
-.puzzle-board.cols5{grid-template-columns:repeat(5,52px);grid-template-rows:repeat(5,52px);}
+.puzzle-board.cols5{grid-template-columns:repeat(5,54px);grid-template-rows:repeat(4,54px);}
+.puzzle-board.cols6{grid-template-columns:repeat(6,46px);grid-template-rows:repeat(4,46px);}
+.puzzle-board.cols7{grid-template-columns:repeat(7,40px);grid-template-rows:repeat(4,40px);}
 
 .puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;}
 .puzzle-board.cols4 .puzzle-cell{width:62px;height:62px;}
-.puzzle-board.cols5 .puzzle-cell{width:52px;height:52px;}
+.puzzle-board.cols5 .puzzle-cell{width:54px;height:54px;}
+.puzzle-board.cols6 .puzzle-cell{width:46px;height:46px;}
+.puzzle-board.cols7 .puzzle-cell{width:40px;height:40px;}
 .puzzle-cell svg{width:100%;height:100%;overflow:visible;}
 .piece-st-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;z-index:10;text-shadow:0 1px 2px rgba(0,0,0,.6);}
 .buffer-piece svg,.buffer-piece path,.buffer-piece span{pointer-events:none;}
@@ -650,7 +654,7 @@ function renderBuffer(){
 function renderBoard(){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
-  const SZ=COLS===5?52:62;
+  const SZ=COLS===7?40:COLS===6?46:COLS===5?54:62;
   for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
     const sides=getSides(flatIdx,S.topology);
     const ownerStation=PIECE_MAP[flatIdx];
@@ -839,7 +843,7 @@ function finishCycle(ok){
 function showCompletePuzzle(){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
-  const SZ=COLS===5?52:62;
+  const SZ=COLS===7?40:COLS===6?46:COLS===5?54:62;
   for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
     const sides=getSides(flatIdx,S.topology);
     const stNum=PIECE_MAP[flatIdx];
@@ -1466,3 +1470,4 @@ initStation();
 </script>
 </body>
 </html>
+  
