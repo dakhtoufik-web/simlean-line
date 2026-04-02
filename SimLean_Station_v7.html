@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Station v8</title>
+<title>SimLean Assembly Line — Station v7</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
 :root{
@@ -357,13 +357,9 @@ const DEFAULT_PROFILE={cols:4,rows:4,1:[0,3,12,15],2:[1,4,11,14],3:[2,7,8,13],4:
 function applyProfile(profileData){
   const p=profileData||DEFAULT_PROFILE;
   COLS=p.cols||4; ROWS=p.rows||4;
-  STATION_POSITIONS={};
-  for(let s=1;s<=6;s++){
-    const v=p[s]||p[String(s)];
-    if(v&&v.length) STATION_POSITIONS[s]=v;
-  }
+  STATION_POSITIONS={1:p[1]||p['1']||[],2:p[2]||p['2']||[],3:p[3]||p['3']||[],4:p[4]||p['4']||[]};
   PIECE_MAP=new Array(COLS*ROWS).fill(0);
-  for(let st=1;st<=6;st++){(STATION_POSITIONS[st]||[]).forEach(idx=>{PIECE_MAP[idx]=st;});}
+  for(let st=1;st<=4;st++){(STATION_POSITIONS[st]||[]).forEach(idx=>{PIECE_MAP[idx]=st;});}
   const board=document.getElementById('puzzleBoard');
   if(board) board.className=`puzzle-board cols${COLS}`;
 }
@@ -388,9 +384,9 @@ const BUFFER_STROKE = {1:'#bf360c',2:'#0d47a1',3:'#f57f17',4:'#004d40'};
 const BUFFER_TEXT   = {1:'#fff',   2:'#fff',   3:'#000',   4:'#fff'};
 
 // Alias pour le badge station (garde les couleurs vives pour l'identité visuelle)
-const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8',5:'#c07de0',6:'#80cc44'};
-const ST_STROKE={1:'#a01818',2:'#a06000',3:'#20a050',4:'#007a6a',5:'#7a40a0',6:'#508820'};
-const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000',5:'#fff',6:'#000'};
+const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8'};
+const ST_STROKE={1:'#a01818',2:'#a06000',3:'#20a050',4:'#007a6a'};
+const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000'};
 
 const COMPONENT_POOL=[
   {id:'A1',name:'Shaft Ø6'},{id:'B2',name:'Bushing'},{id:'C3',name:'Housing'},
@@ -406,23 +402,19 @@ const COMPONENT_POOL=[
 const params=new URLSearchParams(window.location.search);
 const STATION=parseInt(params.get('station')||'1');
 const SESSION=params.get('session')||'demo';
-const ASSY_NAMES={1:'ASSY 1',2:'ASSY 2',3:'ASSY 3',4:'ASSY 4',5:'ASSY 5',6:'ASSY 6'};
+const ASSY_NAMES={1:'ASSY 1',2:'ASSY 2',3:'ASSY 3',4:'ASSY 4'};
 document.getElementById('stationBadge').textContent=ASSY_NAMES[STATION]||`ASSY ${STATION}`;
 document.getElementById('stationBadge').style.background=ST_COLOR[STATION]||'var(--accent)';
 document.getElementById('stationBadge').style.color=ST_TEXT[STATION]||'#000';
 document.getElementById('sessionId').textContent=SESSION.toUpperCase();
 
 const legendEl=document.getElementById('puzzleLegend');
-function renderPuzzleLegend(){
-  legendEl.innerHTML='';
-  for(let s=1;s<=NB_STATIONS;s++){
-    const sp=document.createElement('span');
-    sp.style.cssText=`color:${ST_COLOR[s]||'#aaa'};margin-right:12px;font-weight:700;`;
-    sp.textContent=`■ ASSY ${s}`;
-    legendEl.appendChild(sp);
-  }
+for(let s=1;s<=4;s++){
+  const sp=document.createElement('span');
+  sp.style.cssText=`color:${ST_COLOR[s]};margin-right:12px;font-weight:700;`;
+  sp.textContent=`■ ASSY ${s}`;
+  legendEl.appendChild(sp);
 }
-renderPuzzleLegend();
 
 let CFG={takt:15,co:30};
 
@@ -870,7 +862,7 @@ function listenSessionConfig(){
   db.ref(`assembly_line/${SESSION}/config`).on('value',snap=>{
     const cfg=snap.val();if(!cfg)return;
     if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}
-    if(cfg.nb_stations){NB_STATIONS=cfg.nb_stations;renderPuzzleLegend();}
+    if(cfg.nb_stations)NB_STATIONS=cfg.nb_stations;
 
     // ── CHANGEOVER SIGNAL ─────────────────────────────────
     if(cfg.co_signal&&cfg.co_signal!==S.lastCoSignal){
@@ -884,7 +876,7 @@ function listenSessionConfig(){
       // premier chargement sans C/O
       applyProfile(cfg.profile_data);
       const myPos=STATION_POSITIONS[STATION]||[];
-      const segStart=(STATION-1)*4;
+      const segStart=([0,4,8,12,16])[STATION-1]||((STATION-1)*4);
       S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
       initCycle();
     }
@@ -913,9 +905,7 @@ function listenSessionConfig(){
 const CO_METAL={1:{fill:'#7a9bb5',stroke:'#3a6080',text:'#e8f4ff'},
                 2:{fill:'#a09070',stroke:'#705a30',text:'#fff4e0'},
                 3:{fill:'#6a7a6a',stroke:'#3a4a3a',text:'#e0ede0'},
-                4:{fill:'#8a85a8',stroke:'#504870',text:'#f0eeff'},
-                5:{fill:'#a87060',stroke:'#703020',text:'#fff0e8'},
-                6:{fill:'#70a870',stroke:'#306030',text:'#e8ffe8'}};
+                4:{fill:'#8a85a8',stroke:'#504870',text:'#f0eeff'}};
 
 let coGrid={cells:[], targetPositions:[], operatorPositions:[], painting:false};
 
@@ -957,7 +947,7 @@ function startChangeover(profileName, profileData, coSignalTime){
   if(profileData){
     applyProfile(profileData);
     const myPos=STATION_POSITIONS[STATION]||[];
-    const segStart=(STATION-1)*4;
+    const segStart=([0,4,8,12,16])[STATION-1]||((STATION-1)*4);
     S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
     S.inheritedState={};
     // Forcer régénération des formes pour la nouvelle configuration
