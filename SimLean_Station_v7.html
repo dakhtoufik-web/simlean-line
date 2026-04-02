@@ -413,6 +413,7 @@ document.getElementById('stationBadge').style.color=ST_TEXT[STATION]||'#000';
 document.getElementById('sessionId').textContent=SESSION.toUpperCase();
 
 const legendEl=document.getElementById('puzzleLegend');
+let NB_STATIONS=4,sessionStart=null,sessionInterval=null,db=null;
 function renderPuzzleLegend(){
   legendEl.innerHTML='';
   for(let s=1;s<=NB_STATIONS;s++){
@@ -434,7 +435,6 @@ let S={
   coCount:0,coTotalMs:0,lastCoSignal:null,coStart:null,coRaf:null,
   currentStep:0,  // gamme d'assemblage — index de la pièce courante
 };
-let NB_STATIONS=4,sessionStart=null,sessionInterval=null,db=null;
 
 // ── SVG ENGINE ──────────────────────────────────────────
 function generateTopology(){
