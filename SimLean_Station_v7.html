@@ -431,7 +431,7 @@ let S={
   wipIn:0,wipOut:0,cycles:0,output:0,scrap:0,history:[],
   myPieces:[],cornerComps:[],placedPositions:{},puzzleState:{},
   running:false,started:false,startTime:null,raf:null,errorCount:0,
-  topology:null,cornerSides:{},bufferDisplayOrder:null,lastResetSignal:null,inheritedState:{},fty:0,
+  topology:null,cornerSides:{},bufferDisplayOrder:null,gamme:[],lastResetSignal:null,inheritedState:{},fty:0,
   coCount:0,coTotalMs:0,lastCoSignal:null,coStart:null,coRaf:null,
   currentStep:0,  // gamme d'assemblage — index de la pièce courante
 };
@@ -523,7 +523,8 @@ function initCycle(){
   (STATION_POSITIONS[STATION]||[]).forEach(pos=>{
     S.cornerSides[pos]=getSides(pos,S.topology);
   });
-  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]); // ordre aléatoire = recherche dans la caisse
+  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]); // ordre visuel aléatoire dans la caisse
+  S.gamme=[...Array(S.myPieces.length).keys()];  // séquence d'assemblage FIXE : 0,1,2,3...
   S.cornerComps=S.myPieces.map(p=>({...p}));
   S.placedPositions={};
   S.currentStep=0;
@@ -564,15 +565,18 @@ function renderBuffer(){
     numEl.style.color=placed?'var(--success)':METAL_TEXT[STATION];
     div.appendChild(numEl);
 
-    // Numéro d'ordre gamme (visuel uniquement)
+    // Numéro d'ordre gamme fixe (toujours identique, process industriel)
     const stepEl=document.createElement('span');
     stepEl.style.cssText=`position:absolute;top:2px;right:4px;font-size:9px;font-weight:700;font-family:'Share Tech Mono',monospace;pointer-events:none;z-index:11;`;
-    stepEl.textContent=placed?'✓':(stepIndex+1);
-    stepEl.style.color=placed?'var(--success)':(stepIndex===S.currentStep&&S.running)?'#fff':'rgba(255,255,255,0.4)';
+    const gammeIndex=S.gamme.indexOf(i);
+    stepEl.textContent=placed?'✓':(gammeIndex+1);
+    stepEl.style.color=placed?'var(--success)':(gammeIndex===S.currentStep&&S.running)?'#fff':'rgba(255,255,255,0.4)';
     div.appendChild(stepEl);
 
     if(!placed){
-      const isCurrentStep=(stepIndex===S.currentStep);
+      // La pièce active = celle dont l'index dans la gamme fixe correspond à currentStep
+      const gammeIndex=S.gamme.indexOf(i);      // position fixe dans la séquence d'assemblage
+      const isCurrentStep=(gammeIndex===S.currentStep);
       div.draggable=S.running&&isCurrentStep;
       div.style.cursor=S.running?(isCurrentStep?'grab':'not-allowed'):'not-allowed';
       div.style.opacity=S.running?(isCurrentStep?'1':'0.35'):'0.6';
@@ -672,14 +676,14 @@ function handleDrop(compIdx,targetPos){
   if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
-  // Gamme stricte : vérifier que c'est la pièce du currentStep
-  const displayOrder=S.bufferDisplayOrder||[...Array(S.myPieces.length).keys()];
-  if(displayOrder.indexOf(compIdx)!==S.currentStep){
+  // Gamme fixe : vérifier que compIdx correspond bien à la pièce attendue à ce step
+  const expectedCompIdx=S.gamme[S.currentStep];
+  if(compIdx!==expectedCompIdx){
     S.errorCount++;
     setMsg(`⚠ Respectez la gamme — posez d'abord la pièce n°${S.currentStep+1} (erreurs: ${S.errorCount})`,'err');
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
-    renderBuffer(); // pièce toujours visible après erreur gamme
+    renderBuffer();
     return;
   }
   if(comp.targetPos===targetPos){
