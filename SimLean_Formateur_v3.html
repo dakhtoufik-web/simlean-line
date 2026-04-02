@@ -296,8 +296,6 @@ body {
       <label>NB STATIONS</label>
       <select id="cfgStations" onchange="updateStationGridOptions()">
         <option value="4" selected>4 stations</option>
-        <option value="5">5 stations</option>
-        <option value="6">6 stations</option>
       </select>
     </div>
     <div class="setup-field">
@@ -461,9 +459,12 @@ body {
 // ── PROFILES & CONFIGURATION ──────────────────────────
 // ── Grilles disponibles par nombre de stations ──────────────────
 const GRID_OPTIONS = {
-  4: [{v:'4x4',l:'4×4 (16 pièces)'},{v:'4x5',l:'4×5 (20 pièces)'},{v:'4x6',l:'4×6 (24 pièces)'}],
-  5: [{v:'5x5',l:'5×5 (25 pièces)'},{v:'5x6',l:'5×6 (30 pièces)'},{v:'5x7',l:'5×7 (35 pièces)'}],
-  6: [{v:'6x5',l:'6×5 (30 pièces)'},{v:'6x6',l:'6×6 (36 pièces)'},{v:'6x7',l:'6×7 (42 pièces)'}],
+  4: [
+    {v:'4x4',l:'4×4 (16 pièces)'},
+    {v:'4x5',l:'4×5 (20 pièces)'},
+    {v:'4x6',l:'4×6 (24 pièces)'},
+    {v:'4x7',l:'4×7 (28 pièces)'},
+  ],
 };
 
 function parseGridSize(gs){
