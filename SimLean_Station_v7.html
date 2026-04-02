@@ -78,12 +78,14 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 /* PUZZLE BOARD */
 .puzzle-wrap{display:flex;justify-content:flex-start;overflow-x:auto;margin-bottom:8px;}
 .puzzle-board{display:inline-grid;gap:0;}
+.puzzle-board.cols3{grid-template-columns:repeat(3,72px);grid-template-rows:repeat(4,72px);}
 .puzzle-board.cols4{grid-template-columns:repeat(4,62px);grid-template-rows:repeat(4,62px);}
 .puzzle-board.cols5{grid-template-columns:repeat(5,54px);grid-template-rows:repeat(4,54px);}
 .puzzle-board.cols6{grid-template-columns:repeat(6,46px);grid-template-rows:repeat(4,46px);}
 .puzzle-board.cols7{grid-template-columns:repeat(7,40px);grid-template-rows:repeat(4,40px);}
 
 .puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;}
+.puzzle-board.cols3 .puzzle-cell{width:72px;height:72px;}
 .puzzle-board.cols4 .puzzle-cell{width:62px;height:62px;}
 .puzzle-board.cols5 .puzzle-cell{width:54px;height:54px;}
 .puzzle-board.cols6 .puzzle-cell{width:46px;height:46px;}
@@ -654,7 +656,7 @@ function renderBuffer(){
 function renderBoard(){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
-  const SZ=COLS===7?40:COLS===6?46:COLS===5?54:62;
+  const SZ=COLS===7?40:COLS===6?46:COLS===5?54:COLS===3?72:62;
   for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
     const sides=getSides(flatIdx,S.topology);
     const ownerStation=PIECE_MAP[flatIdx];
@@ -843,7 +845,7 @@ function finishCycle(ok){
 function showCompletePuzzle(){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
-  const SZ=COLS===7?40:COLS===6?46:COLS===5?54:62;
+  const SZ=COLS===7?40:COLS===6?46:COLS===5?54:COLS===3?72:62;
   for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
     const sides=getSides(flatIdx,S.topology);
     const stNum=PIECE_MAP[flatIdx];
@@ -1470,4 +1472,3 @@ initStation();
 </script>
 </body>
 </html>
-  
