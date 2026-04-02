@@ -130,6 +130,19 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .bb-val{font-size:14px;font-weight:700;color:var(--muted);font-family:'Share Tech Mono',monospace;}
 .bb-val.good{color:var(--success);}.bb-val.bad{color:var(--danger);}
 
+/* ── PRODUCTION RUN HISTORY ── */
+.run-history{width:100%;max-width:1060px;margin-top:6px;background:var(--panel);border:1px solid var(--border);overflow:hidden;}
+.run-history-header{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;border-bottom:1px solid var(--border);background:var(--panel2);}
+.run-history-title{font-size:9px;letter-spacing:3px;color:var(--accent);font-weight:700;text-transform:uppercase;}
+.run-table{width:100%;border-collapse:collapse;}
+.run-table th{font-size:8px;letter-spacing:2px;color:#555;text-align:center;padding:4px 6px;border-bottom:1px solid var(--border);text-transform:uppercase;}
+.run-table td{font-size:11px;font-family:'Share Tech Mono',monospace;text-align:center;padding:4px 6px;border-bottom:1px solid rgba(30,37,56,.5);color:var(--text);}
+.run-table tr:last-child td{border-bottom:none;}
+.run-table td.run-label{font-size:9px;letter-spacing:1px;color:#666;text-align:left;font-family:'Barlow Condensed',sans-serif;font-weight:700;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.run-table td.good{color:var(--success);}.run-table td.bad{color:var(--danger);}.run-table td.accent{color:var(--accent);}
+.run-current{background:rgba(0,194,168,.05);}
+.run-current td{color:var(--cyan)!important;}
+
 /* ── CHANGEOVER OVERLAY ── */
 .co-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;
   flex-direction:column;align-items:center;overflow-y:auto;padding:20px 16px;}
@@ -283,7 +296,12 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <div class="status-msg" id="statusMsg"></div>
 <div class="validate-banner" id="validateBanner">
   <div><div class="val-text" id="valText">✅ Assembly completed !</div><div class="val-sub">Validate to send downstream</div></div>
-  <button class="btn" style="background:var(--success);color:#000;" id="btnValidate">→ Send Downstream</button>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <button class="btn" style="background:var(--cyan);color:#000;font-size:12px;" id="btnCapture" onclick="captureVisual()">
+      📸 Capture Visual
+    </button>
+    <button class="btn" style="background:var(--success);color:#000;" id="btnValidate">→ Send Downstream</button>
+  </div>
 </div>
 
 <div class="flux-row">
@@ -346,8 +364,34 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
   <div class="bb-cell"><div class="bb-key">WIP IN</div><div class="bb-val" id="bbWipIn">0</div></div>
 </div>
 
+<!-- SUIVI PAR RUN DE PRODUCTION -->
+<div class="run-history">
+  <div class="run-history-header">
+    <span class="run-history-title">📊 Suivi par run de production</span>
+    <span style="font-size:9px;color:#555;letter-spacing:1px;">1 ligne = 1 configuration (entre chaque C/O)</span>
+  </div>
+  <table class="run-table" id="runTable">
+    <thead>
+      <tr>
+        <th style="text-align:left;">RUN / CONFIG</th>
+        <th>CYCLES</th>
+        <th>OUTPUT</th>
+        <th>ERRORS</th>
+        <th>FTY %</th>
+        <th>AVG C/T</th>
+        <th>MIN C/T</th>
+        <th>C/O TIME</th>
+      </tr>
+    </thead>
+    <tbody id="runBody">
+      <tr><td colspan="8" style="color:#444;font-size:10px;padding:10px;text-align:center;">Démarrez un cycle pour commencer le suivi.</td></tr>
+    </tbody>
+  </table>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 let COLS=4, ROWS=4;
 let PIECE_MAP=[];
@@ -433,7 +477,11 @@ let S={
   running:false,started:false,startTime:null,raf:null,errorCount:0,
   topology:null,cornerSides:{},bufferDisplayOrder:null,gamme:[],lastResetSignal:null,inheritedState:{},fty:0,
   coCount:0,coTotalMs:0,lastCoSignal:null,coStart:null,coRaf:null,
-  currentStep:0,  // gamme d'assemblage — index de la pièce courante
+  coRunning:false,  // true = on est dans la période de changeover (signal → 1ère pièce placée)
+  coProfileLabel:'', // nom du profil en cours de C/O
+  currentStep:0,
+  runs:[],  // historique par run de production (1 run = entre 2 changeovers)
+  currentRun:null, // run en cours
 };
 
 // ── SVG ENGINE ──────────────────────────────────────────
@@ -565,22 +613,14 @@ function renderBuffer(){
     numEl.style.color=placed?'var(--success)':METAL_TEXT[STATION];
     div.appendChild(numEl);
 
-    // Numéro d'ordre gamme fixe (toujours identique, process industriel)
-    const stepEl=document.createElement('span');
-    stepEl.style.cssText=`position:absolute;top:2px;right:4px;font-size:9px;font-weight:700;font-family:'Share Tech Mono',monospace;pointer-events:none;z-index:11;`;
-    const gammeIndex=S.gamme.indexOf(i);
-    stepEl.textContent=placed?'✓':(gammeIndex+1);
-    stepEl.style.color=placed?'var(--success)':(gammeIndex===S.currentStep&&S.running)?'#fff':'rgba(255,255,255,0.4)';
-    div.appendChild(stepEl);
 
     if(!placed){
-      // La pièce active = celle dont l'index dans la gamme fixe correspond à currentStep
-      const gammeIndex=S.gamme.indexOf(i);      // position fixe dans la séquence d'assemblage
-      const isCurrentStep=(gammeIndex===S.currentStep);
-      div.draggable=S.running&&isCurrentStep;
-      div.style.cursor=S.running?(isCurrentStep?'grab':'not-allowed'):'not-allowed';
-      div.style.opacity=S.running?(isCurrentStep?'1':'0.35'):'0.6';
-      if(S.running&&isCurrentStep){
+      // Toutes les pièces sont visibles et draggables — pas de numéro ni de highlight
+      // La gamme est appliquée par handleDrop (rejet si mauvais ordre)
+      div.draggable=!!S.running;
+      div.style.cursor=S.running?'grab':'not-allowed';
+      div.style.opacity=S.running?'1':'0.6';
+      if(S.running){
         div.addEventListener('dragstart',e=>{
           div.classList.add('dragging');
           e.dataTransfer.setData('compIdx',String(i));
@@ -595,10 +635,6 @@ function renderBuffer(){
           renderBuffer();
         });
         div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
-      } else if(S.running&&!isCurrentStep){
-        div.addEventListener('click',()=>setMsg(`⚠ Respectez la gamme — posez d'abord la pièce n°${S.currentStep+1}`,'err'));
-      } else {
-        div.addEventListener('click',()=>setMsg('▶ Click "Start Cycle" to begin','err'));
       }
     }
     bar.appendChild(div);
@@ -625,11 +661,13 @@ function renderBoard(){
     if(isMyPos&&!alreadyPlaced){
       // ZONE DE DROP — dimensions explicites obligatoires
       const comp=S.cornerComps.find(c=>c.targetPos===flatIdx);
+      const compIdx=S.cornerComps.indexOf(comp);
+      const chronoNum=S.gamme.indexOf(compIdx)+1; // numéro d'ordre dans la gamme fixe
       const cell=document.createElement('div');
       cell.className='corner-drop'+(S.running?' pulsing':'');
       cell.style.cssText=`width:${SZ}px;height:${SZ}px;`;
       cell.dataset.pos=flatIdx;
-      cell.innerHTML=`<span class="drop-hint" style="font-size:9px;opacity:0;"></span>`;
+      cell.innerHTML=`<span class="drop-hint" style="font-size:13px;font-weight:900;opacity:0.9;font-family:'Share Tech Mono',monospace;color:var(--accent);">${chronoNum}</span>`;
       if(S.running){
         cell.addEventListener('dragover',e=>{
           e.preventDefault();
@@ -687,9 +725,20 @@ function handleDrop(compIdx,targetPos){
     return;
   }
   if(comp.targetPos===targetPos){
+    // ── 1ère pièce post-C/O : dry run = finalise le changeover ──────────────
+    if(S.coRunning){
+      completeCO(); // arrête le timer C/O, enregistre, crée nouveau run
+      S.placedPositions[targetPos]=comp;
+      S.currentStep++;
+      // S.started reste false → le chrono de cycle ne démarre qu'à la 2ème pièce
+      renderBuffer();renderBoard();updateBufferProgress();
+      // Si seulement 1 pièce à assembler (cas extrême), terminer le cycle
+      if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
+      return;
+    }
+    // ── Pièces normales : démarrer/continuer le chrono de cycle ─────────────
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
     S.placedPositions[targetPos]=comp;
-    // Gamme stricte garantie par le guard ci-dessus → avancer
     S.currentStep++;
     renderBuffer();renderBoard();updateBufferProgress();
     setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
@@ -749,6 +798,7 @@ function startCycle(){
 }
 
 function _doStartCycle(){
+  if(!S.currentRun)startRun('Run initial');
   S.running=true;
   document.getElementById('timerDisp').classList.add('running');
   setMsg('▶ Drag your parts to their positions on the puzzle','ok');
@@ -780,6 +830,7 @@ function finishCycle(ok){
     document.getElementById('validateBanner').classList.add('show');
     document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
     updateStats();updateWIPDisplay();pushStats();
+    updateCurrentRun();
   } else {
     setTimeout(()=>initCycle(),700);
   }
@@ -890,8 +941,9 @@ function listenSessionConfig(){
       S.lastCoSignal=cfg.co_signal;
       startChangeover(cfg.co_profile_name||'New Profile', cfg.profile_data, cfg.co_signal);
     } else if(!cfg.co_signal&&S.coStart){
-      // co_signal supprimé par le formateur → fin du changeover
-      stopChangeover();
+      // co_signal supprimé par le formateur → abandon C/O
+      abortCO();
+      initCycle();
     } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart){
       // premier chargement sans C/O
       applyProfile(cfg.profile_data);
@@ -901,10 +953,10 @@ function listenSessionConfig(){
       initCycle();
     }
 
-    if(cfg.status==='stopped'){stopChangeover();setMsg('⏹ Session stopped','err');document.getElementById('btnStart').disabled=true;}
+    if(cfg.status==='stopped'){abortCO();setMsg('⏹ Session stopped','err');document.getElementById('btnStart').disabled=true;}
     if(cfg.reset_signal&&cfg.reset_signal!==S.lastResetSignal){
       S.lastResetSignal=cfg.reset_signal;
-      stopChangeover();
+      abortCO();
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
       S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;
       S.topology=null;S.cornerSides={};
@@ -942,6 +994,8 @@ function startChangeover(profileName, profileData, coSignalTime){
   document.getElementById('coTimer').textContent='00:00';
   S.coStart=coSignalTime||Date.now();
   S.coCount++;
+  S.coRunning=true;
+  S.coProfileLabel=profileName||`Config ${S.coCount}`;
   document.getElementById('dbCOcount').textContent=S.coCount;
 
   // Build reference grid (full layout) + operator grid
@@ -1168,45 +1222,240 @@ function validateChangeover(){
     return;
   }
 
-  // All correct — stop C/O timer and report
-  stopChangeover();
+  // All correct — fermer l'overlay (timer C/O continue jusqu'à la 1ère pièce)
+  closeCoOverlay();
+  initCycle();
 }
 
-function stopChangeover(){
+// ── Ferme l'overlay C/O — le timer CONTINUE jusqu'à la 1ère pièce placée ──
+function closeCoOverlay(){
+  cancelAnimationFrame(S.coRaf);
+  S.coRaf=null;
+  document.getElementById('coOverlay').classList.remove('show');
+  // Le timer C/O continue à tourner en arrière-plan
+  // Démarrer une animation légère sur la barre de statut pour signaler que C/O n'est pas terminé
+  setMsg('⚙️ Grille validée — Démarrez le cycle et placez la 1ère pièce pour finaliser le C/O','info');
+}
+
+// ── Finalise le C/O au placement de la 1ère pièce (définition industrielle SMED) ──
+function completeCO(){
   if(!S.coStart)return;
   const elapsed=Date.now()-S.coStart;
   S.coStart=null;
-  cancelAnimationFrame(S.coRaf);
-  S.coRaf=null;
+  S.coRunning=false;
   S.coTotalMs+=elapsed;
+  const coSec=Math.round(elapsed/1000);
 
   // Push C/O time to Firebase
-  const coSec=Math.round(elapsed/1000);
   if(db){
     db.ref(`assembly_line/${SESSION}/stations/${stKey}/co_times`).push({
-      round:S.coCount, seconds:coSec, timestamp:Date.now()
+      round:S.coCount,seconds:coSec,timestamp:Date.now()
     });
   }
 
-  document.getElementById('coOverlay').classList.remove('show');
+  // Mettre à jour l'UI
   const totalSec=Math.round(S.coTotalMs/1000);
   const avgSec=Math.round(S.coTotalMs/S.coCount/1000);
-  // C/O TIME = total cumulé + moyenne
   document.getElementById('dbCOtime').textContent=`${totalSec}s total (avg ${avgSec}s)`;
   document.getElementById('dbCOcount').textContent=S.coCount;
-  // C/O = dernier temps mesuré (data box + bottom bar)
   const dbCOel=document.getElementById('dbCO');
   if(dbCOel){dbCOel.textContent=coSec+'s';dbCOel.className='db-val bad';}
   const bbCOel=document.getElementById('bbCO');
-  if(bbCOel) bbCOel.textContent=coSec+'s';
+  if(bbCOel)bbCOel.textContent=coSec+'s';
+
+  // Nouveau run de production après C/O
+  startRun(S.coProfileLabel);
+  if(S.currentRun)S.currentRun.coSec=coSec;
   pushStats();
-  initCycle();
-  setMsg(`✅ Changeover validated in ${coSec}s — Ready to start`,'ok');
+  setMsg(`✅ C/O finalisé en ${coSec}s — 1ère pièce = dry run, cycle en cours…`,'ok');
+}
+
+// ── Abandon/reset forcé du C/O (session stop, reset formateur) ──
+function abortCO(){
+  S.coStart=null;
+  S.coRunning=false;
+  cancelAnimationFrame(S.coRaf);
+  S.coRaf=null;
+  document.getElementById('coOverlay').classList.remove('show');
+}
+
+function startRun(profileName){
+  // Fermer le run précédent s'il existe
+  if(S.currentRun){
+    S.currentRun.endTime=Date.now();
+    S.runs.push({...S.currentRun});
+  }
+  S.currentRun={
+    num:S.runs.length+1,
+    label:profileName||`Run ${S.runs.length+1}`,
+    startTime:Date.now(),endTime:null,
+    cycles:0,output:0,errors:0,fty:0,ctHistory:[],coSec:null,
+  };
+  renderRunTable();
+}
+
+function updateCurrentRun(cycle){
+  if(!S.currentRun)startRun('Initial');
+  const r=S.currentRun;
+  r.cycles=S.cycles;
+  r.output=S.output;
+  r.errors=S.errorCount;
+  r.fty=S.fty;
+  r.ctHistory=[...S.history];
+  renderRunTable();
+}
+
+function renderRunTable(){
+  const tbody=document.getElementById('runBody');
+  if(!tbody)return;
+  const allRuns=[...S.runs];
+  if(S.currentRun)allRuns.push(S.currentRun);
+  if(!allRuns.length)return;
+  tbody.innerHTML='';
+  allRuns.slice().reverse().forEach((r,ri)=>{
+    const isCurrent=!r.endTime;
+    const avgCT=r.ctHistory.length?r.ctHistory.reduce((a,b)=>a+b,0)/r.ctHistory.length:0;
+    const minCT=r.ctHistory.length?Math.min(...r.ctHistory):0;
+    const ftyPct=r.output>0?Math.round((r.fty/r.output)*100):100;
+    const tr=document.createElement('tr');
+    if(isCurrent)tr.className='run-current';
+    tr.innerHTML=`
+      <td class="run-label">${isCurrent?'▶ ':''}<span title="${r.label}">${r.label}</span></td>
+      <td>${r.cycles||0}</td>
+      <td class="${(r.output||0)>0?'good':''}">${r.output||0}</td>
+      <td class="${(r.errors||0)>0?'bad':''}">${r.errors||0}</td>
+      <td class="${ftyPct>=95?'good':ftyPct>=80?'accent':'bad'}">${r.output>0?ftyPct+'%':'—'}</td>
+      <td class="${avgCT>0&&avgCT<=CFG.takt*1000?'good':avgCT>0?'bad':''}">${avgCT>0?(avgCT/1000).toFixed(2)+'s':'—'}</td>
+      <td>${minCT>0?(minCT/1000).toFixed(2)+'s':'—'}</td>
+      <td>${r.coSec!==null?r.coSec+'s':'—'}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
 function pushStats(){
   if(!db)return;
   db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',co_count:S.coCount,co_avg_s:S.coCount>0?Math.round(S.coTotalMs/S.coCount/1000):0,name:`${ASSY_NAMES[STATION]} — Assemblage`,last_updated:Date.now()});
+}
+
+function captureVisual(){
+  const btn=document.getElementById('btnCapture');
+  btn.textContent='⏳ Génération...';
+  btn.disabled=true;
+
+  const target=document.getElementById('puzzleBoard');
+
+  html2canvas(target,{
+    backgroundColor:'#0b0e13',
+    scale:2,           // haute résolution
+    useCORS:true,
+    logging:false,
+  }).then(puzzleCanvas=>{
+
+    // ── Construire l'image finale avec en-tête KEEPLEAN ──
+    const PAD=24, HEAD=90, FOOT=56;
+    const W=puzzleCanvas.width+PAD*2;
+    const H=puzzleCanvas.height+HEAD+FOOT+PAD;
+
+    const canvas=document.createElement('canvas');
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+
+    // Fond
+    ctx.fillStyle='#0b0e13';
+    ctx.fillRect(0,0,W,H);
+
+    // Bordure accent
+    ctx.strokeStyle='#f0a500';
+    ctx.lineWidth=3;
+    ctx.strokeRect(2,2,W-4,H-4);
+
+    // ── HEADER ──
+    // Bande accent top
+    ctx.fillStyle='#f0a500';
+    ctx.fillRect(2,2,W-4,3);
+
+    // Logo KEEPLEAN
+    ctx.font='bold 13px monospace';
+    ctx.fillStyle='#f0a500';
+    ctx.fillText('KEEPLEAN', PAD, 28);
+    ctx.font='13px monospace';
+    ctx.fillStyle='#ffffff';
+    ctx.fillText('— SimLean Assembly Line', PAD+90, 28);
+
+    // Badge station
+    const stColor=ST_COLOR[STATION]||'#f0a500';
+    ctx.fillStyle=stColor;
+    ctx.beginPath();
+    ctx.roundRect(W-PAD-110,10,105,24,12);
+    ctx.fill();
+    ctx.font='bold 12px monospace';
+    ctx.fillStyle=ST_TEXT[STATION]||'#000';
+    ctx.textAlign='center';
+    ctx.fillText(`ASSY ${STATION} — ${SESSION.toUpperCase()}`,W-PAD-57,26);
+    ctx.textAlign='left';
+
+    // Ligne séparateur
+    ctx.strokeStyle='#1e2538';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(PAD,36);ctx.lineTo(W-PAD,36);ctx.stroke();
+
+    // Titre "Visual de montage"
+    ctx.font='bold 18px sans-serif';
+    ctx.fillStyle='#dde1ed';
+    ctx.fillText('📋 Visual de Montage — Gamme d\'Assemblage',PAD,60);
+
+    // Date + cycle time
+    const now=new Date();
+    const dateStr=now.toLocaleDateString('fr-FR')+' '+now.toLocaleTimeString('fr-FR');
+    const lastCT=S.history.length?(S.history[S.history.length-1]/1000).toFixed(2)+'s':'—';
+    ctx.font='11px monospace';
+    ctx.fillStyle='#00c2a8';
+    ctx.fillText(`${dateStr}   |   Cycle: ${S.cycles}   |   C/T: ${lastCT}   |   FTY: ${S.output>0?Math.round((S.fty/S.output)*100)+'%':'—'}`,PAD,78);
+
+    // ── PUZZLE ──
+    ctx.drawImage(puzzleCanvas,PAD,HEAD);
+
+    // ── FOOTER ──
+    const fy=HEAD+puzzleCanvas.height+16;
+    ctx.strokeStyle='#1e2538';
+    ctx.beginPath();ctx.moveTo(PAD,fy-4);ctx.lineTo(W-PAD,fy-4);ctx.stroke();
+
+    // Légende stations
+    let lx=PAD;
+    for(let s=1;s<=NB_STATIONS;s++){
+      ctx.fillStyle=METAL_FILL[s]||METAL_FILL[1];
+      ctx.fillRect(lx,fy+2,14,14);
+      ctx.strokeStyle=METAL_STROKE[s]||METAL_STROKE[1];
+      ctx.lineWidth=1;
+      ctx.strokeRect(lx,fy+2,14,14);
+      ctx.font='11px monospace';
+      ctx.fillStyle='#888';
+      ctx.fillText(`ASSY ${s}`,lx+18,fy+14);
+      lx+=70;
+    }
+
+    // Watermark KEEPLEAN
+    ctx.font='10px monospace';
+    ctx.fillStyle='#333';
+    ctx.textAlign='right';
+    ctx.fillText('keeplean.lu',W-PAD,fy+14);
+    ctx.textAlign='left';
+
+    // ── Téléchargement ──
+    const link=document.createElement('a');
+    const ts=now.toISOString().slice(0,19).replace(/:/g,'-');
+    link.download=`SimLean_ASSY${STATION}_${SESSION}_${ts}.png`;
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+
+    btn.textContent='✅ Capturé !';
+    setTimeout(()=>{btn.textContent='📸 Capture Visual';btn.disabled=false;},2500);
+  }).catch(e=>{
+    console.error('Capture error:',e);
+    btn.textContent='📸 Capture Visual';
+    btn.disabled=false;
+    setMsg('⚠ Capture impossible — faites une capture manuelle','err');
+  });
 }
 
 document.getElementById('btnStart').addEventListener('click',startCycle);
