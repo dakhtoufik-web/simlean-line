@@ -889,20 +889,41 @@ function showCompletePuzzle(){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
   const SZ=COLS===5?52:62;
-  for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
-    const sides=getSides(flatIdx,S.topology);
-    const stNum=PIECE_MAP[flatIdx];
-    const cell=document.createElement('div');
-    cell.className='puzzle-cell';
-    cell.style.cssText=`width:${SZ}px;height:${SZ}px;animation:popIn .3s ease ${(flatIdx*.03).toFixed(2)}s both;`;
-    cell.innerHTML=makeSVG(sides,SZ,METAL_FILL[stNum]||METAL_PLACED,METAL_STROKE[stNum]||METAL_PLACED_STROKE);
-    const numEl=document.createElement('span');
-    numEl.className='piece-st-num';
-    numEl.style.cssText=`font-size:${SZ*.2}px;color:${METAL_TEXT[stNum]||'#e8f0f4'};`;
-    numEl.textContent=stNum;
-    cell.appendChild(numEl);
-    board.appendChild(cell);
+  const W=COLS*SZ,H=ROWS*SZ;
+  board.style.width=W+'px';board.style.height=H+'px';
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width',W);svg.setAttribute('height',H);
+  svg.style.cssText='display:block;overflow:visible;position:absolute;top:0;left:0;pointer-events:none;';
+  for(let fi=0;fi<COLS*ROWS;fi++){
+    const sides=getSides(fi,S.topology);
+    const stNum=PIECE_MAP[fi]||1;
+    const col=fi%COLS,row=Math.floor(fi/COLS);
+    const tx=col*SZ,ty=row*SZ;
+    const delay=(fi*.03).toFixed(2);
+    const g=document.createElementNS(NS,'g');
+    g.setAttribute('transform',`translate(${tx},${ty})`);
+    g.style.cssText=`animation:popIn .3s ease ${delay}s both;`;
+    const path=document.createElementNS(NS,'path');
+    path.setAttribute('d',piecePath(sides,SZ));
+    path.setAttribute('fill',METAL_FILL[stNum]||METAL_PLACED);
+    path.setAttribute('stroke',METAL_STROKE[stNum]||METAL_PLACED_STROKE);
+    path.setAttribute('stroke-width','1.5');
+    path.setAttribute('stroke-linejoin','round');
+    g.appendChild(path);
+    const txt=document.createElementNS(NS,'text');
+    txt.setAttribute('x',String(SZ/2));txt.setAttribute('y',String(SZ/2));
+    txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','central');
+    txt.setAttribute('fill',METAL_TEXT[stNum]||'#e8f0f4');
+    txt.setAttribute('font-size',String(Math.round(SZ*.2)));
+    txt.setAttribute('font-family',"'Barlow Condensed',sans-serif");
+    txt.setAttribute('font-weight','700');txt.setAttribute('pointer-events','none');
+    txt.textContent=String(stNum);
+    g.appendChild(txt);
+    svg.appendChild(g);
   }
+  board.appendChild(svg);
 }
 
 function validatePiece(){
