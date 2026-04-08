@@ -546,6 +546,7 @@ function calcTakt(){
   const demand   = parseFloat(document.getElementById('cfgDemand').value)    || 1;
   const taktSec  = Math.round((availMin * 60) / demand);
   F.takt = taktSec;
+  F.demand = demand;
   const display = document.getElementById('taktDisplay');
   if(display){
     display.textContent = taktSec >= 60
@@ -636,6 +637,7 @@ let F = {
   sessionCode: '',
   nbStations: 4,
   takt: 15,
+  demand: 1,
   gridSize: '4x4',
   profile: 'Balanced (4-4-4-4)',
   baseUrl: '',
