@@ -668,7 +668,10 @@ function renderBoard(){
     const ownerStation=PIECE_MAP[fi];
     const isMyPos=(STATION_POSITIONS[STATION]||[]).includes(fi);
     const alreadyPlaced=!!S.placedPositions[fi];
-    const prevPlaced=S.inheritedState&&S.inheritedState[fi];
+    // prevPlaced: from inheritedState OR fallback to upstream stations (always assembled in line)
+    const inheritedVal=S.inheritedState&&S.inheritedState[fi];
+    const isUpstream=!alreadyPlaced&&!isMyPos&&ownerStation>0&&ownerStation<STATION;
+    const prevPlaced=inheritedVal||(isUpstream?ownerStation:0);
     if(isMyPos&&!alreadyPlaced) continue;
     const col=fi%COLS,row=Math.floor(fi/COLS);
     const tx=col*SZ,ty=row*SZ;
@@ -1010,10 +1013,7 @@ function listenSessionConfig(){
     if(cfg.nb_stations){NB_STATIONS=cfg.nb_stations;renderPuzzleLegend();}
     if(cfg.topology&&!S.topology){
       S.topology=cfg.topology;
-      S.cornerSides={};
-      // Recalc cornerSides for current positions
-      (STATION_POSITIONS[STATION]||[]).forEach(pos=>{S.cornerSides[pos]=getSides(pos,S.topology);});
-      renderBoard();renderBuffer();
+      // cornerSides will be recalculated in initCycle() after applyProfile
     }
     if(STATION===1&&cfg.customer_demand){
       const wipCountEl=document.getElementById('wipIn');
