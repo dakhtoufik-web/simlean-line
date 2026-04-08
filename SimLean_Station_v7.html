@@ -899,15 +899,22 @@ function showCompletePuzzle(){
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
   svg.setAttribute('width',W);svg.setAttribute('height',H);
   svg.style.cssText='display:block;overflow:visible;position:absolute;top:0;left:0;pointer-events:none;';
+  // Build full picture: inheritedState + placedPositions override PIECE_MAP
+  const fullPicture={};
+  // 1. Start with PIECE_MAP as base (station ownership)
+  for(let i=0;i<COLS*ROWS;i++) if(PIECE_MAP[i]) fullPicture[i]=PIECE_MAP[i];
+  // 2. Override with actual inherited data (more reliable)
+  Object.keys(S.inheritedState||{}).forEach(k=>{if(S.inheritedState[k]) fullPicture[Number(k)]=S.inheritedState[k];});
+  // 3. Override with this station's placed pieces
+  Object.keys(S.placedPositions||{}).forEach(k=>{fullPicture[Number(k)]=STATION;});
   for(let fi=0;fi<COLS*ROWS;fi++){
     const sides=getSides(fi,S.topology);
-    const stNum=PIECE_MAP[fi]||1;
+    const stNum=fullPicture[fi]||1;
     const col=fi%COLS,row=Math.floor(fi/COLS);
     const tx=col*SZ,ty=row*SZ;
-    const delay=(fi*.03).toFixed(2);
     const g=document.createElementNS(NS,'g');
     g.setAttribute('transform',`translate(${tx},${ty})`);
-    g.style.cssText=`animation:popIn .3s ease ${delay}s both;`;
+    // No CSS animation on SVG <g> — use SVG animate instead for pop effect
     const path=document.createElementNS(NS,'path');
     path.setAttribute('d',piecePath(sides,SZ));
     path.setAttribute('fill',METAL_FILL[stNum]||METAL_PLACED);
@@ -927,6 +934,8 @@ function showCompletePuzzle(){
     svg.appendChild(g);
   }
   board.appendChild(svg);
+  // Flash the whole board to celebrate
+  svg.style.animation='completeFlash .6s ease 2';
 }
 
 function validatePiece(){
