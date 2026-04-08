@@ -76,16 +76,9 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .bp-name{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:7px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.3px;pointer-events:none;z-index:10;}
 
 /* PUZZLE BOARD */
-.puzzle-wrap{display:inline-flex;justify-content:flex-start;overflow:visible;margin-bottom:8px;border:2px solid #ffffff;padding:8px;width:fit-content;}
-.puzzle-board{display:inline-grid;gap:0;}
-.puzzle-board.cols4{grid-template-columns:repeat(4,62px);grid-template-rows:repeat(4,62px);}
-.puzzle-board.cols5{grid-template-columns:repeat(5,52px);grid-template-rows:repeat(5,52px);}
-
-.puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;}
-.puzzle-board.cols4 .puzzle-cell{width:62px;height:62px;}
-.puzzle-board.cols5 .puzzle-cell{width:52px;height:52px;}
-.puzzle-cell svg{width:100%;height:100%;overflow:visible;}
-.piece-st-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;z-index:10;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+.puzzle-wrap{display:block;overflow:visible;margin-bottom:8px;border:2px solid #ffffff;padding:8px;width:fit-content;}
+.puzzle-board{position:relative;display:block;}
+.piece-st-num{font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.6);}
 .buffer-piece svg,.buffer-piece path,.buffer-piece span{pointer-events:none;}
 
 /* CORNER DROP ZONES */
@@ -320,7 +313,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <div class="buffer-bar" id="bufferBar"><div class="buffer-bar-label">BUFFER</div></div>
 
     <div class="section-label">PRODUCT ASSEMBLY FRAME — <span id="puzzleLegend"></span></div>
-    <div class="puzzle-wrap"><div class="puzzle-board cols4" id="puzzleBoard"></div></div>
+    <div class="puzzle-wrap"><div class="puzzle-board" id="puzzleBoard"></div></div>
 
     <div class="ctrl-row" style="margin-top:12px;">
       <button class="btn btn-primary" id="btnStart" disabled>▶ Start Cycle</button>
@@ -409,7 +402,7 @@ function applyProfile(profileData){
   PIECE_MAP=new Array(COLS*ROWS).fill(0);
   for(let st=1;st<=6;st++){(STATION_POSITIONS[st]||[]).forEach(idx=>{PIECE_MAP[idx]=st;});}
   const board=document.getElementById('puzzleBoard');
-  if(board) board.className=`puzzle-board cols${COLS}`;
+  if(board) board.className='puzzle-board';
 }
 
 // ── PUZZLE BOARD : métaux industriels distincts par station ─
@@ -658,60 +651,85 @@ function renderBoard(){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
   const SZ=COLS===5?52:62;
-  for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
-    const sides=getSides(flatIdx,S.topology);
-    const ownerStation=PIECE_MAP[flatIdx];
-    const isMyPos=(STATION_POSITIONS[STATION]||[]).includes(flatIdx);
-    const alreadyPlaced=!!S.placedPositions[flatIdx];
-    const prevPlaced=S.inheritedState&&S.inheritedState[flatIdx];
+  const W=COLS*SZ,H=ROWS*SZ;
+  board.style.width=W+'px';board.style.height=H+'px';
 
-    if(isMyPos&&!alreadyPlaced){
-      // ZONE DE DROP — dimensions explicites obligatoires
-      const comp=S.cornerComps.find(c=>c.targetPos===flatIdx);
-      const compIdx=S.cornerComps.indexOf(comp);
-      const chronoNum=S.gamme.indexOf(compIdx)+1; // numéro d'ordre dans la gamme fixe
-      const cell=document.createElement('div');
-      cell.className='corner-drop'+(S.running?' pulsing':'');
-      cell.style.cssText=`width:${SZ}px;height:${SZ}px;`;
-      cell.dataset.pos=flatIdx;
-      cell.innerHTML=`<span class="drop-hint" style="font-size:13px;font-weight:900;opacity:0.9;font-family:'Share Tech Mono',monospace;color:var(--accent);">${chronoNum}</span>`;
-      if(S.running){
-        cell.addEventListener('dragover',e=>{
-          e.preventDefault();
-          e.dataTransfer.dropEffect='move';
-          cell.classList.add('drag-over');
-          cell.classList.remove('pulsing');
-        });
-        cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
-        cell.addEventListener('drop',e=>{
-          e.preventDefault();
-          cell.classList.remove('drag-over');
-          const idx=parseInt(e.dataTransfer.getData('compIdx'));
-          handleDrop(idx,flatIdx);
-        });
-      }
-      board.appendChild(cell);
-    } else {
-      // PIÈCE PLACÉE ou autre station — gris métallisé industriel
-      const stNum=alreadyPlaced?STATION:(prevPlaced||ownerStation);
-      const fill=alreadyPlaced?METAL_PLACED:(prevPlaced?METAL_FILL[prevPlaced]:METAL_GHOST);
-      const stroke=alreadyPlaced?METAL_PLACED_STROKE:(prevPlaced?METAL_STROKE[prevPlaced]:METAL_GHOST_STROKE);
-      const cell=document.createElement('div');
-      cell.className='puzzle-cell';
-      cell.style.cssText=`width:${SZ}px;height:${SZ}px;${alreadyPlaced?'animation:popIn .25s ease both;':''}`;
-      cell.innerHTML=makeSVG(sides,SZ,fill,stroke);
-      cell.querySelector('svg').style.pointerEvents='none';
-      if(!alreadyPlaced&&!prevPlaced){
-        cell.querySelector('svg').style.filter='opacity(.25)';
-      }
-      const numEl=document.createElement('span');
-      numEl.className='piece-st-num';
-      numEl.style.cssText=`font-size:${SZ*.2}px;color:${(alreadyPlaced||prevPlaced)?METAL_TEXT[stNum]:'#3a5060'};`;
-      numEl.textContent=stNum;
-      cell.appendChild(numEl);
-      board.appendChild(cell);
+  // ── Single SVG for all piece graphics ──────────────────
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width',W);svg.setAttribute('height',H);
+  svg.style.cssText='display:block;overflow:visible;position:absolute;top:0;left:0;pointer-events:none;';
+
+  // 3 layers: ghosts first, inherited, placed last (tabs render on top)
+  const layers=[[],[],[]];
+  for(let fi=0;fi<COLS*ROWS;fi++){
+    const sides=getSides(fi,S.topology);
+    const ownerStation=PIECE_MAP[fi];
+    const isMyPos=(STATION_POSITIONS[STATION]||[]).includes(fi);
+    const alreadyPlaced=!!S.placedPositions[fi];
+    const prevPlaced=S.inheritedState&&S.inheritedState[fi];
+    if(isMyPos&&!alreadyPlaced) continue;
+    const col=fi%COLS,row=Math.floor(fi/COLS);
+    const tx=col*SZ,ty=row*SZ;
+    const stNum=alreadyPlaced?STATION:(prevPlaced||ownerStation);
+    const fill=alreadyPlaced?METAL_PLACED:(prevPlaced?METAL_FILL[prevPlaced]:METAL_GHOST);
+    const stroke=alreadyPlaced?METAL_PLACED_STROKE:(prevPlaced?METAL_STROKE[prevPlaced]:METAL_GHOST_STROKE);
+    const d=piecePath(sides,SZ);
+    const g=document.createElementNS(NS,'g');
+    g.setAttribute('transform',`translate(${tx},${ty})`);
+    if(!alreadyPlaced&&!prevPlaced) g.setAttribute('opacity','0.25');
+    const path=document.createElementNS(NS,'path');
+    path.setAttribute('d',d);path.setAttribute('fill',fill);
+    path.setAttribute('stroke',stroke);path.setAttribute('stroke-width','1.5');
+    path.setAttribute('stroke-linejoin','round');
+    if(alreadyPlaced){
+      const anim=document.createElementNS(NS,'animate');
+      anim.setAttribute('attributeName','opacity');anim.setAttribute('from','0');
+      anim.setAttribute('to','1');anim.setAttribute('dur','0.25s');anim.setAttribute('fill','freeze');
+      path.appendChild(anim);
     }
+    g.appendChild(path);
+    const txt=document.createElementNS(NS,'text');
+    txt.setAttribute('x',String(SZ/2));txt.setAttribute('y',String(SZ/2));
+    txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','central');
+    txt.setAttribute('fill',(alreadyPlaced||prevPlaced)?METAL_TEXT[stNum]:'#3a5060');
+    txt.setAttribute('font-size',String(Math.round(SZ*.2)));
+    txt.setAttribute('font-family',"'Barlow Condensed',sans-serif");
+    txt.setAttribute('font-weight','700');txt.setAttribute('pointer-events','none');
+    txt.textContent=String(stNum);
+    g.appendChild(txt);
+    layers[alreadyPlaced?2:(prevPlaced?1:0)].push(g);
   }
+  layers[0].forEach(g=>svg.appendChild(g));
+  layers[1].forEach(g=>svg.appendChild(g));
+  layers[2].forEach(g=>svg.appendChild(g));
+  board.appendChild(svg);
+
+  // ── Drop zone overlay (absolute positioned) ─────────────
+  const overlay=document.createElement('div');
+  overlay.style.cssText=`position:absolute;top:0;left:0;width:${W}px;height:${H}px;pointer-events:none;`;
+  for(let fi=0;fi<COLS*ROWS;fi++){
+    const isMyPos=(STATION_POSITIONS[STATION]||[]).includes(fi);
+    const alreadyPlaced=!!S.placedPositions[fi];
+    if(!(isMyPos&&!alreadyPlaced)) continue;
+    const col=fi%COLS,row=Math.floor(fi/COLS);
+    const comp=S.cornerComps.find(c=>c.targetPos===fi);
+    const compIdx=S.cornerComps.indexOf(comp);
+    const chronoNum=S.gamme.indexOf(compIdx)+1;
+    const cell=document.createElement('div');
+    cell.className='corner-drop'+(S.running?' pulsing':'');
+    cell.style.cssText=`position:absolute;left:${col*SZ}px;top:${row*SZ}px;width:${SZ}px;height:${SZ}px;pointer-events:all;box-sizing:border-box;`;
+    cell.dataset.pos=fi;
+    cell.innerHTML=`<span class="drop-hint" style="font-size:13px;font-weight:900;opacity:0.9;font-family:'Share Tech Mono',monospace;color:var(--accent);">${chronoNum}</span>`;
+    if(S.running){
+      cell.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';cell.classList.add('drag-over');cell.classList.remove('pulsing');});
+      cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
+      cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,fi);});
+    }
+    overlay.appendChild(cell);
+  }
+  board.appendChild(overlay);
 }
 
 // ── DROP LOGIC ─────────────────────────────────────────
