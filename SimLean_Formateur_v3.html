@@ -546,6 +546,7 @@ function calcTakt(){
   const demand   = parseFloat(document.getElementById('cfgDemand').value)    || 1;
   const taktSec  = Math.round((availMin * 60) / demand);
   F.takt = taktSec;
+  F.demand = demand;
   const display = document.getElementById('taktDisplay');
   if(display){
     display.textContent = taktSec >= 60
@@ -892,6 +893,7 @@ function pushSessionToFirebase(){
   db.ref(`assembly_line/${F.sessionCode}/config`).set({
     nb_stations: F.nbStations,
     takt: F.takt,
+    customer_demand: F.demand || 1,
     grid_size: F.gridSize,
     profile: F.profile,
     profile_data: profileData,
@@ -1155,31 +1157,13 @@ function triggerChangeover(){
   const assigned=coState.grid.filter(v=>v>0).length;
   if(assigned<total){alert(`All ${total} cells must be assigned (${total-assigned} remaining)`);return;}
   if(coState.active){alert('Changeover already in progress');return;}
-
-  // ── WIP CHECK: no changeover if pieces are still in the line ──
-  const nSt=F.nbStations||4;
-  const wipIssues=[];
-  for(let i=1;i<=nSt;i++){
-    const statusEl=document.getElementById(`scStatus${i}`);
-    if(statusEl&&statusEl.textContent.trim().startsWith('▶')){
-      wipIssues.push(`Station ${i} is currently running a cycle`);
-    }
-    if(i>1){
-      const wipEl=document.getElementById(`scWipIn${i}`);
-      const wipVal=parseInt(wipEl?.textContent)||0;
-      if(wipVal>0) wipIssues.push(`Station ${i} still has ${wipVal} part(s) in incoming buffer`);
-    }
-  }
-  if(wipIssues.length>0){
-    alert('⚠ Changeover blocked — clear all WIP first:\n\n• '+wipIssues.join('\n• '));
-    return;
-  }
   const profileData=buildProfileFromGrid();
   const profileName=getGridProfileName();
   coState.active=true;coState.startTime=Date.now();
   db.ref(`assembly_line/${F.sessionCode}/config`).update({
     co_signal:Date.now(),co_profile_name:profileName,
     profile_data:profileData,profile:profileName,
+    takt:F.takt,customer_demand:F.demand||1,
   });
   document.getElementById('coActiveBadge').classList.add('show');
   document.getElementById('btnTriggerCO').style.display='none';
