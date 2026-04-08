@@ -76,7 +76,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .bp-name{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:7px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.3px;pointer-events:none;z-index:10;}
 
 /* PUZZLE BOARD */
-.puzzle-wrap{display:inline-flex;justify-content:flex-start;overflow-x:auto;margin-bottom:8px;border:2px solid #ffffff;padding:8px;width:fit-content;}
+.puzzle-wrap{display:inline-flex;justify-content:flex-start;overflow:visible;margin-bottom:8px;border:2px solid #ffffff;padding:8px;width:fit-content;}
 .puzzle-board{display:inline-grid;gap:0;}
 .puzzle-board.cols4{grid-template-columns:repeat(4,62px);grid-template-rows:repeat(4,62px);}
 .puzzle-board.cols5{grid-template-columns:repeat(5,52px);grid-template-rows:repeat(5,52px);}
@@ -522,8 +522,8 @@ function piecePath(sides,SZ){
   return d+'Z';
 }
 function makeSVG(sides,sz,fill,stroke){
-  const pad=sz*.2,vs=sz+pad*2,d=piecePath(sides,sz);
-  return `<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;width:${vs}px;height:${vs}px;display:block;margin:-${pad}px;position:relative;z-index:1;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  const d=piecePath(sides,sz);
+  return `<svg viewBox="0 0 ${sz} ${sz}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;width:${sz}px;height:${sz}px;display:block;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
 }
 
 // ── CLOCK ──────────────────────────────────────────────
