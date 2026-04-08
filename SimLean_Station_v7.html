@@ -750,11 +750,15 @@ function handleDrop(compIdx,targetPos){
     return;
   }
   if(comp.targetPos===targetPos){
-    // ── Adjacency check: from 2nd part onward, must be next to an already-placed part ──
-    const placed=Object.keys(S.placedPositions).map(Number);
-    if(placed.length>0){
+    // ── Adjacency check: from 2nd part onward, must be adjacent to any placed piece ──
+    // Include inheritedState so stations 2+ can place next to upstream stations' pieces
+    const allPlaced=[
+      ...Object.keys(S.placedPositions).map(Number),
+      ...Object.keys(S.inheritedState||{}).map(Number)
+    ];
+    if(Object.keys(S.placedPositions).length>0){
       const tRow=Math.floor(targetPos/COLS), tCol=targetPos%COLS;
-      const adjacent=placed.some(p=>{
+      const adjacent=allPlaced.some(p=>{
         const pRow=Math.floor(p/COLS), pCol=p%COLS;
         return (tRow===pRow&&Math.abs(tCol-pCol)===1)||(tCol===pCol&&Math.abs(tRow-pRow)===1);
       });
