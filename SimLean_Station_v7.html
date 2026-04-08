@@ -56,7 +56,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .wip-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
 .wip-count{font-family:'Share Tech Mono',monospace;font-size:32px;font-weight:700;line-height:1;}
 .wip-in .wip-count{color:var(--cyan);}.wip-out .wip-count{color:var(--success);}
-.wip-sub{font-size:9px;color:var(--muted);font-weight:700;}
+.wip-sub{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:1px;}
 .flux-arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:22px;padding:0 2px;align-self:center;}
 
 .station-area{flex:1;background:var(--panel);border:1px solid var(--border);padding:10px 12px;}
@@ -76,7 +76,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .bp-name{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:7px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.3px;pointer-events:none;z-index:10;}
 
 /* PUZZLE BOARD */
-.puzzle-wrap{display:flex;justify-content:flex-start;overflow-x:auto;margin-bottom:8px;border:2px solid #ffffff;padding:8px;display:inline-flex;}
+.puzzle-wrap{display:inline-flex;justify-content:flex-start;overflow-x:auto;margin-bottom:8px;border:2px solid #ffffff;padding:8px;width:fit-content;}
 .puzzle-board{display:inline-grid;gap:0;}
 .puzzle-board.cols4{grid-template-columns:repeat(4,62px);grid-template-rows:repeat(4,62px);}
 .puzzle-board.cols5{grid-template-columns:repeat(5,52px);grid-template-rows:repeat(5,52px);}
@@ -587,6 +587,13 @@ function initCycle(){
   const btn=document.getElementById('btnStart');
   if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
   else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
+  // Station 1: relabel Incoming WIP as Incoming Order
+  if(STATION===1){
+    const lbl=document.querySelector(".wip-box.wip-in .wip-label");
+    const sub=document.querySelector(".wip-box.wip-in .wip-sub");
+    if(lbl) lbl.textContent="Incoming Order";
+    if(sub) sub.textContent="set by trainer";
+  }
 }
 
 // ── RENDER BUFFER ──────────────────────────────────────
