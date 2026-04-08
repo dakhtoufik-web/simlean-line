@@ -546,7 +546,6 @@ function calcTakt(){
   const demand   = parseFloat(document.getElementById('cfgDemand').value)    || 1;
   const taktSec  = Math.round((availMin * 60) / demand);
   F.takt = taktSec;
-  F.demand = demand;
   const display = document.getElementById('taktDisplay');
   if(display){
     display.textContent = taktSec >= 60
@@ -893,7 +892,6 @@ function pushSessionToFirebase(){
   db.ref(`assembly_line/${F.sessionCode}/config`).set({
     nb_stations: F.nbStations,
     takt: F.takt,
-    customer_demand: F.demand || 1,
     grid_size: F.gridSize,
     profile: F.profile,
     profile_data: profileData,
@@ -923,7 +921,7 @@ function listenAllStations(){
 
       totalOutput += output;
       totalScrap  += scrap;
-      totalWip    += wipIn;
+      if(i > 0) totalWip += wipIn;  // exclude station 1 (wip_in=999 = infinite supply)
       totalCycles += cycles;
 
       // Mettre à jour carte station
@@ -957,7 +955,7 @@ function listenAllStations(){
     // KPI globaux
     document.getElementById('kpiOutput').textContent  = totalOutput;
     document.getElementById('kpiScrap').textContent   = totalScrap;
-    document.getElementById('kpiWip').textContent     = totalWip;
+    document.getElementById('kpiWip').textContent     = F.demand || totalWip;
     document.getElementById('kpiCycles').textContent  = totalCycles;
   });
 }
@@ -1163,7 +1161,6 @@ function triggerChangeover(){
   db.ref(`assembly_line/${F.sessionCode}/config`).update({
     co_signal:Date.now(),co_profile_name:profileName,
     profile_data:profileData,profile:profileName,
-    takt:F.takt,customer_demand:F.demand||1,
   });
   document.getElementById('coActiveBadge').classList.add('show');
   document.getElementById('btnTriggerCO').style.display='none';
@@ -1209,3 +1206,4 @@ initFirebase();
 </script>
 </body>
 </html>
+
