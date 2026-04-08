@@ -752,9 +752,12 @@ function handleDrop(compIdx,targetPos){
   if(comp.targetPos===targetPos){
     // ── Adjacency check: from 2nd part onward, must be adjacent to any placed piece ──
     // Include inheritedState so stations 2+ can place next to upstream stations' pieces
+    // Adjacent = any piece placed this cycle + inherited + upstream stations (PIECE_MAP)
+    const upstreamPlaced=PIECE_MAP.reduce((acc,st,idx)=>{if(st>0&&st<STATION)acc.push(idx);return acc;},[]);
     const allPlaced=[
       ...Object.keys(S.placedPositions).map(Number),
-      ...Object.keys(S.inheritedState||{}).map(Number)
+      ...Object.keys(S.inheritedState||{}).map(Number),
+      ...upstreamPlaced
     ];
     if(Object.keys(S.placedPositions).length>0){
       const tRow=Math.floor(targetPos/COLS), tCol=targetPos%COLS;
@@ -984,6 +987,13 @@ function listenSessionConfig(){
     const cfg=snap.val();if(!cfg)return;
     if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}
     if(cfg.nb_stations){NB_STATIONS=cfg.nb_stations;renderPuzzleLegend();}
+    if(cfg.topology&&!S.topology){
+      S.topology=cfg.topology;
+      S.cornerSides={};
+      // Recalc cornerSides for current positions
+      (STATION_POSITIONS[STATION]||[]).forEach(pos=>{S.cornerSides[pos]=getSides(pos,S.topology);});
+      renderBoard();renderBuffer();
+    }
     if(STATION===1&&cfg.customer_demand){
       const wipCountEl=document.getElementById('wipIn');
       if(wipCountEl) wipCountEl.textContent=cfg.customer_demand;
