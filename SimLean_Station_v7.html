@@ -78,18 +78,12 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 /* PUZZLE BOARD */
 .puzzle-wrap{display:flex;justify-content:flex-start;overflow-x:auto;margin-bottom:8px;}
 .puzzle-board{display:inline-grid;gap:0;}
-.puzzle-board.cols3{grid-template-columns:repeat(3,72px);grid-template-rows:repeat(4,72px);}
 .puzzle-board.cols4{grid-template-columns:repeat(4,62px);grid-template-rows:repeat(4,62px);}
-.puzzle-board.cols5{grid-template-columns:repeat(5,54px);grid-template-rows:repeat(4,54px);}
-.puzzle-board.cols6{grid-template-columns:repeat(6,46px);grid-template-rows:repeat(4,46px);}
-.puzzle-board.cols7{grid-template-columns:repeat(7,40px);grid-template-rows:repeat(4,40px);}
+.puzzle-board.cols5{grid-template-columns:repeat(5,52px);grid-template-rows:repeat(5,52px);}
 
 .puzzle-cell{position:relative;display:flex;align-items:center;justify-content:center;overflow:visible;}
-.puzzle-board.cols3 .puzzle-cell{width:72px;height:72px;}
 .puzzle-board.cols4 .puzzle-cell{width:62px;height:62px;}
-.puzzle-board.cols5 .puzzle-cell{width:54px;height:54px;}
-.puzzle-board.cols6 .puzzle-cell{width:46px;height:46px;}
-.puzzle-board.cols7 .puzzle-cell{width:40px;height:40px;}
+.puzzle-board.cols5 .puzzle-cell{width:52px;height:52px;}
 .puzzle-cell svg{width:100%;height:100%;overflow:visible;}
 .piece-st-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;z-index:10;text-shadow:0 1px 2px rgba(0,0,0,.6);}
 .buffer-piece svg,.buffer-piece path,.buffer-piece span{pointer-events:none;}
@@ -373,7 +367,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <!-- SUIVI PAR RUN DE PRODUCTION -->
 <div class="run-history">
   <div class="run-history-header">
-    <span class="run-history-title">📊 Suivi par run de production</span>
+    <span class="run-history-title">📊 Production Run Tracker</span>
     <span style="font-size:9px;color:#555;letter-spacing:1px;">1 ligne = 1 configuration (entre chaque C/O)</span>
   </div>
   <table class="run-table" id="runTable">
@@ -390,7 +384,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
       </tr>
     </thead>
     <tbody id="runBody">
-      <tr><td colspan="8" style="color:#444;font-size:10px;padding:10px;text-align:center;">Démarrez un cycle pour commencer le suivi.</td></tr>
+      <tr><td colspan="8" style="color:#444;font-size:10px;padding:10px;text-align:center;">Start a cycle to begin tracking.</td></tr>
     </tbody>
   </table>
 </div>
@@ -418,26 +412,26 @@ function applyProfile(profileData){
   if(board) board.className=`puzzle-board cols${COLS}`;
 }
 
-// ── PUZZLE BOARD : métaux industriels distincts par station ─
-// S1 → Acier inox (gris bleuté)
-// S2 → Aluminium anodisé (gris doré chaud)
-// S3 → Fonte grise (gris foncé mat)
+// ── PUZZLE BOARD : distinct industrial metals per station ─
+// S1 → Stainless steel (blue-grey)
+// S2 → Anodized aluminum (warm golden grey)
+// S3 → Grey cast iron (dark matte grey)
 // S4 → Titane (gris violet froid)
 const METAL_FILL   = {1:'#7a9bb5',2:'#a09070',3:'#6a7a6a',4:'#8a85a8'};
 const METAL_STROKE = {1:'#3a6080',2:'#705a30',3:'#3a4a3a',4:'#504870'};
 const METAL_TEXT   = {1:'#e8f4ff',2:'#fff4e0',3:'#e0ede0',4:'#f0eeff'};
-const METAL_PLACED = '#c8d8e0';        // pièce posée (brillant neutre)
+const METAL_PLACED = '#c8d8e0';        // placed piece (neutral bright)
 const METAL_PLACED_STROKE = '#6a90a0';
 const METAL_GHOST  = '#2e3d4a';        // cellule vide autre station
 const METAL_GHOST_STROKE = '#1e2d3a';
 
-// ── BUFFER : couleurs industrielles ─────────────────────
-// Orange sécu / Bleu industrie / Jaune sécu / Cyan industrie
+// ── BUFFER : industrial colors ─────────────────────────
+// Safety orange / Industry blue / Safety yellow / Industry cyan
 const BUFFER_FILL   = {1:'#e65100',2:'#1565c0',3:'#f9a825',4:'#00695c'};
 const BUFFER_STROKE = {1:'#bf360c',2:'#0d47a1',3:'#f57f17',4:'#004d40'};
 const BUFFER_TEXT   = {1:'#fff',   2:'#fff',   3:'#000',   4:'#fff'};
 
-// Alias pour le badge station (garde les couleurs vives pour l'identité visuelle)
+// Alias for station badge (keeps vivid colors for visual identity)
 const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8',5:'#c07de0',6:'#80cc44'};
 const ST_STROKE={1:'#a01818',2:'#a06000',3:'#20a050',4:'#007a6a',5:'#7a40a0',6:'#508820'};
 const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000',5:'#fff',6:'#000'};
@@ -483,7 +477,7 @@ let S={
   running:false,started:false,startTime:null,raf:null,errorCount:0,
   topology:null,cornerSides:{},bufferDisplayOrder:null,gamme:[],lastResetSignal:null,inheritedState:{},fty:0,
   coCount:0,coTotalMs:0,lastCoSignal:null,coStart:null,coRaf:null,
-  coRunning:false,  // true = on est dans la période de changeover (signal → 1ère pièce placée)
+  coRunning:false,  // true = currently in changeover period (signal → 1st part placed)
   coProfileLabel:'', // nom du profil en cours de C/O
   currentStep:0,
   runs:[],  // historique par run de production (1 run = entre 2 changeovers)
@@ -556,7 +550,7 @@ function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');e
 function initStation(){
   applyProfile(DEFAULT_PROFILE);
   ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
-  // dbCO et bbCO seront mis à jour uniquement par les vrais temps mesurés
+  // dbCO and bbCO updated only from actual measured times
   document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLY`;
   const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
   const segStart=(STATION-1)*4;
@@ -568,7 +562,7 @@ function initStation(){
 }
 
 function initCycle(){
-  // Topologie fixe par profil — régénérée si nécessaire
+  // Fixed topology per profile — regenerated if needed
   if(!S.topology){
     S.topology=generateTopology();
   }
@@ -577,8 +571,8 @@ function initCycle(){
   (STATION_POSITIONS[STATION]||[]).forEach(pos=>{
     S.cornerSides[pos]=getSides(pos,S.topology);
   });
-  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]); // ordre visuel aléatoire dans la caisse
-  S.gamme=[...Array(S.myPieces.length).keys()];  // séquence d'assemblage FIXE : 0,1,2,3...
+  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]); // random visual order in the bin
+  S.gamme=[...Array(S.myPieces.length).keys()];  // FIXED assembly sequence: 0,1,2,3...
   S.cornerComps=S.myPieces.map(p=>({...p}));
   S.placedPositions={};
   S.currentStep=0;
@@ -621,8 +615,8 @@ function renderBuffer(){
 
 
     if(!placed){
-      // Toutes les pièces sont visibles et draggables — pas de numéro ni de highlight
-      // La gamme est appliquée par handleDrop (rejet si mauvais ordre)
+      // All parts visible and draggable — no number or highlight
+      // Sequence enforced by handleDrop (reject if wrong order)
       div.draggable=!!S.running;
       div.style.cursor=S.running?'grab':'not-allowed';
       div.style.opacity=S.running?'1':'0.6';
@@ -634,8 +628,8 @@ function renderBuffer(){
           currentDrag={idx:i,comp};
         });
         div.addEventListener('dragend',()=>{
-          // Toujours re-rendre le buffer après un drag (succès ou échec)
-          // → garantit que la pièce réapparaît si le drop a échoué ou a été annulé
+          // Always re-render buffer after a drag (success or failure)
+          // → ensures part reappears if drop failed or was cancelled
           div.classList.remove('dragging');
           currentDrag=null;
           renderBuffer();
@@ -649,14 +643,14 @@ function renderBuffer(){
 
 // ── RENDER BOARD — FIXED v5.1 ──────────────────────────
 // Corrections :
-// 1. corner-drop : width/height explicites = zone de drop correctement positionnée
+// 1. corner-drop: explicit width/height = correctly positioned drop zone
 // 2. dragover : e.dataTransfer.dropEffect='move' = drop garanti par le navigateur
-// 3. pièces posées : animation popIn pour confirmer le placement
-// 4. pièces autres stations : opacité 50% (vs 35%) + gris plus clair
+// 3. placed parts: popIn animation to confirm placement
+// 4. other station parts: 50% opacity (vs 35%) + lighter grey
 function renderBoard(){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
-  const SZ=COLS===7?40:COLS===6?46:COLS===5?54:COLS===3?72:62;
+  const SZ=COLS===5?52:62;
   for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
     const sides=getSides(flatIdx,S.topology);
     const ownerStation=PIECE_MAP[flatIdx];
@@ -665,10 +659,10 @@ function renderBoard(){
     const prevPlaced=S.inheritedState&&S.inheritedState[flatIdx];
 
     if(isMyPos&&!alreadyPlaced){
-      // ZONE DE DROP — dimensions explicites obligatoires
+      // DROP ZONE — explicit dimensions required
       const comp=S.cornerComps.find(c=>c.targetPos===flatIdx);
       const compIdx=S.cornerComps.indexOf(comp);
-      const chronoNum=S.gamme.indexOf(compIdx)+1; // numéro d'ordre dans la gamme fixe
+      const chronoNum=S.gamme.indexOf(compIdx)+1; // sequence index in fixed gamme
       const cell=document.createElement('div');
       cell.className='corner-drop'+(S.running?' pulsing':'');
       cell.style.cssText=`width:${SZ}px;height:${SZ}px;`;
@@ -691,7 +685,7 @@ function renderBoard(){
       }
       board.appendChild(cell);
     } else {
-      // PIÈCE PLACÉE ou autre station — gris métallisé industriel
+      // PLACED PART or other station — industrial metallic grey
       const stNum=alreadyPlaced?STATION:(prevPlaced||ownerStation);
       const fill=alreadyPlaced?METAL_PLACED:(prevPlaced?METAL_FILL[prevPlaced]:METAL_GHOST);
       const stroke=alreadyPlaced?METAL_PLACED_STROKE:(prevPlaced?METAL_STROKE[prevPlaced]:METAL_GHOST_STROKE);
@@ -720,29 +714,29 @@ function handleDrop(compIdx,targetPos){
   if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
-  // Gamme fixe : vérifier que compIdx correspond bien à la pièce attendue à ce step
+  // Fixed sequence: verify compIdx matches expected part at this step
   const expectedCompIdx=S.gamme[S.currentStep];
   if(compIdx!==expectedCompIdx){
     S.errorCount++;
-    setMsg(`⚠ Respectez la gamme — posez d'abord la pièce n°${S.currentStep+1} (erreurs: ${S.errorCount})`,'err');
+    setMsg(`⚠ Follow the sequence — place part #${S.currentStep+1} first (errors: ${S.errorCount})`,'err');
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
     renderBuffer();
     return;
   }
   if(comp.targetPos===targetPos){
-    // ── 1ère pièce post-C/O : dry run = finalise le changeover ──────────────
+    // ── 1st part post-C/O: dry run = finalizes changeover ──────────────
     if(S.coRunning){
-      completeCO(); // arrête le timer C/O, enregistre, crée nouveau run
+      completeCO(); // stops C/O timer, records it, creates new run
       S.placedPositions[targetPos]=comp;
       S.currentStep++;
-      // S.started reste false → le chrono de cycle ne démarre qu'à la 2ème pièce
+      // S.started stays false → cycle timer starts on 2nd part
       renderBuffer();renderBoard();updateBufferProgress();
-      // Si seulement 1 pièce à assembler (cas extrême), terminer le cycle
+      // Edge case: only 1 part to assemble, end cycle
       if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
       return;
     }
-    // ── Pièces normales : démarrer/continuer le chrono de cycle ─────────────
+    // ── Normal parts: start/continue cycle timer ─────────────────────────
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
     S.placedPositions[targetPos]=comp;
     S.currentStep++;
@@ -754,7 +748,7 @@ function handleDrop(compIdx,targetPos){
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
     setMsg(`❌ Wrong position! Errors: ${S.errorCount}`,'err');
-    renderBuffer(); // pièce toujours visible après mauvaise position
+    renderBuffer(); // part always visible after wrong drop
   }
 }
 
@@ -845,7 +839,7 @@ function finishCycle(ok){
 function showCompletePuzzle(){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
-  const SZ=COLS===7?40:COLS===6?46:COLS===5?54:COLS===3?72:62;
+  const SZ=COLS===5?52:62;
   for(let flatIdx=0;flatIdx<COLS*ROWS;flatIdx++){
     const sides=getSides(flatIdx,S.topology);
     const stNum=PIECE_MAP[flatIdx];
@@ -874,10 +868,10 @@ function validatePiece(){
       setMsg(`📦 Puzzle → ASSY ${STATION+1}`,'info');
     } else {
       db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);
-      setMsg('🏁 Produit livré au CLIENT ✅','ok');
+      setMsg('🏁 Product delivered to CLIENT ✅','ok');
     }
   } else {
-    setMsg('🏁 Produit livré au CLIENT ✅','ok');
+    setMsg('🏁 Product delivered to CLIENT ✅','ok');
   }
   pushStats();
   setTimeout(()=>{S.inheritedState={};initCycle();},700);
@@ -943,11 +937,11 @@ function listenSessionConfig(){
 
     // ── CHANGEOVER SIGNAL ─────────────────────────────────
     if(cfg.co_signal&&cfg.co_signal!==S.lastCoSignal){
-      // Nouveau signal C/O → démarrer le changeover
+      // New C/O signal → start changeover
       S.lastCoSignal=cfg.co_signal;
       startChangeover(cfg.co_profile_name||'New Profile', cfg.profile_data, cfg.co_signal);
     } else if(!cfg.co_signal&&S.coStart){
-      // co_signal supprimé par le formateur → abandon C/O
+      // co_signal removed by trainer → abort C/O
       abortCO();
       initCycle();
     } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart){
@@ -1032,7 +1026,7 @@ function startChangeover(profileName, profileData, coSignalTime){
     const segStart=(STATION-1)*4;
     S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
     S.inheritedState={};
-    // Forcer régénération des formes pour la nouvelle configuration
+    // Force shape regeneration for new configuration
     S.topology=null;
     S.cornerSides={};
   }
@@ -1228,22 +1222,22 @@ function validateChangeover(){
     return;
   }
 
-  // All correct — fermer l'overlay (timer C/O continue jusqu'à la 1ère pièce)
+  // All correct — close overlay (C/O timer continues until 1st part placed)
   closeCoOverlay();
   initCycle();
 }
 
-// ── Ferme l'overlay C/O — le timer CONTINUE jusqu'à la 1ère pièce placée ──
+// ── Closes the C/O overlay — timer CONTINUES until 1st part is placed ──
 function closeCoOverlay(){
   cancelAnimationFrame(S.coRaf);
   S.coRaf=null;
   document.getElementById('coOverlay').classList.remove('show');
-  // Le timer C/O continue à tourner en arrière-plan
-  // Démarrer une animation légère sur la barre de statut pour signaler que C/O n'est pas terminé
-  setMsg('⚙️ Grille validée — Démarrez le cycle et placez la 1ère pièce pour finaliser le C/O','info');
+  // C/O timer keeps running in the background
+  // Start a subtle animation on the status bar to signal C/O is not yet complete
+  setMsg('⚙️ Grid validated — Start the cycle and place the 1st part to finalize C/O','info');
 }
 
-// ── Finalise le C/O au placement de la 1ère pièce (définition industrielle SMED) ──
+// ── Finalizes C/O on 1st part placement (SMED industrial definition) ──
 function completeCO(){
   if(!S.coStart)return;
   const elapsed=Date.now()-S.coStart;
@@ -1259,7 +1253,7 @@ function completeCO(){
     });
   }
 
-  // Mettre à jour l'UI
+  // Update UI
   const totalSec=Math.round(S.coTotalMs/1000);
   const avgSec=Math.round(S.coTotalMs/S.coCount/1000);
   document.getElementById('dbCOtime').textContent=`${totalSec}s total (avg ${avgSec}s)`;
@@ -1269,14 +1263,14 @@ function completeCO(){
   const bbCOel=document.getElementById('bbCO');
   if(bbCOel)bbCOel.textContent=coSec+'s';
 
-  // Nouveau run de production après C/O
+  // New production run after C/O
   startRun(S.coProfileLabel);
   if(S.currentRun)S.currentRun.coSec=coSec;
   pushStats();
-  setMsg(`✅ C/O finalisé en ${coSec}s — 1ère pièce = dry run, cycle en cours…`,'ok');
+  setMsg(`✅ C/O completed in ${coSec}s — 1st part = dry run, cycle running…`,'ok');
 }
 
-// ── Abandon/reset forcé du C/O (session stop, reset formateur) ──
+// ── Force abort/reset of C/O (session stop, trainer reset) ──
 function abortCO(){
   S.coStart=null;
   S.coRunning=false;
@@ -1286,7 +1280,7 @@ function abortCO(){
 }
 
 function startRun(profileName){
-  // Fermer le run précédent s'il existe
+  // Close previous run if exists
   if(S.currentRun){
     S.currentRun.endTime=Date.now();
     S.runs.push({...S.currentRun});
@@ -1340,24 +1334,24 @@ function renderRunTable(){
 
 function pushStats(){
   if(!db)return;
-  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',co_count:S.coCount,co_avg_s:S.coCount>0?Math.round(S.coTotalMs/S.coCount/1000):0,name:`${ASSY_NAMES[STATION]} — Assemblage`,last_updated:Date.now()});
+  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',co_count:S.coCount,co_avg_s:S.coCount>0?Math.round(S.coTotalMs/S.coCount/1000):0,name:`${ASSY_NAMES[STATION]} — Assembly`,last_updated:Date.now()});
 }
 
 function captureVisual(){
   const btn=document.getElementById('btnCapture');
-  btn.textContent='⏳ Génération...';
+  btn.textContent='⏳ Generating...';
   btn.disabled=true;
 
   const target=document.getElementById('puzzleBoard');
 
   html2canvas(target,{
     backgroundColor:'#0b0e13',
-    scale:2,           // haute résolution
+    scale:2,           // high resolution
     useCORS:true,
     logging:false,
   }).then(puzzleCanvas=>{
 
-    // ── Construire l'image finale avec en-tête KEEPLEAN ──
+    // ── Build final image with KEEPLEAN header ──
     const PAD=24, HEAD=90, FOOT=56;
     const W=puzzleCanvas.width+PAD*2;
     const H=puzzleCanvas.height+HEAD+FOOT+PAD;
@@ -1400,7 +1394,7 @@ function captureVisual(){
     ctx.fillText(`ASSY ${STATION} — ${SESSION.toUpperCase()}`,W-PAD-57,26);
     ctx.textAlign='left';
 
-    // Ligne séparateur
+    // Separator line
     ctx.strokeStyle='#1e2538';
     ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(PAD,36);ctx.lineTo(W-PAD,36);ctx.stroke();
@@ -1408,7 +1402,7 @@ function captureVisual(){
     // Titre "Visual de montage"
     ctx.font='bold 18px sans-serif';
     ctx.fillStyle='#dde1ed';
-    ctx.fillText('📋 Visual de Montage — Gamme d\'Assemblage',PAD,60);
+    ctx.fillText('📋 Assembly Visual — Work Sequence',PAD,60);
 
     // Date + cycle time
     const now=new Date();
@@ -1426,7 +1420,7 @@ function captureVisual(){
     ctx.strokeStyle='#1e2538';
     ctx.beginPath();ctx.moveTo(PAD,fy-4);ctx.lineTo(W-PAD,fy-4);ctx.stroke();
 
-    // Légende stations
+    // Station legend
     let lx=PAD;
     for(let s=1;s<=NB_STATIONS;s++){
       ctx.fillStyle=METAL_FILL[s]||METAL_FILL[1];
@@ -1447,20 +1441,20 @@ function captureVisual(){
     ctx.fillText('keeplean.lu',W-PAD,fy+14);
     ctx.textAlign='left';
 
-    // ── Téléchargement ──
+    // ── Download ──
     const link=document.createElement('a');
     const ts=now.toISOString().slice(0,19).replace(/:/g,'-');
     link.download=`SimLean_ASSY${STATION}_${SESSION}_${ts}.png`;
     link.href=canvas.toDataURL('image/png');
     link.click();
 
-    btn.textContent='✅ Capturé !';
+    btn.textContent='✅ Captured!';
     setTimeout(()=>{btn.textContent='📸 Capture Visual';btn.disabled=false;},2500);
   }).catch(e=>{
     console.error('Capture error:',e);
     btn.textContent='📸 Capture Visual';
     btn.disabled=false;
-    setMsg('⚠ Capture impossible — faites une capture manuelle','err');
+    setMsg('⚠ Capture failed — take a manual screenshot','err');
   });
 }
 
