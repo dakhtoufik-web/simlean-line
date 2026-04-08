@@ -523,7 +523,7 @@ function piecePath(sides,SZ){
 }
 function makeSVG(sides,sz,fill,stroke){
   const pad=sz*.2,vs=sz+pad*2,d=piecePath(sides,sz);
-  return `<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;width:100%;height:100%;display:block;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  return `<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;width:${vs}px;height:${vs}px;display:block;margin:-${pad}px;position:relative;z-index:1;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
 }
 
 // ── CLOCK ──────────────────────────────────────────────
