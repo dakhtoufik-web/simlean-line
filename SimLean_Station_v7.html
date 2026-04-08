@@ -732,6 +732,23 @@ function handleDrop(compIdx,targetPos){
     return;
   }
   if(comp.targetPos===targetPos){
+    // ── Adjacency check: from 2nd part onward, must be next to an already-placed part ──
+    const placed=Object.keys(S.placedPositions).map(Number);
+    if(placed.length>0){
+      const tRow=Math.floor(targetPos/COLS), tCol=targetPos%COLS;
+      const adjacent=placed.some(p=>{
+        const pRow=Math.floor(p/COLS), pCol=p%COLS;
+        return Math.abs(tRow-pRow)<=1 && Math.abs(tCol-pCol)<=1 && !(tRow===pRow&&tCol===pCol);
+      });
+      if(!adjacent){
+        S.errorCount++;
+        const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
+        if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
+        setMsg(`⚠ Not adjacent to assembly — connect to an already placed part (errors: ${S.errorCount})`,'err');
+        renderBuffer();
+        return;
+      }
+    }
     // ── 1ère pièce post-C/O : dry run = finalise le changeover ──────────────
     if(S.coRunning){
       completeCO(); // arrête le timer C/O, enregistre, crée nouveau run
