@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Trainer v4</title>
+<title>SimLean Assembly Line — Trainer v3</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
 
@@ -129,7 +129,7 @@ body {
 .sc-cycles  { font-size:22px; font-family:'Share Tech Mono',monospace;
               color:var(--accent); text-align:center; }
 
-/* FLOW ARROW */
+/* FLÈCHE FLUX */
 .flux-arrow {
   display:flex; flex-direction:column; align-items:center;
   padding:0 8px; position:relative; min-width:80px;
@@ -274,7 +274,7 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Trainer v4</span></div>
+  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Trainer v2</span></div>
   <div style="display:flex;gap:10px;align-items:center;">
     <span style="font-size:11px;color:#888;">
       <span class="conn-dot waiting" id="connDot"></span>
@@ -374,7 +374,7 @@ body {
 
 <!-- FLUX VISUEL -->
 <div class="flux-container" id="fluxContainer">
-  <!-- Dynamically generated -->
+  <!-- Généré dynamiquement -->
 </div>
 
 <!-- LINKS PARTICIPANTS -->
@@ -390,7 +390,7 @@ body {
       </tr>
     </thead>
     <tbody id="linksBody">
-      <tr><td colspan="4" style="color:#555;font-size:12px;padding:16px;">Create a session to generate links.</td></tr>
+      <tr><td colspan="4" style="color:#555;font-size:12px;padding:16px;">Créez une session pour générer les liens.</td></tr>
     </tbody>
   </table>
 </div>
@@ -459,11 +459,11 @@ body {
 <script>
 // ═══════════════════════════════════════════════════════════
 // ── PROFILES & CONFIGURATION ──────────────────────────
-// ── Available grids by number of stations ───────────────────
+// ── Grilles disponibles par nombre de stations ──────────────────
 const GRID_OPTIONS = {
-  4: [{v:'4x4',l:'4×4 (16 parts)'},{v:'4x5',l:'4×5 (20 parts)'},{v:'4x6',l:'4×6 (24 parts)'}],
-  5: [{v:'5x5',l:'5×5 (25 parts)'},{v:'5x6',l:'5×6 (30 parts)'},{v:'5x7',l:'5×7 (35 parts)'}],
-  6: [{v:'6x5',l:'6×5 (30 parts)'},{v:'6x6',l:'6×6 (36 parts)'},{v:'6x7',l:'6×7 (42 parts)'}],
+  4: [{v:'4x4',l:'4×4 (16 pièces)'},{v:'4x5',l:'4×5 (20 pièces)'},{v:'4x6',l:'4×6 (24 pièces)'}],
+  5: [{v:'5x5',l:'5×5 (25 pièces)'},{v:'5x6',l:'5×6 (30 pièces)'},{v:'5x7',l:'5×7 (35 pièces)'}],
+  6: [{v:'6x5',l:'6×5 (30 pièces)'},{v:'6x6',l:'6×6 (36 pièces)'},{v:'6x7',l:'6×7 (42 pièces)'}],
 };
 
 function parseGridSize(gs){
@@ -495,7 +495,7 @@ function getProfiles(gridSize){
   const balDist=Array(N).fill(M);
   profiles[`Balanced (${balDist.join('-')})`]=generateProfile(N,M,balDist);
 
-  // Helper: distribution with bottleneck
+  // Helper : distribution avec goulot d'étranglement
   function bkDist(bkIdx,ratio){
     const bkCount=Math.round(M*(1+ratio));
     const rem=T-bkCount;
@@ -602,7 +602,7 @@ function renderManualInputs(){
   }
   const totDiv=document.createElement('div');totDiv.id='manualTotal';
   totDiv.style.cssText="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--muted);align-self:flex-end;padding-bottom:10px;";
-  totDiv.textContent=`Total: ${N*M} / ${N*M} ✓`;
+  totDiv.textContent=`Total : ${N*M} / ${N*M} ✓`;
   row.appendChild(totDiv);
 }
 
@@ -614,7 +614,7 @@ function updateManualTotal(){
   for(let s=1;s<=N;s++){const el=document.getElementById(`m${s}`);if(el)sum+=parseInt(el.value)||0;}
   const ok=sum===total;
   const el=document.getElementById('manualTotal');
-  if(el){el.textContent=`Total: ${sum} / ${total} ${ok?'✓':'✗'}`;el.style.color=ok?'var(--success)':'var(--danger)';}
+  if(el){el.textContent=`Total : ${sum} / ${total} ${ok?'✓':'✗'}`;el.style.color=ok?'var(--success)':'var(--danger)';}
 }
 
 function buildManualProfile(){
@@ -646,7 +646,7 @@ let F = {
 };
 
 // ═══════════════════════════════════════════════════════════
-// CREATE SESSION
+// CRÉER SESSION
 // ═══════════════════════════════════════════════════════════
 document.getElementById('btnCreate').addEventListener('click', ()=>{
   F.sessionCode = document.getElementById('cfgSession').value.trim().toUpperCase() || 'LEAN01';
@@ -737,7 +737,7 @@ function renderFlux(){
   container.appendChild(supp);
 
   F.stations.forEach((st, i)=>{
-    // Arrow + incoming WIP
+    // Flèche + WIP entrant
     const arrow = document.createElement('div');
     arrow.className = 'flux-arrow';
     arrow.innerHTML = `
@@ -762,13 +762,13 @@ function renderFlux(){
     container.appendChild(card);
   });
 
-  // Final arrow + Client
+  // Flèche finale + Client
   const arrowFinal = document.createElement('div');
   arrowFinal.className = 'flux-arrow';
   arrowFinal.innerHTML = `
     <div class="arrow-line"></div>
     <div class="arrow-wip" id="arrowWipFinal">0</div>
-    <div class="arrow-label">SHIPPED</div>`;
+    <div class="arrow-label">EXPÉDIÉ</div>`;
   container.appendChild(arrowFinal);
 
   const client = document.createElement('div');
@@ -802,7 +802,7 @@ function renderLinks(){
     tbody.appendChild(tr);
   });
 
-  // Trainer link — hardcoded to avoid any confusion
+  // Lien formateur — hardcodé pour éviter toute confusion
   const trF = document.createElement('tr');
   const urlF = `${base}/SimLean_Formateur_v3.html?session=${F.sessionCode}`;
   trF.innerHTML = `
@@ -850,7 +850,7 @@ function setConn(state, label){
 }
 
 // ═══════════════════════════════════════════════════════════
-// TODO: Firebase listeners — update station cards
+// TODO: Firebase listeners — mise à jour des cartes stations
 // updateStationCard(idx, data) { ... }
 // ═══════════════════════════════════════════════════════════
 
@@ -872,18 +872,18 @@ let db = null;
 function initFirebase(){
   try {
     if(typeof firebase === 'undefined')
-      throw new Error('Firebase SDK not loaded — check network connection');
+      throw new Error('Firebase SDK non chargé — vérifier la connexion réseau');
     if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.database();
-    setConn('online', 'Firebase connected');
+    setConn('online', 'Firebase connecté');
   } catch(e){
     db = null;
-    setConn('offline', 'Firebase unavailable — local mode');
+    setConn('offline', 'Firebase indisponible — mode local');
     console.warn('Firebase init:', e.message);
   }
 }
 
-// Write session config to Firebase
+// Écrire config session dans Firebase
 function pushSessionToFirebase(){
   if(!db) return;
   const profileData = F.profile==='Manuel'
@@ -898,12 +898,12 @@ function pushSessionToFirebase(){
     status: 'running',
     created_at: Date.now()
   });
-  // Init incoming WIP for station 1 to ∞ (using 999 = infinity)
+  // Init WIP entrant de la station 1 à ∞ (on utilise -1 = infini)
   db.ref(`assembly_line/${F.sessionCode}/stations/s1/wip_in`).set(999);
   listenAllStations();
 }
 
-// Listen to all stations in real time
+// Écoute toutes les stations en temps réel
 function listenAllStations(){
   db.ref(`assembly_line/${F.sessionCode}/stations`).on('value', snap=>{
     const data = snap.val() || {};
@@ -924,7 +924,7 @@ function listenAllStations(){
       totalWip    += wipIn;
       totalCycles += cycles;
 
-      // Update station card
+      // Mettre à jour carte station
       const card = document.getElementById(`stCard${i}`);
       if(card){
         card.className = `station-card ${status==='running'?'active':status==='idle'?'idle':'waiting'}`;
@@ -940,12 +940,12 @@ function listenAllStations(){
       if(el(`scWipIn${i}`))   el(`scWipIn${i}`).textContent   = wipIn === 999 ? '∞' : wipIn;
       if(el(`scWipOut${i}`))  el(`scWipOut${i}`).textContent  = wipOut;
 
-      // Update WIP arrow between stations
+      // Mettre à jour flèche WIP entre stations
       const arrowEl = document.getElementById(`arrowWip${i}`);
       if(arrowEl) arrowEl.textContent = wipIn === 999 ? '∞' : wipIn;
     }
 
-    // Last station → client
+    // Dernière station → client
     const lastSt = data[`s${F.nbStations}`] || {};
     const clientEl = document.getElementById('clientOutput');
     if(clientEl) clientEl.textContent = lastSt.output || 0;
@@ -960,14 +960,14 @@ function listenAllStations(){
   });
 }
 
-// Stop session in Firebase
+// Arrêter session dans Firebase
 function stopSessionFirebase(){
   if(!db || !F.sessionCode) return;
   db.ref(`assembly_line/${F.sessionCode}/config/status`).set('stopped');
 }
 
 // ═══════════════════════════════════════════════════════════
-// CHANGEOVER — VISUAL GRID EDITOR
+// CHANGEOVER — GRID EDITOR VISUEL
 // ═══════════════════════════════════════════════════════════
 const ST_COLORS = {
   1:{fill:'#7a9bb5',stroke:'#3a6080',text:'#e8f4ff',label:'ASSY 1'},
@@ -1155,6 +1155,25 @@ function triggerChangeover(){
   const assigned=coState.grid.filter(v=>v>0).length;
   if(assigned<total){alert(`All ${total} cells must be assigned (${total-assigned} remaining)`);return;}
   if(coState.active){alert('Changeover already in progress');return;}
+
+  // ── WIP CHECK: no changeover if pieces are still in the line ──
+  const nSt=F.nbStations||4;
+  const wipIssues=[];
+  for(let i=1;i<=nSt;i++){
+    const statusEl=document.getElementById(`scStatus${i}`);
+    if(statusEl&&statusEl.textContent.trim().startsWith('▶')){
+      wipIssues.push(`Station ${i} is currently running a cycle`);
+    }
+    if(i>1){
+      const wipEl=document.getElementById(`scWipIn${i}`);
+      const wipVal=parseInt(wipEl?.textContent)||0;
+      if(wipVal>0) wipIssues.push(`Station ${i} still has ${wipVal} part(s) in incoming buffer`);
+    }
+  }
+  if(wipIssues.length>0){
+    alert('⚠ Changeover blocked — clear all WIP first:\n\n• '+wipIssues.join('\n• '));
+    return;
+  }
   const profileData=buildProfileFromGrid();
   const profileName=getGridProfileName();
   coState.active=true;coState.startTime=Date.now();
