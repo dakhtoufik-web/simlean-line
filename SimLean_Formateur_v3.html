@@ -871,8 +871,6 @@ let db = null;
 
 function initFirebase(){
   try {
-    if(typeof firebase === 'undefined')
-      throw new Error('Firebase SDK non chargé — vérifier la connexion réseau');
     if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     setConn('online', 'Firebase connecté');
@@ -892,6 +890,7 @@ function pushSessionToFirebase(){
   db.ref(`assembly_line/${F.sessionCode}/config`).set({
     nb_stations: F.nbStations,
     takt: F.takt,
+    customer_demand: F.demand,
     grid_size: F.gridSize,
     profile: F.profile,
     profile_data: profileData,
@@ -1201,8 +1200,18 @@ function endChangeover(){
 updateStationGridOptions();
 // Compute initial takt
 calcTakt();
-// Init Firebase au chargement
-initFirebase();
+// Init Firebase — attendre que tous les scripts externes soient chargés
+function tryInitFirebase(attempt){
+  if(typeof firebase !== 'undefined'){
+    initFirebase();
+  } else if(attempt < 10){
+    setTimeout(()=>tryInitFirebase(attempt+1), 300);
+  } else {
+    console.warn('Firebase SDK non chargé après 3s — vérifier la connexion réseau');
+    setConn('offline','Firebase indisponible — mode local');
+  }
+}
+window.addEventListener('load', ()=>tryInitFirebase(0));
 </script>
 </body>
 </html>
