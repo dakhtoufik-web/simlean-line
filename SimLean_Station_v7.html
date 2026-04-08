@@ -738,7 +738,7 @@ function handleDrop(compIdx,targetPos){
       const tRow=Math.floor(targetPos/COLS), tCol=targetPos%COLS;
       const adjacent=placed.some(p=>{
         const pRow=Math.floor(p/COLS), pCol=p%COLS;
-        return Math.abs(tRow-pRow)<=1 && Math.abs(tCol-pCol)<=1 && !(tRow===pRow&&tCol===pCol);
+        return (tRow===pRow&&Math.abs(tCol-pCol)===1)||(tCol===pCol&&Math.abs(tRow-pRow)===1);
       });
       if(!adjacent){
         S.errorCount++;
@@ -1499,3 +1499,4 @@ initStation();
 </script>
 </body>
 </html>
+  
