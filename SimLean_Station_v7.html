@@ -885,7 +885,11 @@ function validatePiece(){
 }
 
 function updateWIPDisplay(){
-  document.getElementById('wipIn').textContent=S.wipIn===999?'∞':S.wipIn;
+  if(STATION===1){
+    // Station 1: display is managed by customer_demand from Firebase — don't overwrite
+  } else {
+    document.getElementById('wipIn').textContent=S.wipIn===999?'∞':S.wipIn;
+  }
   document.getElementById('wipOut').textContent=S.wipOut;
   document.getElementById('bbWipIn').textContent=S.wipIn===999?'∞':S.wipIn;
   document.getElementById('bbOutput').textContent=S.output;
@@ -941,6 +945,11 @@ function listenSessionConfig(){
     const cfg=snap.val();if(!cfg)return;
     if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}
     if(cfg.nb_stations){NB_STATIONS=cfg.nb_stations;renderPuzzleLegend();}
+    if(STATION===1&&cfg.customer_demand){
+      const wipCountEl=document.getElementById('wipIn');
+      if(wipCountEl) wipCountEl.textContent=cfg.customer_demand;
+      // S.wipIn stays 999 internally so station 1 never blocks
+    }
 
     // ── CHANGEOVER SIGNAL ─────────────────────────────────
     if(cfg.co_signal&&cfg.co_signal!==S.lastCoSignal){
