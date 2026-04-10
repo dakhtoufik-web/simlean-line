@@ -1119,6 +1119,12 @@ function startChangeover(profileName, profileData, coSignalTime){
     const myPos=STATION_POSITIONS[STATION]||[];
     const segStart=(STATION-1)*4;
     S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
+    // Reconstruire cornerComps/gamme/bufferDisplayOrder pour le nouveau profil
+    S.cornerComps=S.myPieces.map(p=>({...p}));
+    S.gamme=[...Array(S.myPieces.length).keys()];
+    S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]);
+    S.placedPositions={};
+    S.currentStep=0;
     S.inheritedState={};
     // Forcer régénération des formes pour la nouvelle configuration
     S.topology=null;
