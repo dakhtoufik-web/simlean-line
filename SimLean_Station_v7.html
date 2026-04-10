@@ -465,7 +465,7 @@ renderPuzzleLegend();
 let CFG={takt:15,co:30};
 
 let S={
-  wipIn:0,wipOut:0,cycles:0,output:0,scrap:0,history:[],
+  wipIn:0,wipOut:0,cycles:0,output:0,scrap:0,history:[],remainingDemand:999,
   myPieces:[],cornerComps:[],placedPositions:{},puzzleState:{},
   running:false,started:false,startTime:null,raf:null,errorCount:0,
   topology:null,cornerSides:{},bufferDisplayOrder:null,gamme:[],lastResetSignal:null,inheritedState:{},fty:0,
@@ -869,6 +869,7 @@ function finishCycle(ok){
   S.cycles++;
   if(ok){
     S.output++;S.wipOut++;S.history.push(elapsed);
+    if(STATION===1&&S.remainingDemand!==999&&S.remainingDemand>0) S.remainingDemand--;
     if(S.errorCount===0) S.fty++;
     const isLast=(STATION===NB_STATIONS);
     if(isLast){
@@ -960,18 +961,42 @@ function validatePiece(){
 
 function updateWIPDisplay(){
   if(STATION===1){
-    // Station 1: display is managed by customer_demand from Firebase — don't overwrite
+    const rd=S.remainingDemand;
+    const wipCountEl=document.getElementById('wipIn');
+    if(wipCountEl) wipCountEl.textContent=rd===999?'∞':Math.max(0,rd);
+    document.getElementById('bbWipIn').textContent=rd===999?'∞':Math.max(0,rd);
+    const btn=document.getElementById('btnStart');
+    if(!S.running){
+      if(rd>0||rd===999){
+        btn.disabled=false;btn.textContent='▶ Start Cycle';
+        // Clear alarm if demand restored
+        const alarmEl=document.getElementById('demandAlarm');
+        if(alarmEl) alarmEl.style.display='none';
+      } else {
+        btn.disabled=true;btn.textContent='⏹ Demand fulfilled';
+        // Show alarm banner
+        let alarmEl=document.getElementById('demandAlarm');
+        if(!alarmEl){
+          alarmEl=document.createElement('div');
+          alarmEl.id='demandAlarm';
+          alarmEl.style.cssText="position:fixed;top:0;left:0;right:0;z-index:9999;background:#c62828;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:1px;text-align:center;padding:10px;animation:blink 0.6s step-end infinite;";
+          alarmEl.textContent='🚨 CUSTOMER DEMAND FULFILLED — STOP PRODUCTION 🚨';
+          document.body.prepend(alarmEl);
+        }
+        alarmEl.style.display='block';
+      }
+    }
   } else {
     document.getElementById('wipIn').textContent=S.wipIn===999?'∞':S.wipIn;
+    document.getElementById('bbWipIn').textContent=S.wipIn===999?'∞':S.wipIn;
+    const btn=document.getElementById('btnStart');
+    if(!S.running){
+      if(S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+      else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
+    }
   }
   document.getElementById('wipOut').textContent=S.wipOut;
-  document.getElementById('bbWipIn').textContent=S.wipIn===999?'∞':S.wipIn;
   document.getElementById('bbOutput').textContent=S.output;
-  const btn=document.getElementById('btnStart');
-  if(!S.running){
-    if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
-    else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
-  }
 }
 function updateStats(){
   if(!S.history.length)return;
@@ -1024,9 +1049,10 @@ function listenSessionConfig(){
       // cornerSides will be recalculated in initCycle() after applyProfile
     }
     if(STATION===1&&cfg.customer_demand){
-      const wipCountEl=document.getElementById('wipIn');
-      if(wipCountEl) wipCountEl.textContent=cfg.customer_demand;
-      // S.wipIn stays 999 internally so station 1 never blocks
+      const demand=parseInt(cfg.customer_demand)||0;
+      // Only update remainingDemand if it hasn't been decremented yet (first load / reset)
+      if(S.remainingDemand===999||S.output===0) S.remainingDemand=demand;
+      updateWIPDisplay();
     }
 
     // ── CHANGEOVER SIGNAL ─────────────────────────────────
@@ -1053,6 +1079,7 @@ function listenSessionConfig(){
       abortCO();
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
       S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;
+      if(STATION===1) S.remainingDemand=999; // will be refreshed by customer_demand listener
       S.topology=null;S.cornerSides={};
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
       updateWIPDisplay();updateStats();
