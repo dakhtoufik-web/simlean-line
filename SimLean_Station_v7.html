@@ -647,7 +647,7 @@ function renderBuffer(){
 // 2. dragover : e.dataTransfer.dropEffect='move' = drop garanti par le navigateur
 // 3. pièces posées : animation popIn pour confirmer le placement
 // 4. pièces autres stations : opacité 50% (vs 35%) + gris plus clair
-function renderBoard(){
+function renderBoard(justPlacedPos=null){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
   const SZ=COLS===5?52:62;
@@ -686,7 +686,7 @@ function renderBoard(){
     path.setAttribute('d',d);path.setAttribute('fill',fill);
     path.setAttribute('stroke',stroke);path.setAttribute('stroke-width','1.5');
     path.setAttribute('stroke-linejoin','round');
-    if(alreadyPlaced){
+    if(alreadyPlaced && fi===justPlacedPos){
       const anim=document.createElementNS(NS,'animate');
       anim.setAttribute('attributeName','opacity');anim.setAttribute('from','0');
       anim.setAttribute('to','1');anim.setAttribute('dur','0.25s');anim.setAttribute('fill','freeze');
@@ -783,7 +783,7 @@ function handleDrop(compIdx,targetPos){
       S.placedPositions[targetPos]=comp;
       S.currentStep++;
       // S.started reste false → le chrono de cycle ne démarre qu'à la 2ème pièce
-      renderBuffer();renderBoard();updateBufferProgress();
+      renderBuffer();renderBoard(targetPos);updateBufferProgress();
       // Si seulement 1 pièce à assembler (cas extrême), terminer le cycle
       if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
       return;
@@ -792,7 +792,7 @@ function handleDrop(compIdx,targetPos){
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
     S.placedPositions[targetPos]=comp;
     S.currentStep++;
-    renderBuffer();renderBoard();updateBufferProgress();
+    renderBuffer();renderBoard(targetPos);updateBufferProgress();
     setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
   } else {
@@ -1039,8 +1039,8 @@ function listenSessionConfig(){
       // co_signal supprimé par le formateur → abandon C/O
       abortCO();
       initCycle();
-    } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart){
-      // premier chargement sans C/O
+    } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart&&!S.started&&S.cycles===0){
+      // premier chargement uniquement (pas de reset si une run est en cours)
       applyProfile(cfg.profile_data);
       const myPos=STATION_POSITIONS[STATION]||[];
       const segStart=(STATION-1)*4;
