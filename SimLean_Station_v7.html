@@ -902,7 +902,7 @@ function finishCycle(ok){
       document.getElementById('valText').textContent=`✅ ASSY ${STATION} done — Puzzle → ASSY ${STATION+1}`;
     }
     setMsg(`✅ Assembly completed in ${fmt(elapsed)}s`,'ok');
-    document.getElementById('validateBanner').classList.add('show');stopIdleTimer();
+    document.getElementById('validateBanner').classList.add('show');
     document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
     updateStats();updateWIPDisplay();pushStats();
     updateCurrentRun();
@@ -992,6 +992,13 @@ function updateIncomingOrder(){
   const remaining=Math.max(0,S.customerDemand-S.output);
   const el=document.getElementById('wipIn');
   if(el) el.textContent=remaining;
+  // ── Commande épuisée : prévenir l'opérateur d'arrêter ─────────────────
+  if(remaining===0){
+    const btn=document.getElementById('btnStart');
+    if(btn){btn.disabled=true;btn.textContent='⛔ Commande terminée';}
+    setMsg('🛑 COMMANDE COMPLÈTE — Arrêtez la station, prévenez le formateur !','err');
+    stopIdleTimer();
+  }
 }
 function updateWIPDisplay(){
   if(STATION===1){
@@ -1099,6 +1106,9 @@ function listenSessionConfig(){
       S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;
       S.topology=null;S.cornerSides={};
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
+      // Réactiver le bouton Start si commande était épuisée
+      const btnSt=document.getElementById('btnStart');
+      if(btnSt&&STATION===1){btnSt.disabled=false;btnSt.textContent='▶ Start Cycle';}
       updateWIPDisplay();updateStats();
       document.getElementById('cycleCount').textContent='Cycles: 0';
       document.getElementById('dbCOcount').textContent='0';
@@ -1468,8 +1478,8 @@ function stopIdleTimer(){
   renderRunTable(); // cacher la ligne idle
 }
 function checkIdleTimer(){
-  const bannerActive=document.getElementById('validateBanner').classList.contains('show');
-  const shouldRun=!S.running && !bannerActive && (STATION===1||S.wipIn>0);
+  // Wait counter ON dès qu'une pièce est disponible et que le cycle n'est pas en cours
+  const shouldRun = !S.running && (STATION===1 || S.wipIn>0);
   if(shouldRun && !S.idleRaf) startIdleTimer();
   else if(!shouldRun && S.idleRaf) stopIdleTimer();
 }
