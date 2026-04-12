@@ -404,7 +404,9 @@ function sortByAdjacency(positions,cols,rows){
     }
     if(!found)break;
   }
-  return ordered;
+  // Si le BFS n'a pas couvert toutes les positions (profil non-contigu),
+  // retourner l'ordre d'origine pour ne pas casser les anciens profils
+  return ordered.length===positions.length?ordered:positions;
 }
 function applyProfile(profileData){
   const p=profileData||DEFAULT_PROFILE;
