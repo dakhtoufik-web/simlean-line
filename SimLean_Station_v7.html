@@ -282,6 +282,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <div class="chrono-bar">
   <div class="chrono-cell"><div class="chrono-label">⏰ Clock</div><div class="chrono-val cv-clock" id="clockDisp">--:--:--</div></div>
   <div class="chrono-cell"><div class="chrono-label">⏱ Time on Station</div><div class="chrono-val cv-time" id="sessionTimerDisp">00:00:00</div></div>
+  <div class="chrono-cell"><div class="chrono-label">⏸ Wait Total</div><div class="chrono-val" style="color:var(--danger);" id="waitTotalDisp">0s</div></div>
   <div class="chrono-cell"><div class="chrono-label">📊 Utilization Rate</div><div class="chrono-val cv-occ" id="occDisp">—</div><div class="occ-bar-wrap"><div class="occ-bar-fill" id="occBar" style="width:0%"></div></div></div>
   <div class="chrono-cell"><div class="chrono-label">⏱ Takt Time</div><div class="chrono-val" style="color:var(--text);" id="taktDisp">—</div></div>
 </div>
@@ -474,6 +475,7 @@ let S={
   wipArrivalTime:null, // timestamp arrivée pièce upstream (stations 2,3,4) → base du wait time
   idleRaf:null,        // requestAnimationFrame pour le compteur idle live
   idleStart:null,      // timestamp début de l'idle en cours
+  totalWaitMs:0,       // cumul total des temps d'attente de la session
   customerDemand:0,  // commande fixée par le formateur (Station 1)
   coRunning:false,
   coProfileLabel:'',
@@ -795,8 +797,10 @@ function handleDrop(compIdx,targetPos){
       if(waitBase!==null && S.currentRun){
         S.cycleWaitMs = S.startTime - waitBase;
         S.currentRun.waitTotalMs += S.cycleWaitMs;
+        S.totalWaitMs += S.cycleWaitMs; // cumul session
         S.wipArrivalTime = null;
         S.waitStart = null;
+        updateWaitTotal();
       }
       runTimer();
     }
@@ -908,7 +912,7 @@ function finishCycle(ok){
     updateCurrentRun();
     // ── Si une pièce est déjà disponible, l'attente du prochain cycle commence maintenant ──
     if(STATION===1 || S.wipIn>0){
-      S.wipArrivalTime=performance.now();
+      if(S.wipArrivalTime===null) S.wipArrivalTime=performance.now();
     }
     checkIdleTimer();
   } else {
@@ -1058,7 +1062,8 @@ function listenWipIn(){
       const newVal=snap.val()||0;
       // Enregistrer l'heure d'arrivée quand une pièce arrive (wip_in augmente)
       if(newVal>S.wipIn && !S.running){
-        S.wipArrivalTime=performance.now();
+        // Ne pas écraser si on attend déjà (évite de réinitialiser le compteur d'attente)
+        if(S.wipArrivalTime===null) S.wipArrivalTime=performance.now();
       }
       S.wipIn=newVal;
       updateWIPDisplay();
@@ -1103,7 +1108,7 @@ function listenSessionConfig(){
       S.lastResetSignal=cfg.reset_signal;
       abortCO();
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
-      S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;
+      S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;S.totalWaitMs=0;
       S.topology=null;S.cornerSides={};
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
       // Réactiver le bouton Start si commande était épuisée
@@ -1459,6 +1464,10 @@ function updateCurrentRun(){
 }
 
 // ── Compteur idle live (wipIn > 0, pas de cycle en cours, Send Downstream non actif) ──
+function updateWaitTotal(){
+  const el=document.getElementById('waitTotalDisp');
+  if(el) el.textContent=Math.round(S.totalWaitMs/1000)+'s';
+}
 function startIdleTimer(){
   if(S.idleRaf)return;
   S.idleStart=performance.now();
@@ -1669,7 +1678,7 @@ function captureVisual(){
 
 document.getElementById('btnStart').addEventListener('click',startCycle);
 document.getElementById('btnValidate').addEventListener('click',validatePiece);
-document.getElementById('btnReset').addEventListener('click',()=>{S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.history=[];S.puzzleState={};updateWIPDisplay();initCycle();setMsg('Session reset','info');});
+document.getElementById('btnReset').addEventListener('click',()=>{S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.history=[];S.puzzleState={};S.totalWaitMs=0;updateWaitTotal();updateWIPDisplay();initCycle();setMsg('Session reset','info');});
 
 initStation();
 </script>
