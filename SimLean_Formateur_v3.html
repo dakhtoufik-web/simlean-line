@@ -1163,12 +1163,43 @@ function initGridEditor(){
   else renderGridEditor();
 }
 
+function checkGridContiguity(){
+  // Vérifie que les pièces de chaque station forment un bloc contigu (4-connectivité)
+  const {cols,rows,grid}=coState;
+  const nSt=F.nbStations||4;
+  const errors=[];
+  for(let s=1;s<=nSt;s++){
+    const cells=grid.reduce((a,v,i)=>{if(v===s)a.push(i);return a;},[]);
+    if(!cells.length)continue;
+    // BFS depuis la première cellule
+    const visited=new Set([cells[0]]);
+    const queue=[cells[0]];
+    while(queue.length){
+      const idx=queue.shift();
+      const r=Math.floor(idx/cols),c=idx%cols;
+      [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([nr,nc])=>{
+        if(nr<0||nr>=rows||nc<0||nc>=cols)return;
+        const ni=nr*cols+nc;
+        if(grid[ni]===s&&!visited.has(ni)){visited.add(ni);queue.push(ni);}
+      });
+    }
+    if(visited.size!==cells.length)errors.push(`ASSY ${s}`);
+  }
+  return errors;
+}
+
 function triggerChangeover(){
   if(!db||!F.sessionCode){alert('Session must be active');return;}
   const total=coState.cols*coState.rows;
   const assigned=coState.grid.filter(v=>v>0).length;
   if(assigned<total){alert(`All ${total} cells must be assigned (${total-assigned} remaining)`);return;}
   if(coState.active){alert('Changeover already in progress');return;}
+  // ── Validation contiguïté ────────────────────────────────────────────────
+  const badStations=checkGridContiguity();
+  if(badStations.length){
+    alert(`❌ Non-contiguous pieces detected:\n${badStations.join(', ')}\n\nEach station's pieces must form a connected block on the grid.\nPlease fix the layout before triggering the changeover.`);
+    return;
+  }
   const profileData=buildProfileFromGrid();
   const profileName=getGridProfileName();
   coState.active=true;coState.startTime=Date.now();
