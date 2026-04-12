@@ -357,10 +357,10 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
   <div class="bb-cell"><div class="bb-key">WIP IN</div><div class="bb-val" id="bbWipIn">0</div></div>
 </div>
 
-<!-- SUIVI PAR RUN DE PRODUCTION -->
+<!-- SUIVI PAR CYCLE DE PRODUCTION -->
 <div class="run-history">
   <div class="run-history-header">
-    <span class="run-history-title">📊 Suivi par run de production</span>
+    <span class="run-history-title">📊 Suivi par cycle de production</span>
     <span style="font-size:9px;color:#555;letter-spacing:1px;">1 ligne = 1 configuration (entre chaque C/O)</span>
   </div>
   <table class="run-table" id="runTable">
@@ -375,7 +375,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
       </tr>
     </thead>
     <tbody id="runBody">
-      <tr><td colspan="8" style="color:#444;font-size:10px;padding:10px;text-align:center;">Démarrez un cycle pour commencer le suivi.</td></tr>
+      <tr><td colspan="5" style="color:#444;font-size:10px;padding:10px;text-align:center;">Démarrez un cycle pour commencer le suivi.</td></tr>
     </tbody>
   </table>
 </div>
@@ -472,6 +472,8 @@ let S={
   cycleWaitMs:0,     // attente du cycle courant (Start Cycle → 1er drag)
   cycleErrors:0,     // erreurs du cycle courant
   wipArrivalTime:null, // timestamp arrivée pièce upstream (stations 2,3,4) → base du wait time
+  idleRaf:null,        // requestAnimationFrame pour le compteur idle live
+  idleStart:null,      // timestamp début de l'idle en cours
   customerDemand:0,  // commande fixée par le formateur (Station 1)
   coRunning:false,
   coProfileLabel:'',
@@ -859,7 +861,8 @@ function startCycle(){
 
 function _doStartCycle(){
   if(!S.currentRun)startRun('Run initial');
-  S.waitStart=performance.now(); // début de l'attente avant 1er drag
+  stopIdleTimer(); // l'opérateur commence — fin de l'idle
+  S.waitStart=performance.now();
   S.running=true;
   document.getElementById('timerDisp').classList.add('running');
   setMsg('▶ Drag your parts to their positions on the puzzle','ok');
@@ -899,15 +902,15 @@ function finishCycle(ok){
       document.getElementById('valText').textContent=`✅ ASSY ${STATION} done — Puzzle → ASSY ${STATION+1}`;
     }
     setMsg(`✅ Assembly completed in ${fmt(elapsed)}s`,'ok');
-    document.getElementById('validateBanner').classList.add('show');
+    document.getElementById('validateBanner').classList.add('show');stopIdleTimer();
     document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
     updateStats();updateWIPDisplay();pushStats();
     updateCurrentRun();
     // ── Si une pièce est déjà disponible, l'attente du prochain cycle commence maintenant ──
-    // (mesure la lenteur de l'opérateur : cycle fini mais pièce suivante déjà en attente)
     if(STATION===1 || S.wipIn>0){
       S.wipArrivalTime=performance.now();
     }
+    checkIdleTimer();
   } else {
     setTimeout(()=>initCycle(),700);
   }
@@ -965,7 +968,7 @@ function showCompletePuzzle(){
 
 function validatePiece(){
   document.getElementById('validateBanner').classList.remove('show');
-  S.wipOut--;updateWIPDisplay();
+  S.wipOut--;updateWIPDisplay();checkIdleTimer();
   if(db){
     const cumulative={...S.inheritedState};
     Object.keys(S.placedPositions).forEach(pos=>{cumulative[pos]=STATION;});
@@ -1052,6 +1055,7 @@ function listenWipIn(){
       }
       S.wipIn=newVal;
       updateWIPDisplay();
+      checkIdleTimer();
     }
   });
 }
@@ -1444,13 +1448,54 @@ function updateCurrentRun(){
   renderRunTable();
 }
 
+// ── Compteur idle live (wipIn > 0, pas de cycle en cours, Send Downstream non actif) ──
+function startIdleTimer(){
+  if(S.idleRaf)return;
+  S.idleStart=performance.now();
+  if(S.wipArrivalTime!==null) S.idleStart=S.wipArrivalTime;
+  renderRunTable(); // afficher la ligne idle
+  function tickIdle(){
+    const idleSec=Math.round((performance.now()-S.idleStart)/1000);
+    const el=document.getElementById('idleLiveRow');
+    if(el) el.querySelector('td').textContent=`⏸  IDLE : ${idleSec}s`;
+    S.idleRaf=requestAnimationFrame(tickIdle);
+  }
+  S.idleRaf=requestAnimationFrame(tickIdle);
+}
+function stopIdleTimer(){
+  if(S.idleRaf){cancelAnimationFrame(S.idleRaf);S.idleRaf=null;}
+  S.idleStart=null;
+  renderRunTable(); // cacher la ligne idle
+}
+function checkIdleTimer(){
+  const bannerActive=document.getElementById('validateBanner').classList.contains('show');
+  const shouldRun=!S.running && !bannerActive && (STATION===1||S.wipIn>0);
+  if(shouldRun && !S.idleRaf) startIdleTimer();
+  else if(!shouldRun && S.idleRaf) stopIdleTimer();
+}
+
 function renderRunTable(){
   const tbody=document.getElementById('runBody');
   if(!tbody)return;
   const allRuns=[...S.runs];
   if(S.currentRun)allRuns.push(S.currentRun);
-  if(!allRuns.length)return;
   tbody.innerHTML='';
+
+  // ── Ligne idle live — toujours en premier, état restauré ─────────────────
+  const idleTr=document.createElement('tr');
+  idleTr.id='idleLiveRow';
+  idleTr.style.cssText='background:rgba(0,194,168,.06);display:'+(S.idleRaf?'':'none')+';';
+  const idleSec=S.idleStart?Math.round((performance.now()-S.idleStart)/1000):0;
+  idleTr.innerHTML=`<td colspan="5" style="font-size:11px;letter-spacing:2px;color:var(--cyan);text-align:center;padding:6px;font-family:'Share Tech Mono',monospace;">⏸  IDLE : ${idleSec}s</td>`;
+  tbody.appendChild(idleTr);
+
+  if(!allRuns.length){
+    const emptyTr=document.createElement('tr');
+    emptyTr.innerHTML=`<td colspan="5" style="color:#444;font-size:10px;padding:10px;text-align:center;">Démarrez un cycle pour commencer le suivi.</td>`;
+    tbody.appendChild(emptyTr);
+    return;
+  }
+
   const taktMs=CFG.takt*1000;
   // Afficher du plus récent au plus ancien
   allRuns.slice().reverse().forEach((r,ri)=>{
