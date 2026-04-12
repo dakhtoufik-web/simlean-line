@@ -903,6 +903,11 @@ function finishCycle(ok){
     document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
     updateStats();updateWIPDisplay();pushStats();
     updateCurrentRun();
+    // ── Si une pièce est déjà disponible, l'attente du prochain cycle commence maintenant ──
+    // (mesure la lenteur de l'opérateur : cycle fini mais pièce suivante déjà en attente)
+    if(STATION===1 || S.wipIn>0){
+      S.wipArrivalTime=performance.now();
+    }
   } else {
     setTimeout(()=>initCycle(),700);
   }
