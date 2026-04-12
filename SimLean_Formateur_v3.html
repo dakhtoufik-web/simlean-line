@@ -312,7 +312,7 @@ body {
         <option value="Bottleneck S2 (2-8-3-3)">Bottleneck S2 (2-8-3-3)</option>
         <option value="Bottleneck S3 (4-2-6-4)">Bottleneck S3 (4-2-6-4)</option>
         <option value="Bottleneck S4 (4-4-2-6)">Bottleneck S4 (4-4-2-6)</option>
-        <option value="Manuel">✏ Custom</option>
+        <option value="Manuel" style="display:none">✏ Custom</option>
       </select>
     </div>
     <div class="setup-field">
@@ -471,59 +471,59 @@ function parseGridSize(gs){
   return {N:n,M:m,rows:n,cols:m,total:n*m};
 }
 
-function generateProfile(N,M,dist){
-  // Collecte les indices en ordre diagonal → bonne dispersion visuelle
-  const byDiag=[];
-  for(let d=0;d<N+M-1;d++){
-    for(let r=0;r<N;r++){const c=d-r;if(c>=0&&c<M)byDiag.push(r*M+c);}
-  }
-  const positions={};
-  let cursor=0;
-  for(let s=1;s<=N;s++){
-    positions[s]=byDiag.slice(cursor,cursor+dist[s-1]).sort((a,b)=>a-b);
-    cursor+=dist[s-1];
-  }
-  return {cols:M,rows:N,...positions};
+// Convertit un tableau 2D de numéros de station en objet profil
+function patternToProfile(pat){
+  const rows=pat.length,cols=pat[0].length;
+  const prof={cols,rows};
+  for(let s=1;s<=4;s++) prof[s]=[];
+  pat.forEach((row,r)=>row.forEach((st,c)=>{if(st>=1&&st<=4)prof[st].push(r*cols+c);}));
+  return prof;
 }
 
+// 10 profils garantis contigus par taille de grille
+const PROFILE_DEFS={
+  '4x3':[
+    {name:'Équilibré (3-3-3-3)',        pat:[[1,1,1],[2,2,2],[3,3,3],[4,4,4]]},
+    {name:'Équilibré Alt (3-3-3-3)',    pat:[[1,1,2],[1,2,2],[3,4,4],[3,3,4]]},
+    {name:'Goulot S1 (5-2-2-3)',        pat:[[1,1,1],[1,1,2],[3,3,2],[4,4,4]]},
+    {name:'Goulot S2 (2-5-2-3)',        pat:[[1,2,2],[1,2,2],[3,3,2],[4,4,4]]},
+    {name:'Goulot S3 (3-2-5-2)',        pat:[[1,1,1],[2,2,3],[3,3,3],[3,4,4]]},
+    {name:'Goulot S4 (3-2-2-5)',        pat:[[1,1,1],[2,2,3],[4,4,3],[4,4,4]]},
+    {name:'Cascade ↑ (2-3-3-4)',        pat:[[1,1,2],[3,2,2],[3,3,4],[4,4,4]]},
+    {name:'Cascade ↓ (4-3-3-2)',        pat:[[1,1,1],[1,2,2],[3,3,2],[3,4,4]]},
+    {name:'Sablier (4-2-2-4)',          pat:[[1,1,1],[1,2,2],[3,3,4],[4,4,4]]},
+    {name:'Vague (3-4-2-3)',            pat:[[1,1,1],[2,2,2],[2,3,3],[4,4,4]]},
+  ],
+  '4x4':[
+    {name:'Équilibré (4-4-4-4)',        pat:[[1,1,1,1],[2,2,2,2],[3,3,3,3],[4,4,4,4]]},
+    {name:'Équilibré Alt (4-4-4-4)',    pat:[[1,1,2,2],[1,1,2,2],[3,3,4,4],[3,3,4,4]]},
+    {name:'Goulot S1 (6-3-3-4)',        pat:[[1,1,1,1],[1,1,2,2],[3,3,2,4],[3,4,4,4]]},
+    {name:'Goulot S2 (3-6-4-3)',        pat:[[1,2,2,2],[1,2,2,2],[1,3,3,4],[3,3,4,4]]},
+    {name:'Goulot S3 (3-3-6-4)',        pat:[[1,1,1,2],[3,3,3,2],[3,3,3,2],[4,4,4,4]]},
+    {name:'Goulot S4 (4-3-3-6)',        pat:[[1,1,1,1],[2,3,3,4],[2,4,3,4],[2,4,4,4]]},
+    {name:'Cascade ↑ (2-4-4-6)',        pat:[[1,1,2,2],[3,3,2,2],[3,3,4,4],[4,4,4,4]]},
+    {name:'Cascade ↓ (6-4-4-2)',        pat:[[1,1,1,1],[1,1,2,2],[3,3,2,2],[3,3,4,4]]},
+    {name:'Sablier (5-3-3-5)',          pat:[[1,1,1,1],[1,2,2,3],[4,2,3,3],[4,4,4,4]]},
+    {name:'Vague (3-5-5-3)',            pat:[[1,1,2,2],[1,2,2,2],[3,3,3,3],[3,4,4,4]]},
+  ],
+  '4x5':[
+    {name:'Équilibré (5-5-5-5)',        pat:[[1,1,1,1,1],[2,2,2,2,2],[3,3,3,3,3],[4,4,4,4,4]]},
+    {name:'Équilibré Alt (5-5-5-5)',    pat:[[1,1,2,3,3],[1,2,2,3,3],[1,2,2,3,4],[1,4,4,4,4]]},
+    {name:'Goulot S1 (7-4-4-5)',        pat:[[1,1,1,1,1],[1,1,2,3,3],[4,2,2,2,3],[4,4,4,4,3]]},
+    {name:'Goulot S2 (5-7-4-4)',        pat:[[1,1,1,2,2],[1,1,2,2,2],[3,3,2,2,4],[3,3,4,4,4]]},
+    {name:'Goulot S3 (5-4-7-4)',        pat:[[1,1,1,1,2],[1,3,3,3,2],[3,3,3,3,2],[4,4,4,4,2]]},
+    {name:'Goulot S4 (5-4-4-7)',        pat:[[1,1,1,1,1],[2,2,3,3,3],[2,2,3,4,4],[4,4,4,4,4]]},
+    {name:'Cascade ↑ (3-4-6-7)',        pat:[[1,1,1,2,2],[3,3,3,2,2],[3,3,3,4,4],[4,4,4,4,4]]},
+    {name:'Cascade ↓ (7-6-4-3)',        pat:[[1,1,1,1,1],[2,2,2,1,1],[2,2,2,3,3],[4,4,4,3,3]]},
+    {name:'Sablier (6-4-4-6)',          pat:[[1,1,1,1,1],[1,2,2,2,2],[3,3,3,3,4],[4,4,4,4,4]]},
+    {name:'Vague (4-6-6-4)',            pat:[[1,1,1,1,2],[2,2,2,2,2],[3,3,3,3,3],[3,4,4,4,4]]},
+  ]
+};
+
 function getProfiles(gridSize){
-  const {N,M}=parseGridSize(gridSize);
-  const T=N*M;
+  const defs=PROFILE_DEFS[gridSize]||[];
   const profiles={};
-
-  // Balanced
-  const balDist=Array(N).fill(M);
-  profiles[`Balanced (${balDist.join('-')})`]=generateProfile(N,M,balDist);
-
-  // Helper : distribution avec goulot d'étranglement
-  function bkDist(bkIdx,ratio){
-    const bkCount=Math.round(M*(1+ratio));
-    const rem=T-bkCount;
-    const each=Math.floor(rem/(N-1));
-    const d=Array(N).fill(each);
-    d[bkIdx]=bkCount;
-    let diff=T-d.reduce((a,b)=>a+b,0);
-    for(let i=0;i<N&&diff!==0;i++){if(i!==bkIdx){d[i]+=diff>0?1:-1;diff+=diff>0?-1:1;}}
-    return d;
-  }
-
-  if(N>=3){
-    const d2=bkDist(1,0.6);
-    profiles[`Bottleneck S2 (${d2.join('-')})`]=generateProfile(N,M,d2);
-  }
-  if(N>=4){
-    const dN=bkDist(N-2,0.6);
-    profiles[`Bottleneck S${N-1} (${dN.join('-')})`]=generateProfile(N,M,dN);
-  }
-  if(N>=5){
-    const dM=bkDist(Math.floor(N/2),0.6);
-    profiles[`Bottleneck S${Math.floor(N/2)+1} (${dM.join('-')})`]=generateProfile(N,M,dM);
-  }
-  if(N>=6){
-    const dL=bkDist(N-1,0.6);
-    profiles[`Bottleneck S${N} (${dL.join('-')})`]=generateProfile(N,M,dL);
-  }
-
+  defs.forEach(({name,pat})=>{profiles[name]=patternToProfile(pat);});
   return profiles;
 }
 
@@ -573,9 +573,6 @@ function updateProfiles(){
     opt.value=p;opt.textContent=p;
     sel.appendChild(opt);
   });
-  const mopt=document.createElement('option');
-  mopt.value='Manuel';mopt.textContent='✏ Custom';
-  sel.appendChild(mopt);
   if(prev&&sel.querySelector(`option[value="${prev}"]`)) sel.value=prev;
   toggleManual();
   renderManualInputs();
