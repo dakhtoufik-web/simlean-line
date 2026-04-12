@@ -282,7 +282,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <div class="chrono-bar">
   <div class="chrono-cell"><div class="chrono-label">⏰ Clock</div><div class="chrono-val cv-clock" id="clockDisp">--:--:--</div></div>
   <div class="chrono-cell"><div class="chrono-label">⏱ Time on Station</div><div class="chrono-val cv-time" id="sessionTimerDisp">00:00:00</div></div>
-  <div class="chrono-cell"><div class="chrono-label">⏸ Wait Total</div><div class="chrono-val" style="color:var(--danger);" id="waitTotalDisp">00:00:00</div></div>
+  <div class="chrono-cell"><div class="chrono-label">⏸ WAIT Total Time</div><div class="chrono-val" style="color:var(--danger);" id="waitTotalDisp">00:00:00</div></div>
   <div class="chrono-cell"><div class="chrono-label">📊 Utilization Rate</div><div class="chrono-val cv-occ" id="occDisp">—</div><div class="occ-bar-wrap"><div class="occ-bar-fill" id="occBar" style="width:0%"></div></div></div>
   <div class="chrono-cell"><div class="chrono-label">⏱ Takt Time</div><div class="chrono-val" style="color:var(--text);" id="taktDisp">—</div></div>
 </div>
@@ -1040,7 +1040,7 @@ function initFirebase(){
     db=firebase.database();
     listenWipIn();listenSessionConfig();pushStats();
     setConn('online',`${ASSY_NAMES[STATION]} connected`);
-    if(STATION===1){S.wipIn=999;updateWIPDisplay();}
+    if(STATION===1){S.wipIn=999;updateWIPDisplay();checkWaitTimer();}
   }catch(e){
     setConn('offline','Local mode');
     if(STATION===1){S.wipIn=999;document.getElementById('btnStart').disabled=false;document.getElementById('btnStart').textContent='▶ Start Cycle';}
@@ -1050,13 +1050,9 @@ function listenWipIn(){
   db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).on('value',snap=>{
     if(STATION>1){
       const newVal=snap.val()||0;
-      // Enregistrer l'heure d'arrivée quand une pièce arrive (wip_in augmente)
-      if(newVal>S.wipIn && !S.running){
-        // Ne pas écraser si on attend déjà (évite de réinitialiser le compteur d'attente)
-        }
       S.wipIn=newVal;
       updateWIPDisplay();
-      checkWaitTimer();
+      checkWaitTimer(); // démarre le wait si wipIn > 0 et cycle pas commencé
     }
   });
 }
@@ -1467,16 +1463,18 @@ function updateWaitTotal(){
 }
 // ── Démarrer le wait (wipIn > 0, cycle pas commencé) ─────────────────────────
 function startWaitTimer(){
-  if(S.waitStart!==null)return; // déjà en cours
+  if(S.waitStart!==null)return;
   S.waitStart=performance.now();
   renderRunTable();
   function tickWait(){
     if(S.waitStart===null)return;
+    const currentMs=performance.now()-S.waitStart;
+    // Live idle row dans la table
     const el=document.getElementById('idleLiveRow');
-    if(el){
-      const ms=performance.now()-S.waitStart;
-      el.querySelector('td').textContent=`⏸  WAIT : ${fmtHMS(ms)}`;
-    }
+    if(el) el.querySelector('td').textContent=`⏸  WAIT : ${fmtHMS(currentMs)}`;
+    // Wait Total Time — affiche cumul + attente en cours
+    const totalEl=document.getElementById('waitTotalDisp');
+    if(totalEl) totalEl.textContent=fmtHMS(S.totalWaitMs+currentMs);
     S.waitRaf=requestAnimationFrame(tickWait);
   }
   S.waitRaf=requestAnimationFrame(tickWait);
