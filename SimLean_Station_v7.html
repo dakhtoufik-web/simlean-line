@@ -216,7 +216,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
         </div>
       </div>
       <div class="co-timer-wrap">
-        <div class="co-timer" id="coTimer">00:00</div>
+        <div class="co-timer" id="coTimer">0</div>
         <div class="co-timer-label">C/O TIME</div>
       </div>
     </div>
@@ -465,7 +465,7 @@ renderPuzzleLegend();
 let CFG={takt:15,co:30};
 
 let S={
-  wipIn:0,wipOut:0,cycles:0,output:0,scrap:0,history:[],remainingDemand:999,
+  wipIn:0,wipOut:0,cycles:0,output:0,scrap:0,history:[],
   myPieces:[],cornerComps:[],placedPositions:{},puzzleState:{},
   running:false,started:false,startTime:null,raf:null,errorCount:0,
   topology:null,cornerSides:{},bufferDisplayOrder:null,gamme:[],lastResetSignal:null,inheritedState:{},fty:0,
@@ -536,7 +536,7 @@ function startSessionTimer(){
   },1000);
 }
 function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
-function fmt(ms){return(ms/1000).toFixed(3).padStart(6,'0');}
+function fmt(ms){return Math.round(ms/1000);}
 function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');el.textContent=txt;el.className=`status-msg show ${type}`;if(!txt)el.classList.remove('show');}
 
 // ── INIT ───────────────────────────────────────────────
@@ -776,18 +776,8 @@ function handleDrop(compIdx,targetPos){
         return;
       }
     }
-    // ── 1ère pièce post-C/O : dry run = finalise le changeover ──────────────
-    if(S.coRunning){
-      completeCO(); // arrête le timer C/O, enregistre, crée nouveau run
-      S.placedPositions[targetPos]=comp;
-      S.currentStep++;
-      // S.started reste false → le chrono de cycle ne démarre qu'à la 2ème pièce
-      renderBuffer();renderBoard(targetPos);updateBufferProgress();
-      // Si seulement 1 pièce à assembler (cas extrême), terminer le cycle
-      if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
-      return;
-    }
-    // ── Pièces normales : démarrer/continuer le chrono de cycle ─────────────
+    // ── Démarrer/continuer le chrono de cycle ────────────────────────────────
+    // (coRunning reste true jusqu'à finishCycle du 1er cycle complet = SMED)
     if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
     S.placedPositions[targetPos]=comp;
     S.currentStep++;
@@ -864,12 +854,13 @@ function runTimer(){
 function finishCycle(ok){
   S.running=false;cancelAnimationFrame(S.raf);
   const elapsed=S.startTime?performance.now()-S.startTime:0;
+  // ── SMED : C/O se termine à la fin du 1er cycle complet ─────────────────
+  if(S.coRunning) completeCO();
   document.getElementById('timerDisp').classList.remove('running');
   document.getElementById('timerDisp').classList.add('done');
   S.cycles++;
   if(ok){
     S.output++;S.wipOut++;S.history.push(elapsed);
-    if(STATION===1&&S.remainingDemand!==999&&S.remainingDemand>0) S.remainingDemand--;
     if(S.errorCount===0) S.fty++;
     const isLast=(STATION===NB_STATIONS);
     if(isLast){
@@ -961,51 +952,27 @@ function validatePiece(){
 
 function updateWIPDisplay(){
   if(STATION===1){
-    const rd=S.remainingDemand;
-    const wipCountEl=document.getElementById('wipIn');
-    if(wipCountEl) wipCountEl.textContent=rd===999?'∞':Math.max(0,rd);
-    document.getElementById('bbWipIn').textContent=rd===999?'∞':Math.max(0,rd);
-    const btn=document.getElementById('btnStart');
-    if(!S.running){
-      if(rd>0||rd===999){
-        btn.disabled=false;btn.textContent='▶ Start Cycle';
-        // Clear alarm if demand restored
-        const alarmEl=document.getElementById('demandAlarm');
-        if(alarmEl) alarmEl.style.display='none';
-      } else {
-        btn.disabled=true;btn.textContent='⏹ Demand fulfilled';
-        // Show alarm banner
-        let alarmEl=document.getElementById('demandAlarm');
-        if(!alarmEl){
-          alarmEl=document.createElement('div');
-          alarmEl.id='demandAlarm';
-          alarmEl.style.cssText="position:fixed;top:0;left:0;right:0;z-index:9999;background:#c62828;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:1px;text-align:center;padding:10px;animation:blink 0.6s step-end infinite;";
-          alarmEl.textContent='🚨 CUSTOMER DEMAND FULFILLED — STOP PRODUCTION 🚨';
-          document.body.prepend(alarmEl);
-        }
-        alarmEl.style.display='block';
-      }
-    }
+    // Station 1: display is managed by customer_demand from Firebase — don't overwrite
   } else {
     document.getElementById('wipIn').textContent=S.wipIn===999?'∞':S.wipIn;
-    document.getElementById('bbWipIn').textContent=S.wipIn===999?'∞':S.wipIn;
-    const btn=document.getElementById('btnStart');
-    if(!S.running){
-      if(S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
-      else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
-    }
   }
   document.getElementById('wipOut').textContent=S.wipOut;
+  document.getElementById('bbWipIn').textContent=S.wipIn===999?'∞':S.wipIn;
   document.getElementById('bbOutput').textContent=S.output;
+  const btn=document.getElementById('btnStart');
+  if(!S.running){
+    if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+    else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
+  }
 }
 function updateStats(){
   if(!S.history.length)return;
   const last=S.history[S.history.length-1],moy=S.history.reduce((a,b)=>a+b,0)/S.history.length,min=Math.min(...S.history),taktMs=CFG.takt*1000;
-  document.getElementById('dbCTact').textContent=(last/1000).toFixed(3)+'s';
+  document.getElementById('dbCTact').textContent=Math.round(last/1000)+'s';
   document.getElementById('dbCTact').className='db-val '+(last<=taktMs?'good':'bad');
-  document.getElementById('dbCTmoy').textContent=(moy/1000).toFixed(3)+'s';
-  document.getElementById('dbCTmin').textContent=(min/1000).toFixed(3)+'s';
-  document.getElementById('bbCT').textContent=(moy/1000).toFixed(1)+'s';
+  document.getElementById('dbCTmoy').textContent=Math.round(moy/1000)+'s';
+  document.getElementById('dbCTmin').textContent=Math.round(min/1000)+'s';
+  document.getElementById('bbCT').textContent=Math.round(moy/1000)+'s';
   document.getElementById('dbOutput').textContent=S.output;
   document.getElementById('dbScrap').textContent=S.errorCount;
   const ftyPct=S.output>0?Math.round((S.fty/S.output)*100):100;
@@ -1049,10 +1016,9 @@ function listenSessionConfig(){
       // cornerSides will be recalculated in initCycle() after applyProfile
     }
     if(STATION===1&&cfg.customer_demand){
-      const demand=parseInt(cfg.customer_demand)||0;
-      // Only update remainingDemand if it hasn't been decremented yet (first load / reset)
-      if(S.remainingDemand===999||S.output===0) S.remainingDemand=demand;
-      updateWIPDisplay();
+      const wipCountEl=document.getElementById('wipIn');
+      if(wipCountEl) wipCountEl.textContent=cfg.customer_demand;
+      // S.wipIn stays 999 internally so station 1 never blocks
     }
 
     // ── CHANGEOVER SIGNAL ─────────────────────────────────
@@ -1079,7 +1045,6 @@ function listenSessionConfig(){
       abortCO();
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
       S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;
-      if(STATION===1) S.remainingDemand=999; // will be refreshed by customer_demand listener
       S.topology=null;S.cornerSides={};
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
       updateWIPDisplay();updateStats();
@@ -1112,7 +1077,7 @@ function startChangeover(profileName, profileData, coSignalTime){
   // Reset timer
   cancelAnimationFrame(S.coRaf);
   S.coRaf=null;
-  document.getElementById('coTimer').textContent='00:00';
+  document.getElementById('coTimer').textContent='0';
   S.coStart=coSignalTime||Date.now();
   S.coCount++;
   S.coRunning=true;
@@ -1130,9 +1095,8 @@ function startChangeover(profileName, profileData, coSignalTime){
   function tickCO(){
     if(!S.coStart)return;
     const e=Date.now()-S.coStart;
-    const m=Math.floor(e/60000),s=Math.floor((e%60000)/1000);
-    document.getElementById('coTimer').textContent=
-      String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    const s=Math.floor(e/1000);
+    document.getElementById('coTimer').textContent=String(s);
     S.coRaf=requestAnimationFrame(tickCO);
   }
   S.coRaf=requestAnimationFrame(tickCO);
@@ -1364,7 +1328,7 @@ function closeCoOverlay(){
   setMsg('⚙️ Grille validée — Démarrez le cycle et placez la 1ère pièce pour finaliser le C/O','info');
 }
 
-// ── Finalise le C/O au placement de la 1ère pièce (définition industrielle SMED) ──
+// ── Finalise le C/O à la fin du 1er cycle complet (SMED : signal → 1ère bonne pièce) ──
 function completeCO(){
   if(!S.coStart)return;
   const elapsed=Date.now()-S.coStart;
@@ -1394,7 +1358,7 @@ function completeCO(){
   startRun(S.coProfileLabel);
   if(S.currentRun)S.currentRun.coSec=coSec;
   pushStats();
-  setMsg(`✅ C/O finalisé en ${coSec}s — 1ère pièce = dry run, cycle en cours…`,'ok');
+  setMsg(`✅ C/O finalisé en ${coSec}s (config + dry run — SMED)`, 'ok');
 }
 
 // ── Abandon/reset forcé du C/O (session stop, reset formateur) ──
@@ -1452,8 +1416,8 @@ function renderRunTable(){
       <td class="${(r.output||0)>0?'good':''}">${r.output||0}</td>
       <td class="${(r.errors||0)>0?'bad':''}">${r.errors||0}</td>
       <td class="${ftyPct>=95?'good':ftyPct>=80?'accent':'bad'}">${r.output>0?ftyPct+'%':'—'}</td>
-      <td class="${avgCT>0&&avgCT<=CFG.takt*1000?'good':avgCT>0?'bad':''}">${avgCT>0?(avgCT/1000).toFixed(2)+'s':'—'}</td>
-      <td>${minCT>0?(minCT/1000).toFixed(2)+'s':'—'}</td>
+      <td class="${avgCT>0&&avgCT<=CFG.takt*1000?'good':avgCT>0?'bad':''}">${avgCT>0?Math.round(avgCT/1000)+'s':'—'}</td>
+      <td>${minCT>0?Math.round(minCT/1000)+'s':'—'}</td>
       <td>${r.coSec!==null?r.coSec+'s':'—'}</td>`;
     tbody.appendChild(tr);
   });
@@ -1461,7 +1425,7 @@ function renderRunTable(){
 
 function pushStats(){
   if(!db)return;
-  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?parseFloat((S.history.reduce((a,b)=>a+b,0)/S.history.length/1000).toFixed(2)):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',co_count:S.coCount,co_avg_s:S.coCount>0?Math.round(S.coTotalMs/S.coCount/1000):0,name:`${ASSY_NAMES[STATION]} — Assemblage`,last_updated:Date.now()});
+  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?Math.round(S.history.reduce((a,b)=>a+b,0)/S.history.length/1000):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',co_count:S.coCount,co_avg_s:S.coCount>0?Math.round(S.coTotalMs/S.coCount/1000):0,name:`${ASSY_NAMES[STATION]} — Assemblage`,last_updated:Date.now()});
 }
 
 function captureVisual(){
@@ -1534,7 +1498,7 @@ function captureVisual(){
     // Date + cycle time
     const now=new Date();
     const dateStr=now.toLocaleDateString('fr-FR')+' '+now.toLocaleTimeString('fr-FR');
-    const lastCT=S.history.length?(S.history[S.history.length-1]/1000).toFixed(2)+'s':'—';
+    const lastCT=S.history.length?Math.round(S.history[S.history.length-1]/1000)+'s':'—';
     ctx.font='11px monospace';
     ctx.fillStyle='#00c2a8';
     ctx.fillText(`${dateStr}   |   Cycle: ${S.cycles}   |   C/T: ${lastCT}   |   FTY: ${S.output>0?Math.round((S.fty/S.output)*100)+'%':'—'}`,PAD,78);
