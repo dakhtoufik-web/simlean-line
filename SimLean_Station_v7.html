@@ -771,16 +771,6 @@ function handleDrop(compIdx,targetPos){
   if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const comp=S.cornerComps[compIdx];
   if(!comp)return;
-  // Gamme fixe : vérifier que compIdx correspond bien à la pièce attendue à ce step
-  const expectedCompIdx=S.gamme[S.currentStep];
-  if(compIdx!==expectedCompIdx){
-    S.errorCount++;S.cycleErrors++;
-    setMsg(`⚠ Respectez la gamme — posez d'abord la pièce n°${S.currentStep+1} (erreurs: ${S.errorCount})`,'err');
-    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
-    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
-    renderBuffer();
-    return;
-  }
   if(comp.targetPos===targetPos){
     // ── Adjacency check: from 2nd part onward, must be adjacent to any placed piece ──
     // Include inheritedState so stations 2+ can place next to upstream stations' pieces
@@ -1728,4 +1718,4 @@ document.getElementById('btnReset').addEventListener('click',()=>{
 initStation();
 </script>
 </body>
-</html>
+</htm
