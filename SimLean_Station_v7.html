@@ -645,12 +645,13 @@ function renderBuffer(){
 
 
     if(!placed){
-      // Toutes les pièces sont visibles et draggables — pas de numéro ni de highlight
-      // La gamme est appliquée par handleDrop (rejet si mauvais ordre)
       div.draggable=!!S.running;
       div.style.cursor=S.running?'grab':'not-allowed';
       div.style.opacity=S.running?'1':'0.6';
+      div.style.userSelect='none';
+      div.style.webkitUserSelect='none';
       if(S.running){
+        // ── Drag & Drop ─────────────────────────────────────
         div.addEventListener('dragstart',e=>{
           div.classList.add('dragging');
           e.dataTransfer.setData('compIdx',String(i));
@@ -658,11 +659,21 @@ function renderBuffer(){
           currentDrag={idx:i,comp};
         });
         div.addEventListener('dragend',()=>{
-          // Toujours re-rendre le buffer après un drag (succès ou échec)
-          // → garantit que la pièce réapparaît si le drop a échoué ou a été annulé
           div.classList.remove('dragging');
           currentDrag=null;
           renderBuffer();
+        });
+        // ── Clic pour sélectionner (fallback si drag ne marche pas) ─
+        div.addEventListener('click',()=>{
+          if(currentDrag&&currentDrag.idx===i){
+            currentDrag=null;
+            renderBuffer();
+          } else {
+            currentDrag={idx:i,comp};
+            document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
+            div.style.outline='3px solid var(--success)';
+            setMsg('✅ Pièce sélectionnée — cliquez maintenant sur sa zone dans le puzzle','ok');
+          }
         });
         div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
       }
@@ -758,6 +769,13 @@ function renderBoard(justPlacedPos=null){
       cell.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';cell.classList.add('drag-over');cell.classList.remove('pulsing');});
       cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
       cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,fi);});
+      // Clic sur zone cible (si pièce sélectionnée par clic dans le buffer)
+      cell.addEventListener('click',()=>{
+        if(currentDrag){
+          document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
+          handleDrop(currentDrag.idx,fi);
+        }
+      });
     }
     overlay.appendChild(cell);
   }
@@ -1718,4 +1736,4 @@ document.getElementById('btnReset').addEventListener('click',()=>{
 initStation();
 </script>
 </body>
-</htm
+</html>
