@@ -348,7 +348,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 </div>
 
 <div class="bottom-bar">
-  <div class="bb-cell"><div class="bb-key">AVG C/T</div><div class="bb-val" id="bbCT">—</div></div>
+  <div class="bb-cell"><div class="bb-key">C/T</div><div class="bb-val" id="bbCT">—</div></div>
   <div class="bb-cell"><div class="bb-key">TAKT</div><div class="bb-val" id="bbTakt">—</div></div>
   <div class="bb-cell"><div class="bb-key">C/O</div><div class="bb-val" id="bbCO">—</div></div>
   <div class="bb-cell"><div class="bb-key">AVAIL</div><div class="bb-val good" id="bbDispo">100%</div></div>
@@ -371,8 +371,9 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
         <th>OUTPUT</th>
         <th>ERRORS</th>
         <th>FTY %</th>
-        <th>AVG C/T</th>
+        <th>C/T</th>
         <th>MIN C/T</th>
+        <th>WAIT</th>
         <th>C/O TIME</th>
       </tr>
     </thead>
@@ -470,6 +471,7 @@ let S={
   running:false,started:false,startTime:null,raf:null,errorCount:0,
   topology:null,cornerSides:{},bufferDisplayOrder:null,gamme:[],lastResetSignal:null,inheritedState:{},fty:0,
   coCount:0,coTotalMs:0,lastCoSignal:null,coStart:null,coRaf:null,
+  waitStart:null, // timestamp clic "Start Cycle" → pour mesurer l'attente avant 1er drag
   coRunning:false,  // true = on est dans la période de changeover (signal → 1ère pièce placée)
   coProfileLabel:'', // nom du profil en cours de C/O
   currentStep:0,
@@ -778,7 +780,15 @@ function handleDrop(compIdx,targetPos){
     }
     // ── Démarrer/continuer le chrono de cycle ────────────────────────────────
     // (coRunning reste true jusqu'à finishCycle du 1er cycle complet = SMED)
-    if(!S.started){S.started=true;S.startTime=performance.now();runTimer();}
+    if(!S.started){
+      S.started=true;S.startTime=performance.now();
+      // Capturer le temps d'attente (Start Cycle → 1er drag)
+      if(S.waitStart!==null&&S.currentRun){
+        S.currentRun.waitTotalMs+=(S.startTime-S.waitStart);
+        S.waitStart=null;
+      }
+      runTimer();
+    }
     S.placedPositions[targetPos]=comp;
     S.currentStep++;
     renderBuffer();renderBoard(targetPos);updateBufferProgress();
@@ -840,6 +850,7 @@ function startCycle(){
 
 function _doStartCycle(){
   if(!S.currentRun)startRun('Run initial');
+  S.waitStart=performance.now(); // début de l'attente avant 1er drag
   S.running=true;
   document.getElementById('timerDisp').classList.add('running');
   setMsg('▶ Drag your parts to their positions on the puzzle','ok');
@@ -972,7 +983,8 @@ function updateStats(){
   document.getElementById('dbCTact').className='db-val '+(last<=taktMs?'good':'bad');
   document.getElementById('dbCTmoy').textContent=Math.round(moy/1000)+'s';
   document.getElementById('dbCTmin').textContent=Math.round(min/1000)+'s';
-  document.getElementById('bbCT').textContent=Math.round(moy/1000)+'s';
+  document.getElementById('bbCT').textContent=Math.round(last/1000)+'s';
+  document.getElementById('bbCT').className='bb-val '+(last<=taktMs?'good':'bad');
   document.getElementById('dbOutput').textContent=S.output;
   document.getElementById('dbScrap').textContent=S.errorCount;
   const ftyPct=S.output>0?Math.round((S.fty/S.output)*100):100;
@@ -1380,7 +1392,7 @@ function startRun(profileName){
     num:S.runs.length+1,
     label:profileName||`Run ${S.runs.length+1}`,
     startTime:Date.now(),endTime:null,
-    cycles:0,output:0,errors:0,fty:0,ctHistory:[],coSec:null,
+    cycles:0,output:0,errors:0,fty:0,ctHistory:[],coSec:null,waitTotalMs:0,
   };
   renderRunTable();
 }
@@ -1418,6 +1430,7 @@ function renderRunTable(){
       <td class="${ftyPct>=95?'good':ftyPct>=80?'accent':'bad'}">${r.output>0?ftyPct+'%':'—'}</td>
       <td class="${avgCT>0&&avgCT<=CFG.takt*1000?'good':avgCT>0?'bad':''}">${avgCT>0?Math.round(avgCT/1000)+'s':'—'}</td>
       <td>${minCT>0?Math.round(minCT/1000)+'s':'—'}</td>
+      <td>${(r.waitTotalMs||0)>0?Math.round(r.waitTotalMs/1000)+'s':'—'}</td>
       <td>${r.coSec!==null?r.coSec+'s':'—'}</td>`;
     tbody.appendChild(tr);
   });
