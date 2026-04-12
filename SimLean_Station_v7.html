@@ -367,14 +367,11 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <thead>
       <tr>
         <th style="text-align:left;">RUN / CONFIG</th>
-        <th>CYCLES</th>
-        <th>OUTPUT</th>
-        <th>ERRORS</th>
-        <th>FTY %</th>
+        <th>CYCLE</th>
         <th>C/T</th>
-        <th>MIN C/T</th>
         <th>WAIT</th>
-        <th>C/O TIME</th>
+        <th>ERRORS</th>
+        <th>PASS</th>
       </tr>
     </thead>
     <tbody id="runBody">
@@ -471,12 +468,15 @@ let S={
   running:false,started:false,startTime:null,raf:null,errorCount:0,
   topology:null,cornerSides:{},bufferDisplayOrder:null,gamme:[],lastResetSignal:null,inheritedState:{},fty:0,
   coCount:0,coTotalMs:0,lastCoSignal:null,coStart:null,coRaf:null,
-  waitStart:null, // timestamp clic "Start Cycle" → pour mesurer l'attente avant 1er drag
-  coRunning:false,  // true = on est dans la période de changeover (signal → 1ère pièce placée)
-  coProfileLabel:'', // nom du profil en cours de C/O
+  waitStart:null,    // timestamp clic "Start Cycle" → pour mesurer l'attente avant 1er drag
+  cycleWaitMs:0,     // attente du cycle courant (Start Cycle → 1er drag)
+  cycleErrors:0,     // erreurs du cycle courant
+  customerDemand:0,  // commande fixée par le formateur (Station 1)
+  coRunning:false,
+  coProfileLabel:'',
   currentStep:0,
-  runs:[],  // historique par run de production (1 run = entre 2 changeovers)
-  currentRun:null, // run en cours
+  runs:[],
+  currentRun:null,
 };
 
 // ── SVG ENGINE ──────────────────────────────────────────
@@ -572,6 +572,7 @@ function initCycle(){
   S.placedPositions={};
   S.currentStep=0;
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
+  S.cycleErrors=0;S.cycleWaitMs=0;
   const scrapEl=document.getElementById('dbScrap');
   if(scrapEl)scrapEl.textContent='0';
   cancelAnimationFrame(S.raf);
@@ -746,7 +747,7 @@ function handleDrop(compIdx,targetPos){
   // Gamme fixe : vérifier que compIdx correspond bien à la pièce attendue à ce step
   const expectedCompIdx=S.gamme[S.currentStep];
   if(compIdx!==expectedCompIdx){
-    S.errorCount++;
+    S.errorCount++;S.cycleErrors++;
     setMsg(`⚠ Respectez la gamme — posez d'abord la pièce n°${S.currentStep+1} (erreurs: ${S.errorCount})`,'err');
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
@@ -770,7 +771,7 @@ function handleDrop(compIdx,targetPos){
         return (tRow===pRow&&Math.abs(tCol-pCol)===1)||(tCol===pCol&&Math.abs(tRow-pRow)===1);
       });
       if(!adjacent){
-        S.errorCount++;
+        S.errorCount++;S.cycleErrors++;
         const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
         if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
         setMsg(`⚠ Not adjacent to assembly — connect to an already placed part (errors: ${S.errorCount})`,'err');
@@ -784,7 +785,8 @@ function handleDrop(compIdx,targetPos){
       S.started=true;S.startTime=performance.now();
       // Capturer le temps d'attente (Start Cycle → 1er drag)
       if(S.waitStart!==null&&S.currentRun){
-        S.currentRun.waitTotalMs+=(S.startTime-S.waitStart);
+        S.cycleWaitMs=S.startTime-S.waitStart;
+        S.currentRun.waitTotalMs+=S.cycleWaitMs;
         S.waitStart=null;
       }
       runTimer();
@@ -795,7 +797,7 @@ function handleDrop(compIdx,targetPos){
     setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
   } else {
-    S.errorCount++;
+    S.errorCount++;S.cycleErrors++;
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
     setMsg(`❌ Wrong position! Errors: ${S.errorCount}`,'err');
@@ -870,6 +872,15 @@ function finishCycle(ok){
   document.getElementById('timerDisp').classList.remove('running');
   document.getElementById('timerDisp').classList.add('done');
   S.cycles++;
+  // ── Enregistrer les données du cycle courant ─────────────────────────────
+  if(S.currentRun){
+    S.currentRun.cyclesData.push({
+      ct: elapsed,
+      waitMs: S.cycleWaitMs,
+      errors: S.cycleErrors,
+      passed: ok
+    });
+  }
   if(ok){
     S.output++;S.wipOut++;S.history.push(elapsed);
     if(S.errorCount===0) S.fty++;
@@ -961,9 +972,15 @@ function validatePiece(){
   setTimeout(()=>{S.inheritedState={};initCycle();},700);
 }
 
+function updateIncomingOrder(){
+  if(STATION!==1||!S.customerDemand)return;
+  const remaining=Math.max(0,S.customerDemand-S.output);
+  const el=document.getElementById('wipIn');
+  if(el) el.textContent=remaining;
+}
 function updateWIPDisplay(){
   if(STATION===1){
-    // Station 1: display is managed by customer_demand from Firebase — don't overwrite
+    updateIncomingOrder();
   } else {
     document.getElementById('wipIn').textContent=S.wipIn===999?'∞':S.wipIn;
   }
@@ -1028,9 +1045,8 @@ function listenSessionConfig(){
       // cornerSides will be recalculated in initCycle() after applyProfile
     }
     if(STATION===1&&cfg.customer_demand){
-      const wipCountEl=document.getElementById('wipIn');
-      if(wipCountEl) wipCountEl.textContent=cfg.customer_demand;
-      // S.wipIn stays 999 internally so station 1 never blocks
+      S.customerDemand=cfg.customer_demand;
+      updateIncomingOrder();
     }
 
     // ── CHANGEOVER SIGNAL ─────────────────────────────────
@@ -1392,19 +1408,19 @@ function startRun(profileName){
     num:S.runs.length+1,
     label:profileName||`Run ${S.runs.length+1}`,
     startTime:Date.now(),endTime:null,
-    cycles:0,output:0,errors:0,fty:0,ctHistory:[],coSec:null,waitTotalMs:0,
+    cycles:0,output:0,errors:0,fty:0,coSec:null,waitTotalMs:0,
+    cyclesData:[],  // [{ct, waitMs, errors, passed}] — 1 entrée par cycle
   };
   renderRunTable();
 }
 
-function updateCurrentRun(cycle){
+function updateCurrentRun(){
   if(!S.currentRun)startRun('Initial');
   const r=S.currentRun;
   r.cycles=S.cycles;
   r.output=S.output;
   r.errors=S.errorCount;
   r.fty=S.fty;
-  r.ctHistory=[...S.history];
   renderRunTable();
 }
 
@@ -1415,24 +1431,38 @@ function renderRunTable(){
   if(S.currentRun)allRuns.push(S.currentRun);
   if(!allRuns.length)return;
   tbody.innerHTML='';
+  const taktMs=CFG.takt*1000;
+  // Afficher du plus récent au plus ancien
   allRuns.slice().reverse().forEach((r,ri)=>{
     const isCurrent=!r.endTime;
-    const avgCT=r.ctHistory.length?r.ctHistory.reduce((a,b)=>a+b,0)/r.ctHistory.length:0;
-    const minCT=r.ctHistory.length?Math.min(...r.ctHistory):0;
-    const ftyPct=r.output>0?Math.round((r.fty/r.output)*100):100;
-    const tr=document.createElement('tr');
-    if(isCurrent)tr.className='run-current';
-    tr.innerHTML=`
-      <td class="run-label">${isCurrent?'▶ ':''}<span title="${r.label}">${r.label}</span></td>
-      <td>${r.cycles||0}</td>
-      <td class="${(r.output||0)>0?'good':''}">${r.output||0}</td>
-      <td class="${(r.errors||0)>0?'bad':''}">${r.errors||0}</td>
-      <td class="${ftyPct>=95?'good':ftyPct>=80?'accent':'bad'}">${r.output>0?ftyPct+'%':'—'}</td>
-      <td class="${avgCT>0&&avgCT<=CFG.takt*1000?'good':avgCT>0?'bad':''}">${avgCT>0?Math.round(avgCT/1000)+'s':'—'}</td>
-      <td>${minCT>0?Math.round(minCT/1000)+'s':'—'}</td>
-      <td>${(r.waitTotalMs||0)>0?Math.round(r.waitTotalMs/1000)+'s':'—'}</td>
-      <td>${r.coSec!==null?r.coSec+'s':'—'}</td>`;
-    tbody.appendChild(tr);
+    // ── Séparateur C/O ─────────────────────────────────────────────────────
+    const sepTr=document.createElement('tr');
+    sepTr.style.cssText='background:rgba(240,165,0,.07);';
+    const coLabel=r.coSec!==null?`⚙ C/O : ${r.coSec}s`:'⚙ Run initial';
+    sepTr.innerHTML=`<td colspan="5" style="font-size:9px;letter-spacing:2px;color:var(--accent);text-align:left;padding:4px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;">${coLabel} — <span style="color:#555;">${r.label}</span>${isCurrent?' <span style="color:var(--success);">▶ EN COURS</span>':''}</td>`;
+    tbody.appendChild(sepTr);
+    // ── 1 ligne par cycle ───────────────────────────────────────────────────
+    const cycles=r.cyclesData||[];
+    if(!cycles.length){
+      const emptyTr=document.createElement('tr');
+      emptyTr.innerHTML=`<td colspan="5" style="color:#333;font-size:10px;padding:6px;text-align:center;">Aucun cycle</td>`;
+      tbody.appendChild(emptyTr);
+    } else {
+      cycles.slice().reverse().forEach((c,ci)=>{
+        const cycleNum=cycles.length-ci;
+        const ctMs=c.ct||0;
+        const ctOk=ctMs>0&&ctMs<=taktMs;
+        const tr=document.createElement('tr');
+        if(isCurrent&&ci===0)tr.className='run-current';
+        tr.innerHTML=`
+          <td style="color:#555;font-size:10px;padding:4px 8px;text-align:left;">  Cycle ${cycleNum}</td>
+          <td class="${ctMs>0?(ctOk?'good':'bad'):''}">${ctMs>0?Math.round(ctMs/1000)+'s':'—'}</td>
+          <td>${(c.waitMs||0)>500?Math.round(c.waitMs/1000)+'s':'—'}</td>
+          <td class="${(c.errors||0)>0?'bad':''}">${c.errors||0}</td>
+          <td class="${c.passed?'good':'bad'}">${c.passed?'✓':'✗'}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
   });
 }
 
