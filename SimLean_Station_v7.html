@@ -1079,8 +1079,8 @@ function listenSessionConfig(){
       // co_signal supprimé par le formateur → abandon C/O
       abortCO();
       initCycle();
-    } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart&&!S.started&&S.cycles===0){
-      // premier chargement uniquement (pas de reset si une run est en cours)
+    } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart&&!S.running&&!S.started&&S.cycles===0){
+      // premier chargement uniquement (pas de reset si un cycle est en cours)
       applyProfile(cfg.profile_data);
       const myPos=STATION_POSITIONS[STATION]||[];
       const segStart=(STATION-1)*4;
