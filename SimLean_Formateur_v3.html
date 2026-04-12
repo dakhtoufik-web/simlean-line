@@ -472,11 +472,37 @@ function parseGridSize(gs){
 }
 
 // Convertit un tableau 2D de numéros de station en objet profil
+// Réordonne les positions d'une station en parcours BFS contigu
+// → garantit que chaque pièce est adjacente à une pièce déjà posée
+function sortByAdjacency(positions, cols, rows){
+  if(positions.length<=1) return positions;
+  const set=new Set(positions);
+  const ordered=[positions[0]];
+  set.delete(positions[0]);
+  while(set.size>0){
+    let found=false;
+    for(let i=ordered.length-1;i>=0&&!found;i--){
+      const idx=ordered[i];
+      const r=Math.floor(idx/cols),c=idx%cols;
+      const nb=[];
+      if(r>0)nb.push((r-1)*cols+c);
+      if(r<rows-1)nb.push((r+1)*cols+c);
+      if(c>0)nb.push(r*cols+(c-1));
+      if(c<cols-1)nb.push(r*cols+(c+1));
+      for(const n of nb){if(set.has(n)){ordered.push(n);set.delete(n);found=true;break;}}
+    }
+    if(!found)break; // non-connexe — ne devrait pas arriver
+  }
+  return ordered;
+}
+
 function patternToProfile(pat){
   const rows=pat.length,cols=pat[0].length;
   const prof={cols,rows};
   for(let s=1;s<=4;s++) prof[s]=[];
   pat.forEach((row,r)=>row.forEach((st,c)=>{if(st>=1&&st<=4)prof[st].push(r*cols+c);}));
+  // Réordonner chaque station en parcours adjacence (requis pour la gamme d'assemblage)
+  for(let s=1;s<=4;s++) prof[s]=sortByAdjacency(prof[s],cols,rows);
   return prof;
 }
 
@@ -1138,6 +1164,8 @@ function buildProfileFromGrid(){
   const nSt=F.nbStations||4;
   const pos={};for(let s=1;s<=nSt;s++)pos[s]=[];
   coState.grid.forEach((st,idx)=>{if(st>0&&st<=nSt)pos[st].push(idx);});
+  // Réordonner en parcours adjacence pour garantir la gamme d'assemblage
+  for(let s=1;s<=nSt;s++) pos[s]=sortByAdjacency(pos[s],coState.cols,coState.rows);
   return {cols:coState.cols,rows:coState.rows,...pos};
 }
 
