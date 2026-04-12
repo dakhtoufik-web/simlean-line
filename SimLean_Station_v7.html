@@ -389,13 +389,30 @@ let PIECE_MAP=[];
 let STATION_POSITIONS={ 1:[0,3,12,15], 2:[1,4,11,14], 3:[2,7,8,13], 4:[5,6,9,10] };
 const DEFAULT_PROFILE={cols:4,rows:4,1:[0,3,12,15],2:[1,4,11,14],3:[2,7,8,13],4:[5,6,9,10]};
 
+function sortByAdjacency(positions,cols,rows){
+  if(!positions||positions.length<=1)return positions||[];
+  const set=new Set(positions);
+  const ordered=[positions[0]];set.delete(positions[0]);
+  while(set.size>0){
+    let found=false;
+    for(let i=ordered.length-1;i>=0&&!found;i--){
+      const idx=ordered[i],r=Math.floor(idx/cols),c=idx%cols;
+      const nb=[];
+      if(r>0)nb.push((r-1)*cols+c);if(r<rows-1)nb.push((r+1)*cols+c);
+      if(c>0)nb.push(r*cols+(c-1));if(c<cols-1)nb.push(r*cols+(c+1));
+      for(const n of nb){if(set.has(n)){ordered.push(n);set.delete(n);found=true;break;}}
+    }
+    if(!found)break;
+  }
+  return ordered;
+}
 function applyProfile(profileData){
   const p=profileData||DEFAULT_PROFILE;
   COLS=p.cols||4; ROWS=p.rows||4;
   STATION_POSITIONS={};
   for(let s=1;s<=6;s++){
     const v=p[s]||p[String(s)];
-    if(v&&v.length) STATION_POSITIONS[s]=v;
+    if(v&&v.length) STATION_POSITIONS[s]=sortByAdjacency(v,COLS,ROWS);
   }
   PIECE_MAP=new Array(COLS*ROWS).fill(0);
   for(let st=1;st<=6;st++){(STATION_POSITIONS[st]||[]).forEach(idx=>{PIECE_MAP[idx]=st;});}
@@ -1708,4 +1725,3 @@ initStation();
 </script>
 </body>
 </html>
-
