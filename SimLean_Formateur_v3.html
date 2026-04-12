@@ -493,7 +493,7 @@ function sortByAdjacency(positions, cols, rows){
     }
     if(!found)break; // non-connexe — ne devrait pas arriver
   }
-  return ordered;
+  return ordered.length===positions.length?ordered:positions;
 }
 
 function patternToProfile(pat){
