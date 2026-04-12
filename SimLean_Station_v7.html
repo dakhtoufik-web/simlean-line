@@ -560,6 +560,8 @@ function initStation(){
 }
 
 function initCycle(){
+  // Guard : ne jamais réinitialiser si un cycle est en cours
+  if(S.running) return;
   // Topologie fixe par profil — régénérée si nécessaire
   if(!S.topology){
     S.topology=generateTopology();
