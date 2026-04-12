@@ -1165,6 +1165,8 @@ function startChangeover(profileName, profileData, coSignalTime){
   if(S.running){S.running=false;cancelAnimationFrame(S.raf);}
   document.getElementById('btnStart').disabled=true;
   document.getElementById('validateBanner').classList.remove('show');
+  // Réinitialiser le compteur de demande pour le nouveau run
+  S.runOutputStart=S.output;
 
   // Reset timer
   cancelAnimationFrame(S.coRaf);
