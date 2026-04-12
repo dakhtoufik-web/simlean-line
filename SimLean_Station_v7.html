@@ -299,7 +299,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 </div>
 
 <div class="flux-row">
-  <div class="wip-box wip-in"><div class="wip-label">Incoming WIP</div><div class="wip-count" id="wipIn">0</div><div class="wip-sub">parts available</div></div>
+  <div class="wip-box wip-in"><div class="wip-label">Incoming WIP</div><div class="wip-count" id="wipIn">0</div><div class="wip-sub">parts available</div><button id="btnRefreshDemand" onclick="refreshDemand()" style="display:none;margin-top:6px;font-size:9px;padding:3px 8px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);cursor:pointer;letter-spacing:1px;">↺ Refresh</button></div>
   <div class="flux-arrow">→</div>
 
   <div class="station-area">
@@ -474,6 +474,7 @@ let S={
   cycleErrors:0,     // erreurs du cycle courant
   totalWaitMs:0,     // cumul total des temps d'attente session
   customerDemand:0,  // commande fixée par le formateur (Station 1)
+  runOutputStart:0,  // S.output au début du run courant (pour calcul demand par run)
   coRunning:false,
   coProfileLabel:'',
   currentStep:0,
@@ -594,6 +595,8 @@ function initCycle(){
     const sub=document.querySelector(".wip-box.wip-in .wip-sub");
     if(lbl) lbl.textContent="Incoming Order";
     if(sub) sub.textContent="set by trainer";
+    const rb=document.getElementById('btnRefreshDemand');
+    if(rb) rb.style.display='inline-block';
   }
 }
 
@@ -984,7 +987,8 @@ function validatePiece(){
 
 function updateIncomingOrder(){
   if(STATION!==1||!S.customerDemand)return;
-  const remaining=Math.max(0,S.customerDemand-S.output);
+  const runOutput=S.output-S.runOutputStart;
+  const remaining=Math.max(0,S.customerDemand-runOutput);
   const el=document.getElementById('wipIn');
   if(el) el.textContent=remaining;
   // ── Commande épuisée : prévenir l'opérateur d'arrêter ─────────────────
@@ -995,7 +999,20 @@ function updateIncomingOrder(){
     stopWaitTimer();
   }
 }
-function updateWIPDisplay(){
+function refreshDemand(){
+  if(STATION!==1||!db)return;
+  db.ref(`assembly_line/${SESSION}/config/customer_demand`).once('value',snap=>{
+    const d=snap.val();
+    if(d){
+      S.customerDemand=d;
+      S.runOutputStart=S.output; // rebase sur la production actuelle
+      const btn=document.getElementById('btnStart');
+      if(btn){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+      setMsg(`↺ Demand refreshed — ${d} pcs`,'info');
+      updateIncomingOrder();
+    }
+  });
+}
   if(STATION===1){
     updateIncomingOrder();
   } else {
@@ -1431,6 +1448,7 @@ function startRun(profileName){
     S.currentRun.endTime=Date.now();
     S.runs.push({...S.currentRun});
   }
+  S.runOutputStart=S.output; // base de calcul du demand pour ce run
   S.currentRun={
     num:S.runs.length+1,
     label:profileName||`Run ${S.runs.length+1}`,
