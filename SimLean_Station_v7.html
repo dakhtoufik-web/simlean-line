@@ -471,6 +471,7 @@ let S={
   waitStart:null,    // timestamp clic "Start Cycle" → pour mesurer l'attente avant 1er drag
   cycleWaitMs:0,     // attente du cycle courant (Start Cycle → 1er drag)
   cycleErrors:0,     // erreurs du cycle courant
+  wipArrivalTime:null, // timestamp arrivée pièce upstream (stations 2,3,4) → base du wait time
   customerDemand:0,  // commande fixée par le formateur (Station 1)
   coRunning:false,
   coProfileLabel:'',
@@ -572,7 +573,7 @@ function initCycle(){
   S.placedPositions={};
   S.currentStep=0;
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
-  S.cycleErrors=0;S.cycleWaitMs=0;
+  S.cycleErrors=0;S.cycleWaitMs=0;S.waitStart=null;
   const scrapEl=document.getElementById('dbScrap');
   if(scrapEl)scrapEl.textContent='0';
   cancelAnimationFrame(S.raf);
@@ -783,11 +784,17 @@ function handleDrop(compIdx,targetPos){
     // (coRunning reste true jusqu'à finishCycle du 1er cycle complet = SMED)
     if(!S.started){
       S.started=true;S.startTime=performance.now();
-      // Capturer le temps d'attente (Start Cycle → 1er drag)
-      if(S.waitStart!==null&&S.currentRun){
-        S.cycleWaitMs=S.startTime-S.waitStart;
-        S.currentRun.waitTotalMs+=S.cycleWaitMs;
-        S.waitStart=null;
+      // Capturer le temps d'attente au 1er drag
+      // Stations 2,3,4 : attente depuis l'arrivée de la pièce upstream
+      // Station 1 : attente depuis le clic "Start Cycle" (pas d'upstream)
+      const waitBase = (STATION>1 && S.wipArrivalTime!==null)
+        ? S.wipArrivalTime
+        : S.waitStart;
+      if(waitBase!==null && S.currentRun){
+        S.cycleWaitMs = S.startTime - waitBase;
+        S.currentRun.waitTotalMs += S.cycleWaitMs;
+        S.wipArrivalTime = null;
+        S.waitStart = null;
       }
       runTimer();
     }
@@ -1032,7 +1039,15 @@ function initFirebase(){
 }
 function listenWipIn(){
   db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).on('value',snap=>{
-    if(STATION>1){S.wipIn=snap.val()||0;updateWIPDisplay();}
+    if(STATION>1){
+      const newVal=snap.val()||0;
+      // Enregistrer l'heure d'arrivée quand une pièce arrive (wip_in augmente)
+      if(newVal>S.wipIn && !S.running){
+        S.wipArrivalTime=performance.now();
+      }
+      S.wipIn=newVal;
+      updateWIPDisplay();
+    }
   });
 }
 function listenSessionConfig(){
