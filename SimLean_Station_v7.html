@@ -502,6 +502,7 @@ let S={
   batchMode:false,   // true = batch mode
   batchSize:1,       // nb cycles avant envoi en aval
   batchCount:0,      // cycles complétés dans le batch courant
+  batchResetTimer:null, // timer entre cycles batch (à annuler si nouveau cycle démarre trop vite)
   currentRun:null,
 };
 
@@ -896,6 +897,7 @@ function startCycle(){
 }
 
 function _doStartCycle(){
+  if(S.batchResetTimer){clearTimeout(S.batchResetTimer);S.batchResetTimer=null;}
   if(!S.currentRun)startRun('Run initial');
   S.running=true;
   document.getElementById('timerDisp').classList.add('running');
@@ -958,7 +960,8 @@ function finishCycle(ok){
         document.getElementById('batchCounter').style.color='var(--accent)';
         // Réactiver Start Cycle pour le prochain cycle du batch
         // Utiliser setTimeout pour passer après tous les autres setters (Firebase, updateWIPDisplay, etc.)
-        setTimeout(()=>{
+        S.batchResetTimer=setTimeout(()=>{
+          S.batchResetTimer=null;
           // Reset du board pour le prochain cycle (sans toucher wipOut ni batchCount)
           S.placedPositions={};S.errorCount=0;S.cycleErrors=0;S.cycleWaitMs=0;
           S.started=false;
@@ -1223,6 +1226,7 @@ function listenSessionConfig(){
       S.lastResetSignal=cfg.reset_signal;
       abortCO();
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);S.batchCount=0;
+      if(S.batchResetTimer){clearTimeout(S.batchResetTimer);S.batchResetTimer=null;}
       S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;S.totalWaitMs=0;
       if(S.waitRaf){cancelAnimationFrame(S.waitRaf);S.waitRaf=null;}
       S.waitStart=null;updateWaitTotal();
