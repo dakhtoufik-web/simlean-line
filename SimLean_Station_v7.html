@@ -328,7 +328,37 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
   </div>
 
   <div class="flux-arrow">→</div>
-  <div class="wip-box wip-out"><div class="wip-label">Outgoing WIP</div><div class="wip-count" id="wipOut">0</div><div class="wip-sub">parts produced</div></div>
+
+  <!-- FLOW MODE PANEL -->
+  <div class="wip-box wip-out" style="min-width:160px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;align-items:center;">
+
+    <!-- Toggle OPF / BATCH -->
+    <div style="display:flex;gap:0;width:100%;border:1px solid var(--border);overflow:hidden;">
+      <div id="fmOPF" style="flex:1;text-align:center;font-size:9px;letter-spacing:1px;font-weight:700;padding:5px 4px;font-family:'Share Tech Mono',monospace;transition:all .3s;">ONE PIECE<br>FLOW</div>
+      <div style="width:1px;background:var(--border);"></div>
+      <div id="fmBatch" style="flex:1;text-align:center;font-size:9px;letter-spacing:1px;font-weight:700;padding:5px 4px;font-family:'Share Tech Mono',monospace;transition:all .3s;">BATCH</div>
+    </div>
+
+    <!-- Batch Size -->
+    <div id="fmBatchSize" style="font-size:10px;letter-spacing:1px;color:var(--accent);font-weight:700;display:none;">Batch Size = <span id="fmBatchSizeVal">—</span></div>
+
+    <!-- Outgoing WIP -->
+    <div class="wip-label" style="margin-top:4px;">Outgoing WIP</div>
+    <div class="wip-count" id="wipOut">0</div>
+    <div class="wip-sub">parts produced</div>
+
+    <!-- Batch Count -->
+    <div id="fmBatchCountRow" style="display:none;width:100%;text-align:center;margin-top:4px;">
+      <div style="font-size:9px;letter-spacing:1px;color:var(--muted);font-weight:700;">BATCH COUNT</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);" id="fmBatchCount">0 / —</div>
+    </div>
+
+    <!-- Batch Ready Flag -->
+    <div id="fmBatchReady" style="display:none;width:100%;text-align:center;background:rgba(61,232,138,.15);border:1px solid var(--success);padding:5px;margin-top:2px;">
+      <span style="font-size:10px;letter-spacing:2px;font-weight:700;color:var(--success);">✓ BATCH READY</span>
+    </div>
+
+  </div>
 
   <div class="data-box">
     <div class="db-title"><span style="color:var(--accent);margin-right:4px;">▌</span>DATA BOX</div>
@@ -955,9 +985,11 @@ function finishCycle(ok){
         document.getElementById('batchCounter').style.color='var(--success)';
         document.getElementById('btnStart').disabled=true;
         document.getElementById('btnStart').textContent='⏳ Send Downstream First';
+        updateFlowModePanel();
       } else {
         document.getElementById('valSub').textContent=`Continuez — encore ${S.batchSize-S.batchCount} cycle(s)`;
         document.getElementById('batchCounter').style.color='var(--accent)';
+        updateFlowModePanel();
         // Réactiver Start Cycle pour le prochain cycle du batch
         // Utiliser setTimeout pour passer après tous les autres setters (Firebase, updateWIPDisplay, etc.)
         S.batchResetTimer=setTimeout(()=>{
@@ -1050,6 +1082,7 @@ function validatePiece(){
   S.batchCount=0;
   S.wipOut=0;
   updateWIPDisplay();checkWaitTimer();
+  updateFlowModePanel();
   if(db){
     const cumulative={...S.inheritedState};
     Object.keys(S.placedPositions).forEach(pos=>{cumulative[pos]=STATION;});
@@ -1104,8 +1137,36 @@ function refreshDemand(){
   });
 }
 function updateBatchUI(){
-  const label=document.getElementById('bbBatchMode');
-  if(label){label.textContent=S.batchMode?`BATCH ×${S.batchSize}`:'ONE PIECE FLOW';}
+  updateFlowModePanel();
+}
+
+function updateFlowModePanel(batchDone){
+  const isB=S.batchMode;
+  // Toggle highlight
+  const opfEl=document.getElementById('fmOPF');
+  const batEl=document.getElementById('fmBatch');
+  if(opfEl){
+    opfEl.style.background=isB?'transparent':'var(--cyan)';
+    opfEl.style.color=isB?'#444':'#000';
+  }
+  if(batEl){
+    batEl.style.background=isB?'var(--accent)':'transparent';
+    batEl.style.color=isB?'#000':'#444';
+  }
+  // Batch size label
+  const bsRow=document.getElementById('fmBatchSize');
+  const bsVal=document.getElementById('fmBatchSizeVal');
+  if(bsRow){bsRow.style.display=isB?'block':'none';}
+  if(bsVal&&isB){bsVal.textContent=S.batchSize;}
+  // Batch count row
+  const bcRow=document.getElementById('fmBatchCountRow');
+  const bcEl=document.getElementById('fmBatchCount');
+  if(bcRow){bcRow.style.display=isB?'block':'none';}
+  if(bcEl&&isB){bcEl.textContent=`${S.batchCount} / ${S.batchSize}`;}
+  // Batch ready flag
+  const done=isB&&S.batchCount>=S.batchSize;
+  const readyEl=document.getElementById('fmBatchReady');
+  if(readyEl){readyEl.style.display=done?'block':'none';}
 }
 
 function updateWIPDisplay(){
