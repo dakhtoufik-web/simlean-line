@@ -1140,9 +1140,11 @@ function listenSessionConfig(){
       S.lastCoSignal=cfg.co_signal;
       startChangeover(cfg.co_profile_name||'New Profile', cfg.profile_data, cfg.co_signal);
     } else if(!cfg.co_signal&&S.coStart){
-      // co_signal supprimé par le formateur → abandon C/O
-      abortCO();
-      initCycle();
+      // co_signal supprimé par le formateur
+      // → n'aborter que si l'overlay est encore affiché (opérateur pas encore validé)
+      // → si le cycle est en cours ou coRunning, laisser completeCO() se déclencher normalement
+      const overlayVisible=document.getElementById('coOverlay').classList.contains('show');
+      if(overlayVisible){abortCO();initCycle();}
     } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart&&!S.running&&!S.started&&S.cycles===0){
       // premier chargement uniquement (pas de reset si un cycle est en cours)
       applyProfile(cfg.profile_data);
