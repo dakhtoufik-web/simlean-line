@@ -607,7 +607,8 @@ function initCycle(){
   setMsg('');
   renderBuffer();renderBoard();updateBufferProgress();
   const btn=document.getElementById('btnStart');
-  if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+  if(S.wipOut>0){btn.disabled=true;btn.textContent='⏳ Send Downstream First';}
+  else if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
   else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
   // Station 1: relabel Incoming WIP as Incoming Order
   if(STATION===1){
@@ -1039,7 +1040,10 @@ function refreshDemand(){
       S.customerDemand=d;
       S.runOutputStart=S.output; // rebase sur la production actuelle
       const btn=document.getElementById('btnStart');
-      if(btn){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+      if(btn){
+        if(S.wipOut>0){btn.disabled=true;btn.textContent='⏳ Send Downstream First';}
+        else{btn.disabled=false;btn.textContent='▶ Start Cycle';}
+      }
       setMsg(`↺ Demand refreshed — ${d} pcs`,'info');
       updateIncomingOrder();
     }
@@ -1095,7 +1099,7 @@ function initFirebase(){
     if(STATION===1){S.wipIn=999;updateWIPDisplay();checkWaitTimer();}
   }catch(e){
     setConn('offline','Local mode');
-    if(STATION===1){S.wipIn=999;document.getElementById('btnStart').disabled=false;document.getElementById('btnStart').textContent='▶ Start Cycle';}
+    if(STATION===1){S.wipIn=999;document.getElementById('btnStart').disabled=S.wipOut>0;document.getElementById('btnStart').textContent=S.wipOut>0?'⏳ Send Downstream First':'▶ Start Cycle';}
   }
 }
 function listenWipIn(){
@@ -1714,7 +1718,6 @@ function captureVisual(){
     ctx.textAlign='right';
     ctx.fillText('keeplean.lu',W-PAD,fy+14);
     ctx.textAlign='left';
-
     // ── Téléchargement ──
     const link=document.createElement('a');
     const ts=now.toISOString().slice(0,19).replace(/:/g,'-');
