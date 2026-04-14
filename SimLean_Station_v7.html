@@ -289,7 +289,8 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 
 <div class="status-msg" id="statusMsg"></div>
 <div class="validate-banner" id="validateBanner">
-  <div><div class="val-text" id="valText">✅ Assembly completed !</div><div class="val-sub">Validate to send downstream</div></div>
+  <div><div class="val-text" id="valText">✅ Assembly completed !</div><div class="val-sub" id="valSub">Validate to send downstream</div></div>
+  <div id="batchCounter" style="display:none;font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--accent);letter-spacing:2px;"></div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
     <button class="btn" style="background:var(--cyan);color:#000;font-size:12px;" id="btnCapture" onclick="captureVisual()">
       📸 Capture Visual
@@ -498,6 +499,9 @@ let S={
   coProfileLabel:'',
   currentStep:0,
   runs:[],
+  batchMode:false,   // true = batch mode
+  batchSize:1,       // nb cycles avant envoi en aval
+  batchCount:0,      // cycles complétés dans le batch courant
   currentRun:null,
 };
 
@@ -931,11 +935,33 @@ function finishCycle(ok){
       document.getElementById('valText').textContent=`✅ ASSY ${STATION} done — Puzzle → ASSY ${STATION+1}`;
     }
     setMsg(`✅ Assembly completed in ${fmt(elapsed)}s`,'ok');
-    document.getElementById('validateBanner').classList.add('show');
-    document.getElementById('btnValidate').disabled=false;
     document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
     updateStats();updateWIPDisplay();pushStats();
     updateCurrentRun();
+
+    // ── BATCH MODE ──────────────────────────────────────────
+    if(S.batchMode){
+      S.batchCount++;
+      const done=S.batchCount>=S.batchSize;
+      document.getElementById('validateBanner').classList.add('show');
+      document.getElementById('btnValidate').disabled=!done;
+      document.getElementById('batchCounter').style.display='block';
+      document.getElementById('batchCounter').textContent=`${S.batchCount} / ${S.batchSize}`;
+      if(done){
+        document.getElementById('valSub').textContent=`Batch complet — Envoyez les ${S.batchSize} pièces en aval`;
+        document.getElementById('batchCounter').style.color='var(--success)';
+      } else {
+        document.getElementById('valSub').textContent=`Continuez — encore ${S.batchSize-S.batchCount} cycle(s)`;
+        document.getElementById('batchCounter').style.color='var(--accent)';
+      }
+    } else {
+      // OPF — comportement normal
+      document.getElementById('validateBanner').classList.add('show');
+      document.getElementById('btnValidate').disabled=false;
+      document.getElementById('batchCounter').style.display='none';
+      document.getElementById('valSub').textContent='Validate to send downstream';
+    }
+
     // ── Si une pièce est déjà disponible, l'attente du prochain cycle commence maintenant ──
     if(STATION===1 || S.wipIn>0){
     }
@@ -1000,21 +1026,29 @@ function validatePiece(){
   if(!banner.classList.contains('show')){setMsg('⚠ Assemble toutes tes pièces avant d\'envoyer en aval','err');return;}
   banner.classList.remove('show');
   document.getElementById('btnValidate').disabled=true;
-  S.wipOut--;updateWIPDisplay();checkWaitTimer();
+  document.getElementById('batchCounter').style.display='none';
+  document.getElementById('valSub').textContent='Validate to send downstream';
+  S.batchCount=0;
+  updateWIPDisplay();checkWaitTimer();
   if(db){
     const cumulative={...S.inheritedState};
     Object.keys(S.placedPositions).forEach(pos=>{cumulative[pos]=STATION;});
+    const qty=S.batchMode?S.batchSize:1;
     if(STATION<NB_STATIONS){
-      db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION+1}`).push(cumulative);
-      db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+1);
-      setMsg(`📦 Puzzle → ASSY ${STATION+1}`,'info');
+      // Envoyer qty puzzles en aval
+      for(let i=0;i<qty;i++){
+        db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION+1}`).push(cumulative);
+      }
+      db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+qty);
+      setMsg(qty>1?`📦 Batch ×${qty} → ASSY ${STATION+1}`:`📦 Puzzle → ASSY ${STATION+1}`,'info');
     } else {
-      db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+1);
-      setMsg('🏁 Produit livré au CLIENT ✅','ok');
+      db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+qty);
+      setMsg(qty>1?`🏁 Batch ×${qty} livré au CLIENT ✅`:'🏁 Produit livré au CLIENT ✅','ok');
     }
   } else {
     setMsg('🏁 Produit livré au CLIENT ✅','ok');
   }
+  S.wipOut=0;
   pushStats();
   setTimeout(()=>{S.inheritedState={};initCycle();},700);
 }
@@ -1050,6 +1084,11 @@ function refreshDemand(){
     }
   });
 }
+function updateBatchUI(){
+  const label=document.getElementById('bbBatchMode');
+  if(label){label.textContent=S.batchMode?`BATCH ×${S.batchSize}`:'ONE PIECE FLOW';}
+}
+
 function updateWIPDisplay(){
   if(STATION===1){
     updateIncomingOrder();
@@ -1125,6 +1164,14 @@ function listenSessionConfig(){
     const cfg=snap.val();if(!cfg)return;
     if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}
     if(cfg.nb_stations){NB_STATIONS=cfg.nb_stations;renderPuzzleLegend();}
+    if(cfg.station_modes){
+      const myMode=cfg.station_modes[`s${STATION}`];
+      if(myMode){
+        S.batchMode=(myMode.mode==='batch');
+        S.batchSize=S.batchMode?(myMode.size||2):1;
+        updateBatchUI();
+      }
+    }
     if(cfg.topology&&!S.topology){
       S.topology=cfg.topology;
       // cornerSides will be recalculated in initCycle() after applyProfile
@@ -1158,7 +1205,7 @@ function listenSessionConfig(){
     if(cfg.reset_signal&&cfg.reset_signal!==S.lastResetSignal){
       S.lastResetSignal=cfg.reset_signal;
       abortCO();
-      S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);
+      S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);S.batchCount=0;
       S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;S.totalWaitMs=0;
       if(S.waitRaf){cancelAnimationFrame(S.waitRaf);S.waitRaf=null;}
       S.waitStart=null;updateWaitTotal();
@@ -1728,7 +1775,6 @@ function captureVisual(){
     ctx.textAlign='right';
     ctx.fillText('keeplean.lu',W-PAD,fy+14);
     ctx.textAlign='left';
-
     // ── Téléchargement ──
     const link=document.createElement('a');
     const ts=now.toISOString().slice(0,19).replace(/:/g,'-');
