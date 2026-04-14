@@ -868,7 +868,7 @@ document.addEventListener('touchend',e=>{
 // ── CYCLE ──────────────────────────────────────────────
 function startCycle(){
   if(S.running)return;
-  if(S.cornerComps.length===0){setMsg('⚠ Buffer vide — attends le chargement des pièces avant de démarrer','err');return;}
+  if(S.wipOut>0){setMsg('⚠ Envoie d\'abord le produit fini en aval (Send Downstream) avant de démarrer un nouveau cycle','err');return;}
   if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
   startSessionTimer();
   if(STATION>1&&db){
