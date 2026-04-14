@@ -308,7 +308,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
       <span style="font-size:11px;color:var(--muted);font-weight:700;" id="cycleCount">Cycles: 0</span>
     </div>
 
-    <div class="section-label">BUFFER — Incoming Parts (drag your parts of your product onto the assembly frame)
+    <div class="section-label">BUFFER — Incoming Parts (Pick a part → Place it on the assembly frame)
       <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--success);margin-left:8px;" id="bufferProgress">0 / 4</span>
     </div>
     <div class="buffer-bar" id="bufferBar"><div class="buffer-bar-label">BUFFER</div></div>
@@ -867,6 +867,7 @@ document.addEventListener('touchend',e=>{
 // ── CYCLE ──────────────────────────────────────────────
 function startCycle(){
   if(S.running)return;
+  if(S.cornerComps.length===0){setMsg('⚠ Buffer vide — attends le chargement des pièces avant de démarrer','err');return;}
   if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
   startSessionTimer();
   if(STATION>1&&db){
@@ -891,7 +892,7 @@ function _doStartCycle(){
   if(!S.currentRun)startRun('Run initial');
   S.running=true;
   document.getElementById('timerDisp').classList.add('running');
-  setMsg('▶ Drag your parts to their positions on the puzzle','ok');
+  setMsg('▶ Pick a part → Place it on the assembly frame','ok');
   document.getElementById('btnStart').disabled=true;
   renderBuffer();renderBoard();
 }
