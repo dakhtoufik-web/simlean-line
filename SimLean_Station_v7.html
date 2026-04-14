@@ -611,7 +611,8 @@ function initCycle(){
   setMsg('');
   renderBuffer();renderBoard();updateBufferProgress();
   const btn=document.getElementById('btnStart');
-  if(S.wipOut>0){btn.disabled=true;btn.textContent='⏳ Send Downstream First';}
+  const batchBlocking=S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize);
+  if(batchBlocking){btn.disabled=true;btn.textContent='⏳ Send Downstream First';}
   else if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
   else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
   // Station 1: relabel Incoming WIP as Incoming Order
@@ -873,7 +874,7 @@ document.addEventListener('touchend',e=>{
 // ── CYCLE ──────────────────────────────────────────────
 function startCycle(){
   if(S.running)return;
-  if(S.wipOut>0){setMsg('⚠ Envoie d\'abord le produit fini en aval (Send Downstream) avant de démarrer un nouveau cycle','err');return;}
+  if(S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize)){setMsg('⚠ Envoie d\'abord le produit fini en aval (Send Downstream) avant de démarrer un nouveau cycle','err');return;}
   if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
   startSessionTimer();
   if(STATION>1&&db){
@@ -1101,7 +1102,8 @@ function updateWIPDisplay(){
   const btn=document.getElementById('btnStart');
   const banner=document.getElementById('validateBanner');
   if(!S.running){
-    if(S.wipOut>0){
+    const batchBlocking=S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize);
+    if(batchBlocking){
       btn.disabled=true;btn.textContent='⏳ Send Downstream First';
       // S'assurer que le banner Send Downstream est visible
       if(banner&&!banner.classList.contains('show')){
