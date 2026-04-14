@@ -1059,9 +1059,16 @@ function updateWIPDisplay(){
   document.getElementById('bbWipIn').textContent=S.wipIn===999?'∞':S.wipIn;
   document.getElementById('bbOutput').textContent=S.output;
   const btn=document.getElementById('btnStart');
+  const banner=document.getElementById('validateBanner');
   if(!S.running){
-    if(S.wipOut>0){btn.disabled=true;btn.textContent='⏳ Send Downstream First';}
-    else if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+    if(S.wipOut>0){
+      btn.disabled=true;btn.textContent='⏳ Send Downstream First';
+      // S'assurer que le banner Send Downstream est visible
+      if(banner&&!banner.classList.contains('show')){
+        banner.classList.add('show');
+        document.getElementById('btnValidate').disabled=false;
+      }
+    } else if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
     else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
   }
 }
@@ -1718,6 +1725,7 @@ function captureVisual(){
     ctx.textAlign='right';
     ctx.fillText('keeplean.lu',W-PAD,fy+14);
     ctx.textAlign='left';
+
     // ── Téléchargement ──
     const link=document.createElement('a');
     const ts=now.toISOString().slice(0,19).replace(/:/g,'-');
