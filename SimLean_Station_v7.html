@@ -999,7 +999,8 @@ function validatePiece(){
   const banner=document.getElementById('validateBanner');
   if(!banner.classList.contains('show')){setMsg('⚠ Assemble toutes tes pièces avant d\'envoyer en aval','err');return;}
   banner.classList.remove('show');
-  document.getElementById('btnValidate').disabled=true;updateWIPDisplay();checkWaitTimer();
+  document.getElementById('btnValidate').disabled=true;
+  S.wipOut--;updateWIPDisplay();checkWaitTimer();
   if(db){
     const cumulative={...S.inheritedState};
     Object.keys(S.placedPositions).forEach(pos=>{cumulative[pos]=STATION;});
