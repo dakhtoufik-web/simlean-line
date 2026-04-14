@@ -951,9 +951,21 @@ function finishCycle(ok){
       if(done){
         document.getElementById('valSub').textContent=`Batch complet — Envoyez les ${S.batchSize} pièces en aval`;
         document.getElementById('batchCounter').style.color='var(--success)';
+        document.getElementById('btnStart').disabled=true;
+        document.getElementById('btnStart').textContent='⏳ Send Downstream First';
       } else {
         document.getElementById('valSub').textContent=`Continuez — encore ${S.batchSize-S.batchCount} cycle(s)`;
         document.getElementById('batchCounter').style.color='var(--accent)';
+        // Réactiver Start Cycle pour le prochain cycle du batch
+        document.getElementById('btnStart').disabled=false;
+        document.getElementById('btnStart').textContent='▶ Start Cycle';
+        // Réinitialiser le board pour le prochain cycle (sans envoyer en aval)
+        setTimeout(()=>{
+          S.placedPositions={};S.errorCount=0;S.cycleErrors=0;S.cycleWaitMs=0;
+          renderBuffer();renderBoard();
+          document.getElementById('timerDisp').textContent='00.000';
+          document.getElementById('timerDisp').className='timer-val';
+        },400);
       }
     } else {
       // OPF — comportement normal
