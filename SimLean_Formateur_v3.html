@@ -339,6 +339,12 @@ body {
       <div style="font-size:10px;letter-spacing:2px;color:var(--cyan);font-weight:700;margin-bottom:12px;text-transform:uppercase;">✏ Custom layout — number of parts per station</div>
       <div id="manualInputsRow" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;"></div>
     </div>
+
+    <!-- FLOW MODE PAR STATION -->
+    <div style="width:100%;margin-top:10px;background:var(--panel2);border:1px solid var(--accent);padding:14px 16px;">
+      <div style="font-size:10px;letter-spacing:2px;color:var(--accent);font-weight:700;margin-bottom:12px;text-transform:uppercase;">⚙ Flow Mode — par station</div>
+      <div id="stationModeRows" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
     <div class="setup-field">
       <label>&nbsp;</label>
       <button class="btn btn-primary" id="btnCreate">▶ Create Session</button>
@@ -553,9 +559,59 @@ function getProfiles(gridSize){
   return profiles;
 }
 
+function renderStationModes(){
+  const N=parseInt(document.getElementById('cfgStations').value)||4;
+  const container=document.getElementById('stationModeRows');
+  if(!container)return;
+  // Preserve existing values
+  const existing={};
+  container.querySelectorAll('[data-st]').forEach(row=>{
+    const st=row.dataset.st;
+    const mode=row.querySelector('.mode-select').value;
+    const size=row.querySelector('.batch-size').value;
+    existing[st]={mode,size};
+  });
+  container.innerHTML='';
+  for(let i=1;i<=N;i++){
+    const prev=existing[i]||{mode:'opf',size:3};
+    const row=document.createElement('div');
+    row.dataset.st=i;
+    row.style.cssText='display:flex;align-items:center;gap:12px;';
+    row.innerHTML=`
+      <span style="font-size:10px;letter-spacing:1px;color:var(--muted);font-weight:700;min-width:60px;">ASSY ${i}</span>
+      <select class="mode-select" style="background:var(--bg);border:1px solid var(--border);color:#fff;padding:4px 8px;font-size:11px;letter-spacing:1px;" onchange="toggleBatchSize(this)">
+        <option value="opf" ${prev.mode==='opf'?'selected':''}>One Piece Flow</option>
+        <option value="batch" ${prev.mode==='batch'?'selected':''}>Batch</option>
+      </select>
+      <span class="batch-label" style="font-size:10px;color:var(--muted);display:${prev.mode==='batch'?'inline':'none'};">Batch size :</span>
+      <input class="batch-size" type="number" min="2" max="20" value="${prev.size||3}"
+        style="width:50px;background:var(--bg);border:1px solid var(--accent);color:var(--accent);padding:4px 6px;font-size:12px;font-family:'Share Tech Mono',monospace;display:${prev.mode==='batch'?'inline':'none'};">`;
+    container.appendChild(row);
+  }
+}
+
+function toggleBatchSize(sel){
+  const row=sel.closest('[data-st]');
+  const show=sel.value==='batch';
+  row.querySelector('.batch-label').style.display=show?'inline':'none';
+  row.querySelector('.batch-size').style.display=show?'inline':'none';
+}
+
+function getStationModes(){
+  const modes={};
+  document.querySelectorAll('#stationModeRows [data-st]').forEach(row=>{
+    const st=parseInt(row.dataset.st);
+    const mode=row.querySelector('.mode-select').value;
+    const size=parseInt(row.querySelector('.batch-size').value)||3;
+    modes[`s${st}`]={mode, size: mode==='batch'?size:1};
+  });
+  return modes;
+}
+
 function updateStationGridOptions(){
   const N=parseInt(document.getElementById('cfgStations').value);
   const sel=document.getElementById('cfgGridSize');
+  renderStationModes();
   const prev=sel.value;
   sel.innerHTML='';
   (GRID_OPTIONS[N]||[]).forEach(o=>{
@@ -932,6 +988,7 @@ function pushSessionToFirebase(){
     topology: (()=>{const[c,r]=F.gridSize.split('x').map(Number);return generateTopology(c,r);})(),
     profile: F.profile,
     profile_data: profileData,
+    station_modes: getStationModes(),
     status: 'running',
     created_at: Date.now()
   });
