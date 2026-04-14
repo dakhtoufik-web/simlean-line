@@ -294,7 +294,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <button class="btn" style="background:var(--cyan);color:#000;font-size:12px;" id="btnCapture" onclick="captureVisual()">
       📸 Capture Visual
     </button>
-    <button class="btn" style="background:var(--success);color:#000;" id="btnValidate">→ Send Downstream</button>
+    <button class="btn" style="background:var(--success);color:#000;" id="btnValidate" disabled>→ Send Downstream</button>
   </div>
 </div>
 
@@ -603,6 +603,7 @@ function initCycle(){
   cancelAnimationFrame(S.raf);
   const td=document.getElementById('timerDisp');td.textContent='00.000';td.className='timer-val';
   document.getElementById('validateBanner').classList.remove('show');
+  document.getElementById('btnValidate').disabled=true;
   setMsg('');
   renderBuffer();renderBoard();updateBufferProgress();
   const btn=document.getElementById('btnStart');
@@ -930,6 +931,7 @@ function finishCycle(ok){
     }
     setMsg(`✅ Assembly completed in ${fmt(elapsed)}s`,'ok');
     document.getElementById('validateBanner').classList.add('show');
+    document.getElementById('btnValidate').disabled=false;
     document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
     updateStats();updateWIPDisplay();pushStats();
     updateCurrentRun();
@@ -993,8 +995,10 @@ function showCompletePuzzle(){
 }
 
 function validatePiece(){
-  document.getElementById('validateBanner').classList.remove('show');
-  S.wipOut--;updateWIPDisplay();checkWaitTimer();
+  const banner=document.getElementById('validateBanner');
+  if(!banner.classList.contains('show')){setMsg('⚠ Assemble toutes tes pièces avant d\'envoyer en aval','err');return;}
+  banner.classList.remove('show');
+  document.getElementById('btnValidate').disabled=true;updateWIPDisplay();checkWaitTimer();
   if(db){
     const cumulative={...S.inheritedState};
     Object.keys(S.placedPositions).forEach(pos=>{cumulative[pos]=STATION;});
@@ -1174,6 +1178,7 @@ function startChangeover(profileName, profileData, coSignalTime){
   if(S.running){S.running=false;cancelAnimationFrame(S.raf);}
   document.getElementById('btnStart').disabled=true;
   document.getElementById('validateBanner').classList.remove('show');
+  document.getElementById('btnValidate').disabled=true;
   // Réinitialiser le compteur de demande pour le nouveau run
   S.runOutputStart=S.output;
 
