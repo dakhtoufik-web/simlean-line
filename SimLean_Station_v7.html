@@ -1056,7 +1056,8 @@ function updateWIPDisplay(){
   document.getElementById('bbOutput').textContent=S.output;
   const btn=document.getElementById('btnStart');
   if(!S.running){
-    if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+    if(S.wipOut>0){btn.disabled=true;btn.textContent='⏳ Send Downstream First';}
+    else if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
     else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
   }
 }
