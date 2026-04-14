@@ -1048,6 +1048,7 @@ function validatePiece(){
   document.getElementById('batchCounter').style.display='none';
   document.getElementById('valSub').textContent='Validate to send downstream';
   S.batchCount=0;
+  S.wipOut=0;
   updateWIPDisplay();checkWaitTimer();
   if(db){
     const cumulative={...S.inheritedState};
@@ -1067,7 +1068,6 @@ function validatePiece(){
   } else {
     setMsg('🏁 Produit livré au CLIENT ✅','ok');
   }
-  S.wipOut=0;
   pushStats();
   setTimeout(()=>{S.inheritedState={};initCycle();},700);
 }
