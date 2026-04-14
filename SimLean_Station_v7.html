@@ -957,15 +957,18 @@ function finishCycle(ok){
         document.getElementById('valSub').textContent=`Continuez — encore ${S.batchSize-S.batchCount} cycle(s)`;
         document.getElementById('batchCounter').style.color='var(--accent)';
         // Réactiver Start Cycle pour le prochain cycle du batch
-        document.getElementById('btnStart').disabled=false;
-        document.getElementById('btnStart').textContent='▶ Start Cycle';
-        // Réinitialiser le board pour le prochain cycle (sans envoyer en aval)
+        // Utiliser setTimeout pour passer après tous les autres setters (Firebase, updateWIPDisplay, etc.)
         setTimeout(()=>{
+          // Reset du board pour le prochain cycle (sans toucher wipOut ni batchCount)
           S.placedPositions={};S.errorCount=0;S.cycleErrors=0;S.cycleWaitMs=0;
-          renderBuffer();renderBoard();
+          S.started=false;
           document.getElementById('timerDisp').textContent='00.000';
           document.getElementById('timerDisp').className='timer-val';
-        },400);
+          renderBuffer();renderBoard();
+          // Forcer Start actif — doit passer en dernier
+          document.getElementById('btnStart').disabled=false;
+          document.getElementById('btnStart').textContent='▶ Start Cycle';
+        },500);
       }
     } else {
       // OPF — comportement normal
