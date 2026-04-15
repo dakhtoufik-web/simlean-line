@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -129,7 +129,7 @@ body {
 .sc-cycles  { font-size:22px; font-family:'Share Tech Mono',monospace;
               color:var(--accent); text-align:center; }
 
-/* FLÈCHE FLUX */
+/* FLOW ARROW */
 .flux-arrow {
   display:flex; flex-direction:column; align-items:center;
   padding:0 8px; position:relative; min-width:80px;
@@ -342,7 +342,7 @@ body {
 
     <!-- FLOW MODE PAR STATION -->
     <div style="width:100%;margin-top:10px;background:var(--panel2);border:1px solid var(--accent);padding:14px 16px;">
-      <div style="font-size:10px;letter-spacing:2px;color:var(--accent);font-weight:700;margin-bottom:12px;text-transform:uppercase;">⚙ Flow Mode — par station</div>
+      <div style="font-size:10px;letter-spacing:2px;color:var(--accent);font-weight:700;margin-bottom:12px;text-transform:uppercase;">⚙ Flow Mode — per station</div>
       <div id="stationModeRows" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
     <div class="setup-field">
@@ -380,7 +380,7 @@ body {
 
 <!-- FLUX VISUEL -->
 <div class="flux-container" id="fluxContainer">
-  <!-- Généré dynamiquement -->
+  <!-- Dynamically generated -->
 </div>
 
 <!-- LINKS PARTICIPANTS -->
@@ -396,7 +396,7 @@ body {
       </tr>
     </thead>
     <tbody id="linksBody">
-      <tr><td colspan="4" style="color:#555;font-size:12px;padding:16px;">Créez une session pour générer les liens.</td></tr>
+      <tr><td colspan="4" style="color:#555;font-size:12px;padding:16px;">Create a session to generate the links.</td></tr>
     </tbody>
   </table>
 </div>
@@ -467,9 +467,9 @@ body {
 // ── PROFILES & CONFIGURATION ──────────────────────────
 // ── Grilles disponibles par nombre de stations ──────────────────
 const GRID_OPTIONS = {
-  4: [{v:'4x4',l:'4×4 (16 pièces)'},{v:'4x5',l:'4×5 (20 pièces)'},{v:'4x6',l:'4×6 (24 pièces)'}],
-  5: [{v:'5x5',l:'5×5 (25 pièces)'},{v:'5x6',l:'5×6 (30 pièces)'},{v:'5x7',l:'5×7 (35 pièces)'}],
-  6: [{v:'6x5',l:'6×5 (30 pièces)'},{v:'6x6',l:'6×6 (36 pièces)'},{v:'6x7',l:'6×7 (42 pièces)'}],
+  4: [{v:'4x4',l:'4×4 (16 pieces)'},{v:'4x5',l:'4×5 (20 pieces)'},{v:'4x6',l:'4×6 (24 pieces)'}],
+  5: [{v:'5x5',l:'5×5 (25 pieces)'},{v:'5x6',l:'5×6 (30 pieces)'},{v:'5x7',l:'5×7 (35 pieces)'}],
+  6: [{v:'6x5',l:'6×5 (30 pieces)'},{v:'6x6',l:'6×6 (36 pieces)'},{v:'6x7',l:'6×7 (42 pieces)'}],
 };
 
 function parseGridSize(gs){
@@ -477,9 +477,9 @@ function parseGridSize(gs){
   return {N:n,M:m,rows:n,cols:m,total:n*m};
 }
 
-// Convertit un tableau 2D de numéros de station en objet profil
-// Réordonne les positions d'une station en parcours BFS contigu
-// → garantit que chaque pièce est adjacente à une pièce déjà posée
+// Converts a 2D array of station numbers into a profile object
+// Reorders station positions using contiguous BFS traversal
+// → guarantees each piece is adjacent to an already-placed piece
 function sortByAdjacency(positions, cols, rows){
   if(positions.length<=1) return positions;
   const set=new Set(positions);
@@ -507,7 +507,7 @@ function patternToProfile(pat){
   const prof={cols,rows};
   for(let s=1;s<=4;s++) prof[s]=[];
   pat.forEach((row,r)=>row.forEach((st,c)=>{if(st>=1&&st<=4)prof[st].push(r*cols+c);}));
-  // Réordonner chaque station en parcours adjacence (requis pour la gamme d'assemblage)
+  // Reorder each station by adjacency traversal (required for assembly sequence)
   for(let s=1;s<=4;s++) prof[s]=sortByAdjacency(prof[s],cols,rows);
   return prof;
 }
@@ -515,40 +515,40 @@ function patternToProfile(pat){
 // 10 profils garantis contigus par taille de grille
 const PROFILE_DEFS={
   '4x3':[
-    {name:'Équilibré (3-3-3-3)',        pat:[[1,1,1],[2,2,2],[3,3,3],[4,4,4]]},
-    {name:'Équilibré Alt (3-3-3-3)',    pat:[[1,1,2],[1,2,2],[3,4,4],[3,3,4]]},
-    {name:'Goulot S1 (5-2-2-3)',        pat:[[1,1,1],[1,1,2],[3,3,2],[4,4,4]]},
-    {name:'Goulot S2 (2-5-2-3)',        pat:[[1,2,2],[1,2,2],[3,3,2],[4,4,4]]},
-    {name:'Goulot S3 (3-2-5-2)',        pat:[[1,1,1],[2,2,3],[3,3,3],[3,4,4]]},
-    {name:'Goulot S4 (3-2-2-5)',        pat:[[1,1,1],[2,2,3],[4,4,3],[4,4,4]]},
+    {name:'Balanced (3-3-3-3)',        pat:[[1,1,1],[2,2,2],[3,3,3],[4,4,4]]},
+    {name:'Balanced Alt (3-3-3-3)',    pat:[[1,1,2],[1,2,2],[3,4,4],[3,3,4]]},
+    {name:'Bottleneck S1 (5-2-2-3)',        pat:[[1,1,1],[1,1,2],[3,3,2],[4,4,4]]},
+    {name:'Bottleneck S2 (2-5-2-3)',        pat:[[1,2,2],[1,2,2],[3,3,2],[4,4,4]]},
+    {name:'Bottleneck S3 (3-2-5-2)',        pat:[[1,1,1],[2,2,3],[3,3,3],[3,4,4]]},
+    {name:'Bottleneck S4 (3-2-2-5)',        pat:[[1,1,1],[2,2,3],[4,4,3],[4,4,4]]},
     {name:'Cascade ↑ (2-3-3-4)',        pat:[[1,1,2],[3,2,2],[3,3,4],[4,4,4]]},
     {name:'Cascade ↓ (4-3-3-2)',        pat:[[1,1,1],[1,2,2],[3,3,2],[3,4,4]]},
-    {name:'Sablier (4-2-2-4)',          pat:[[1,1,1],[1,2,2],[3,3,4],[4,4,4]]},
-    {name:'Vague (3-4-2-3)',            pat:[[1,1,1],[2,2,2],[2,3,3],[4,4,4]]},
+    {name:'Hourglass (4-2-2-4)',          pat:[[1,1,1],[1,2,2],[3,3,4],[4,4,4]]},
+    {name:'Wave (3-4-2-3)',            pat:[[1,1,1],[2,2,2],[2,3,3],[4,4,4]]},
   ],
   '4x4':[
-    {name:'Équilibré (4-4-4-4)',        pat:[[1,1,1,1],[2,2,2,2],[3,3,3,3],[4,4,4,4]]},
-    {name:'Équilibré Alt (4-4-4-4)',    pat:[[1,1,2,2],[1,1,2,2],[3,3,4,4],[3,3,4,4]]},
-    {name:'Goulot S1 (6-3-3-4)',        pat:[[1,1,1,1],[1,1,2,2],[3,3,2,4],[3,4,4,4]]},
-    {name:'Goulot S2 (3-6-4-3)',        pat:[[1,2,2,2],[1,2,2,2],[1,3,3,4],[3,3,4,4]]},
-    {name:'Goulot S3 (3-3-6-4)',        pat:[[1,1,1,2],[3,3,3,2],[3,3,3,2],[4,4,4,4]]},
-    {name:'Goulot S4 (4-3-3-6)',        pat:[[1,1,1,1],[2,3,3,4],[2,4,3,4],[2,4,4,4]]},
+    {name:'Balanced (4-4-4-4)',        pat:[[1,1,1,1],[2,2,2,2],[3,3,3,3],[4,4,4,4]]},
+    {name:'Balanced Alt (4-4-4-4)',    pat:[[1,1,2,2],[1,1,2,2],[3,3,4,4],[3,3,4,4]]},
+    {name:'Bottleneck S1 (6-3-3-4)',        pat:[[1,1,1,1],[1,1,2,2],[3,3,2,4],[3,4,4,4]]},
+    {name:'Bottleneck S2 (3-6-4-3)',        pat:[[1,2,2,2],[1,2,2,2],[1,3,3,4],[3,3,4,4]]},
+    {name:'Bottleneck S3 (3-3-6-4)',        pat:[[1,1,1,2],[3,3,3,2],[3,3,3,2],[4,4,4,4]]},
+    {name:'Bottleneck S4 (4-3-3-6)',        pat:[[1,1,1,1],[2,3,3,4],[2,4,3,4],[2,4,4,4]]},
     {name:'Cascade ↑ (2-4-4-6)',        pat:[[1,1,2,2],[3,3,2,2],[3,3,4,4],[4,4,4,4]]},
     {name:'Cascade ↓ (6-4-4-2)',        pat:[[1,1,1,1],[1,1,2,2],[3,3,2,2],[3,3,4,4]]},
-    {name:'Sablier (5-3-3-5)',          pat:[[1,1,1,1],[1,2,2,3],[4,2,3,3],[4,4,4,4]]},
-    {name:'Vague (3-5-5-3)',            pat:[[1,1,2,2],[1,2,2,2],[3,3,3,3],[3,4,4,4]]},
+    {name:'Hourglass (5-3-3-5)',          pat:[[1,1,1,1],[1,2,2,3],[4,2,3,3],[4,4,4,4]]},
+    {name:'Wave (3-5-5-3)',            pat:[[1,1,2,2],[1,2,2,2],[3,3,3,3],[3,4,4,4]]},
   ],
   '4x5':[
-    {name:'Équilibré (5-5-5-5)',        pat:[[1,1,1,1,1],[2,2,2,2,2],[3,3,3,3,3],[4,4,4,4,4]]},
-    {name:'Équilibré Alt (5-5-5-5)',    pat:[[1,1,2,3,3],[1,2,2,3,3],[1,2,2,3,4],[1,4,4,4,4]]},
-    {name:'Goulot S1 (7-4-4-5)',        pat:[[1,1,1,1,1],[1,1,2,3,3],[4,2,2,2,3],[4,4,4,4,3]]},
-    {name:'Goulot S2 (5-7-4-4)',        pat:[[1,1,1,2,2],[1,1,2,2,2],[3,3,2,2,4],[3,3,4,4,4]]},
-    {name:'Goulot S3 (5-4-7-4)',        pat:[[1,1,1,1,2],[1,3,3,3,2],[3,3,3,3,2],[4,4,4,4,2]]},
-    {name:'Goulot S4 (5-4-4-7)',        pat:[[1,1,1,1,1],[2,2,3,3,3],[2,2,3,4,4],[4,4,4,4,4]]},
+    {name:'Balanced (5-5-5-5)',        pat:[[1,1,1,1,1],[2,2,2,2,2],[3,3,3,3,3],[4,4,4,4,4]]},
+    {name:'Balanced Alt (5-5-5-5)',    pat:[[1,1,2,3,3],[1,2,2,3,3],[1,2,2,3,4],[1,4,4,4,4]]},
+    {name:'Bottleneck S1 (7-4-4-5)',        pat:[[1,1,1,1,1],[1,1,2,3,3],[4,2,2,2,3],[4,4,4,4,3]]},
+    {name:'Bottleneck S2 (5-7-4-4)',        pat:[[1,1,1,2,2],[1,1,2,2,2],[3,3,2,2,4],[3,3,4,4,4]]},
+    {name:'Bottleneck S3 (5-4-7-4)',        pat:[[1,1,1,1,2],[1,3,3,3,2],[3,3,3,3,2],[4,4,4,4,2]]},
+    {name:'Bottleneck S4 (5-4-4-7)',        pat:[[1,1,1,1,1],[2,2,3,3,3],[2,2,3,4,4],[4,4,4,4,4]]},
     {name:'Cascade ↑ (3-4-6-7)',        pat:[[1,1,1,2,2],[3,3,3,2,2],[3,3,3,4,4],[4,4,4,4,4]]},
     {name:'Cascade ↓ (7-6-4-3)',        pat:[[1,1,1,1,1],[2,2,2,1,1],[2,2,2,3,3],[4,4,4,3,3]]},
-    {name:'Sablier (6-4-4-6)',          pat:[[1,1,1,1,1],[1,2,2,2,2],[3,3,3,3,4],[4,4,4,4,4]]},
-    {name:'Vague (4-6-6-4)',            pat:[[1,1,1,1,2],[2,2,2,2,2],[3,3,3,3,3],[3,4,4,4,4]]},
+    {name:'Hourglass (6-4-4-6)',          pat:[[1,1,1,1,1],[1,2,2,2,2],[3,3,3,3,4],[4,4,4,4,4]]},
+    {name:'Wave (4-6-6-4)',            pat:[[1,1,1,1,2],[2,2,2,2,2],[3,3,3,3,3],[3,4,4,4,4]]},
   ]
 };
 
@@ -682,7 +682,7 @@ function renderManualInputs(){
   }
   const totDiv=document.createElement('div');totDiv.id='manualTotal';
   totDiv.style.cssText="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--muted);align-self:flex-end;padding-bottom:10px;";
-  totDiv.textContent=`Total : ${N*M} / ${N*M} ✓`;
+  totDiv.textContent=`Total: ${N*M} / ${N*M} ✓`;
   row.appendChild(totDiv);
 }
 
@@ -694,7 +694,7 @@ function updateManualTotal(){
   for(let s=1;s<=N;s++){const el=document.getElementById(`m${s}`);if(el)sum+=parseInt(el.value)||0;}
   const ok=sum===total;
   const el=document.getElementById('manualTotal');
-  if(el){el.textContent=`Total : ${sum} / ${total} ${ok?'✓':'✗'}`;el.style.color=ok?'var(--success)':'var(--danger)';}
+  if(el){el.textContent=`Total: ${sum} / ${total} ${ok?'✓':'✗'}`;el.style.color=ok?'var(--success)':'var(--danger)';}
 }
 
 function buildManualProfile(){
@@ -727,7 +727,7 @@ let F = {
 };
 
 // ═══════════════════════════════════════════════════════════
-// CRÉER SESSION
+// CREATE SESSION
 // ═══════════════════════════════════════════════════════════
 document.getElementById('btnCreate').addEventListener('click', ()=>{
   F.sessionCode = document.getElementById('cfgSession').value.trim().toUpperCase() || 'LEAN01';
@@ -818,7 +818,7 @@ function renderFlux(){
   container.appendChild(supp);
 
   F.stations.forEach((st, i)=>{
-    // Flèche + WIP entrant
+    // Arrow + incoming WIP
     const arrow = document.createElement('div');
     arrow.className = 'flux-arrow';
     arrow.innerHTML = `
@@ -843,13 +843,13 @@ function renderFlux(){
     container.appendChild(card);
   });
 
-  // Flèche finale + Client
+  // Final arrow + Client
   const arrowFinal = document.createElement('div');
   arrowFinal.className = 'flux-arrow';
   arrowFinal.innerHTML = `
     <div class="arrow-line"></div>
     <div class="arrow-wip" id="arrowWipFinal">0</div>
-    <div class="arrow-label">EXPÉDIÉ</div>`;
+    <div class="arrow-label">SHIPPED</div>`;
   container.appendChild(arrowFinal);
 
   const client = document.createElement('div');
@@ -883,11 +883,11 @@ function renderLinks(){
     tbody.appendChild(tr);
   });
 
-  // Lien formateur — hardcodé pour éviter toute confusion
+  // Trainer link — hardcoded to avoid any confusion
   const trF = document.createElement('tr');
   const urlF = `${base}/SimLean_Formateur_v3.html?session=${F.sessionCode}`;
   trF.innerHTML = `
-    <td><strong style="color:var(--danger);">Formateur</strong></td>
+    <td><strong style="color:var(--danger);">Trainer</strong></td>
     <td style="color:#888;">Global View</td>
     <td><div class="link-url">${urlF}</div></td>
     <td><button class="btn-copy-link" onclick="copyLink(-1, '${urlF}')">📋 Copy</button></td>`;
@@ -931,7 +931,7 @@ function setConn(state, label){
 }
 
 // ═══════════════════════════════════════════════════════════
-// TODO: Firebase listeners — mise à jour des cartes stations
+// TODO: Firebase listeners — update station cards
 // updateStationCard(idx, data) { ... }
 // ═══════════════════════════════════════════════════════════
 
@@ -954,15 +954,15 @@ function initFirebase(){
   try {
     if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.database();
-    setConn('online', 'Firebase connecté');
+    setConn('online', 'Firebase connected');
   } catch(e){
     db = null;
-    setConn('offline', 'Firebase indisponible — mode local');
+    setConn('offline', 'Firebase unavailable — local mode');
     console.warn('Firebase init:', e.message);
   }
 }
 
-// Écrire config session dans Firebase
+// Write session config to Firebase
 function pushDemandUpdate(){
   if(!db||!F.running) return;
   const demand=parseFloat(document.getElementById('cfgDemand').value)||1;
@@ -992,12 +992,12 @@ function pushSessionToFirebase(){
     status: 'running',
     created_at: Date.now()
   });
-  // Init WIP entrant de la station 1 à ∞ (on utilise -1 = infini)
+  // Init incoming WIP of station 1 to ∞ (use -1 = infinite)
   db.ref(`assembly_line/${F.sessionCode}/stations/s1/wip_in`).set(999);
   listenAllStations();
 }
 
-// Écoute toutes les stations en temps réel
+// Listen to all stations in real time
 function listenAllStations(){
   db.ref(`assembly_line/${F.sessionCode}/stations`).on('value', snap=>{
     const data = snap.val() || {};
@@ -1018,7 +1018,7 @@ function listenAllStations(){
       if(i > 0) totalWip += wipIn;  // exclude station 1 (wip_in=999 = infinite supply)
       totalCycles += cycles;
 
-      // Mettre à jour carte station
+      // Update station card
       const card = document.getElementById(`stCard${i}`);
       if(card){
         card.className = `station-card ${status==='running'?'active':status==='idle'?'idle':'waiting'}`;
@@ -1034,12 +1034,12 @@ function listenAllStations(){
       if(el(`scWipIn${i}`))   el(`scWipIn${i}`).textContent   = wipIn === 999 ? '∞' : wipIn;
       if(el(`scWipOut${i}`))  el(`scWipOut${i}`).textContent  = wipOut;
 
-      // Mettre à jour flèche WIP entre stations
+      // Update WIP arrow between stations
       const arrowEl = document.getElementById(`arrowWip${i}`);
       if(arrowEl) arrowEl.textContent = wipIn === 999 ? '∞' : wipIn;
     }
 
-    // Dernière station → client
+    // Last station → client
     const lastSt = data[`s${F.nbStations}`] || {};
     const clientEl = document.getElementById('clientOutput');
     if(clientEl) clientEl.textContent = lastSt.output || 0;
@@ -1054,7 +1054,7 @@ function listenAllStations(){
   });
 }
 
-// Arrêter session dans Firebase
+// Stop session in Firebase
 function stopSessionFirebase(){
   if(!db || !F.sessionCode) return;
   db.ref(`assembly_line/${F.sessionCode}/config/status`).set('stopped');
@@ -1221,7 +1221,7 @@ function buildProfileFromGrid(){
   const nSt=F.nbStations||4;
   const pos={};for(let s=1;s<=nSt;s++)pos[s]=[];
   coState.grid.forEach((st,idx)=>{if(st>0&&st<=nSt)pos[st].push(idx);});
-  // Réordonner en parcours adjacence pour garantir la gamme d'assemblage
+  // Reorder by adjacency traversal to guarantee assembly sequence
   for(let s=1;s<=nSt;s++) pos[s]=sortByAdjacency(pos[s],coState.cols,coState.rows);
   return {cols:coState.cols,rows:coState.rows,...pos};
 }
@@ -1246,14 +1246,14 @@ function initGridEditor(){
 }
 
 function checkGridContiguity(){
-  // Vérifie que les pièces de chaque station forment un bloc contigu (4-connectivité)
+  // Check that each station's pieces form a contiguous block (4-connectivity)
   const {cols,rows,grid}=coState;
   const nSt=F.nbStations||4;
   const errors=[];
   for(let s=1;s<=nSt;s++){
     const cells=grid.reduce((a,v,i)=>{if(v===s)a.push(i);return a;},[]);
     if(!cells.length)continue;
-    // BFS depuis la première cellule
+    // BFS from the first cell
     const visited=new Set([cells[0]]);
     const queue=[cells[0]];
     while(queue.length){
@@ -1276,7 +1276,7 @@ function triggerChangeover(){
   const assigned=coState.grid.filter(v=>v>0).length;
   if(assigned<total){alert(`All ${total} cells must be assigned (${total-assigned} remaining)`);return;}
   if(coState.active){alert('Changeover already in progress');return;}
-  // ── Validation contiguïté ────────────────────────────────────────────────
+  // ── Contiguity validation ─────────────────────────────────────────────────
   const badStations=checkGridContiguity();
   if(badStations.length){
     alert(`❌ Non-contiguous pieces detected:\n${badStations.join(', ')}\n\nEach station's pieces must form a connected block on the grid.\nPlease fix the layout before triggering the changeover.`);
@@ -1328,15 +1328,15 @@ function endChangeover(){
 updateStationGridOptions();
 // Compute initial takt
 calcTakt();
-// Init Firebase — attendre que tous les scripts externes soient chargés
+// Init Firebase — wait for all external scripts to be loaded
 function tryInitFirebase(attempt){
   if(typeof firebase !== 'undefined'){
     initFirebase();
   } else if(attempt < 10){
     setTimeout(()=>tryInitFirebase(attempt+1), 300);
   } else {
-    console.warn('Firebase SDK non chargé après 3s — vérifier la connexion réseau');
-    setConn('offline','Firebase indisponible — mode local');
+    console.warn('Firebase SDK not loaded after 3s — check network connection');
+    setConn('offline','Firebase unavailable — local mode');
   }
 }
 window.addEventListener('load', ()=>tryInitFirebase(0));
