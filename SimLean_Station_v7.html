@@ -1492,6 +1492,8 @@ function listenSessionConfig(){
       const myPos=STATION_POSITIONS[STATION]||[];
       const segStart=(STATION-1)*4;
       S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
+      // ← CRITICAL: re-init buffer with correct positions from actual profile
+      initBuffer();
       initCycle();
     }
 
