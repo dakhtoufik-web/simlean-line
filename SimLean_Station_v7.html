@@ -862,72 +862,78 @@ function initCycle(){
 // ── RENDER BUFFER ──────────────────────────────────────
 function renderBuffer(){
   const bar=document.getElementById('bufferBar');
-  bar.innerHTML=`<div class="buffer-bar-label">BUFFER</div>${!S.running?'<div style="font-size:9px;letter-spacing:1px;color:var(--danger);font-weight:700;text-transform:uppercase;align-self:center;margin-left:4px;">🔒 Start Cycle First</div>':''}`;
-  const displayOrder=S.bufferDisplayOrder||[0,1,2,3];
-  displayOrder.forEach((i,stepIndex)=>{
-    const comp=S.cornerComps[i];
-    if(!comp)return;
-    const placed=!!S.placedPositions[comp.targetPos];
+  const totalPieces=piecesRemaining();
+  const lockMsg='<div style="font-size:9px;letter-spacing:1px;color:var(--danger);font-weight:700;text-transform:uppercase;align-self:center;margin-left:4px;">🔒 Start Cycle First</div>';
+  bar.innerHTML='<div class="buffer-bar-label">BUFFER</div>'+(!S.running&&totalPieces>0?lockMsg:'');
+
+  if(totalPieces===0){
+    bar.innerHTML+='<div style="font-size:11px;color:#555;letter-spacing:1px;align-self:center;padding:8px;">📦 Buffer empty — replenishment needed</div>';
+    checkBufferEmpty();
+    updateReplenUI();
+    return;
+  }
+
+  // Scan S.buffer directly — shows ALL unplaced pieces (all 4 sets mixed)
+  S.buffer.forEach((comp, bufIdx)=>{
+    if(comp.placed) return;
     const div=document.createElement('div');
-    div.className='buffer-piece'+(placed?' used':'');
-    div.dataset.idx=i;
-    const fill=placed?'rgba(176,200,212,.25)':METAL_FILL[STATION];
-    const stroke=placed?'rgba(176,200,212,.5)':METAL_STROKE[STATION];
+    div.className='buffer-piece';
+    div.dataset.bufIdx=bufIdx;
+    const fill=METAL_FILL[STATION];
+    const stroke=METAL_STROKE[STATION];
     const sides=S.cornerSides[comp.targetPos]||{top:0,right:0,bottom:0,left:0};
     const pad=14,vs=60+pad*2,d=piecePath(sides,60);
     div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="72" height="72" style="display:block;margin:auto;overflow:visible;pointer-events:none;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
-
     const numEl=document.createElement('span');
     numEl.className='bp-num';
     numEl.textContent=STATION;
-    numEl.style.color=placed?'var(--success)':METAL_TEXT[STATION];
+    numEl.style.color=METAL_TEXT[STATION];
     div.appendChild(numEl);
 
-
-    if(!placed){
-      div.draggable=!!S.running;
-      div.style.cursor=S.running?'grab':'not-allowed';
-      div.style.opacity=S.running?'1':'0.6';
-      div.style.userSelect='none';
-      div.style.webkitUserSelect='none';
-      if(S.running){
-        // ── Drag & Drop ─────────────────────────────────────
-        div.addEventListener('dragstart',e=>{
-          div.classList.add('dragging');
-          e.dataTransfer.setData('compIdx',String(i));
-          e.dataTransfer.effectAllowed='move';
-          currentDrag={idx:i,comp};
-        });
-        div.addEventListener('dragend',()=>{
-          div.classList.remove('dragging');
-          currentDrag=null;
-          renderBuffer();
-        });
-        // ── Clic pour sélectionner (fallback si drag ne marche pas) ─
-        div.addEventListener('click',()=>{
-          if(currentDrag&&currentDrag.idx===i){
-            currentDrag=null;
-            renderBuffer();
-          } else {
-            currentDrag={idx:i,comp};
-            document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
-            div.style.outline='3px solid var(--success)';
-            setMsg('✅ Part selected — click its target zone on the puzzle','ok');
-          }
-        });
-        div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
-      }
+    if(!S.running){
+      div.style.cursor='not-allowed';div.style.opacity='0.6';
+    } else {
+      div.draggable=true;div.style.cursor='grab';
+      div.style.userSelect='none';div.style.webkitUserSelect='none';
+      div.addEventListener('dragstart',e=>{
+        div.classList.add('dragging');
+        e.dataTransfer.setData('compIdx',String(bufIdx));
+        e.dataTransfer.effectAllowed='move';
+        currentDrag={bufIdx,comp};
+      });
+      div.addEventListener('dragend',()=>{
+        div.classList.remove('dragging');currentDrag=null;renderBuffer();
+      });
+      div.addEventListener('click',()=>{
+        if(currentDrag&&currentDrag.bufIdx===bufIdx){
+          currentDrag=null;renderBuffer();
+        } else {
+          currentDrag={bufIdx,comp};
+          document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
+          div.style.outline='3px solid var(--success)';
+          setMsg('✅ Part selected — click its target zone on the puzzle','ok');
+        }
+      });
+      div.addEventListener('touchstart',()=>{currentDrag={bufIdx,comp};},{passive:true});
     }
     bar.appendChild(div);
   });
+  updateReplenUI();
 }
 
+function updateBufferProgress(){
+  const placed=Object.keys(S.placedPositions).length;
+  document.getElementById('bufferProgress').textContent=`${placed} / ${S.myPieces.length}`;
+  updateReplenUI();
+}
+
+// ── DROP LOGIC ─────────────────────────────────────────
 // ── RENDER BOARD — FIXED v5.1 ──────────────────────────
 // Corrections :
 // 1. corner-drop : width/height explicites = zone de drop correctement positionnée
 // 2. dragover : e.dataTransfer.dropEffect='move' = drop garanti par le navigateur
-// 3. pieces posées : animation popIn pour confirmer le placement
-// 4. pieces autres stations : opacité 50% (vs 35%) + gris plus clair
+// 3. pièces posées : animation popIn pour confirmer le placement
+// 4. pièces autres stations : opacité 50% (vs 35%) + gris plus clair
 function renderBoard(justPlacedPos=null){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
@@ -1009,13 +1015,12 @@ function renderBoard(justPlacedPos=null){
       cell.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';cell.classList.add('drag-over');cell.classList.remove('pulsing');});
       cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
       cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,fi);});
-      // Click on target zone (if piece selected by click in buffer)
+      // Clic sur zone cible (si pièce sélectionnée par clic dans le buffer)
       cell.addEventListener('click',()=>{
         if(currentDrag){
           document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
-          const bIdx=currentDrag.bufIdx!==undefined?currentDrag.bufIdx:currentDrag.idx;
-          handleDrop(bIdx,fi);
-          currentDrag=null;
+          const bIdx2=currentDrag.bufIdx!==undefined?currentDrag.bufIdx:0;
+          handleDrop(bIdx2,fi);
         }
       });
     }
@@ -1024,18 +1029,30 @@ function renderBoard(justPlacedPos=null){
   board.appendChild(overlay);
 }
 
-// ── DROP LOGIC ─────────────────────────────────────────
+
 let currentDrag=null; // {bufIdx, comp}
 
 function handleDrop(bufIdx,targetPos){
   if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
-  // resolve piece from buffer
   const comp=S.buffer[bufIdx];
   if(!comp||comp.placed)return;
-  if(comp.targetPos===targetPos){
-    // ── Adjacency check: from 2nd part onward, must be adjacent to any placed piece ──
-    // Include inheritedState so stations 2+ can place next to upstream stations' pieces
-    // Adjacent = any piece placed this cycle + inherited + upstream stations (PIECE_MAP)
+
+  // Auto-match: if operator dragged wrong shape, find any unplaced piece for this zone
+  let actualComp=comp, actualBufIdx=bufIdx;
+  if(comp.targetPos!==targetPos){
+    const match=S.buffer.findIndex(p=>!p.placed&&p.targetPos===targetPos);
+    if(match===-1){
+      S.errorCount++;S.cycleErrors++;
+      const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
+      if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
+      setMsg(`❌ Wrong position! No matching part left. Errors: ${S.errorCount}`,'err');
+      renderBuffer();return;
+    }
+    actualComp=S.buffer[match];actualBufIdx=match;
+  }
+
+  if(actualComp.targetPos===targetPos){
+    // Adjacency check
     const upstreamPlaced=PIECE_MAP.reduce((acc,st,idx)=>{if(st>0&&st<STATION)acc.push(idx);return acc;},[]);
     const allPlaced=[
       ...Object.keys(S.placedPositions).map(Number),
@@ -1043,9 +1060,9 @@ function handleDrop(bufIdx,targetPos){
       ...upstreamPlaced
     ];
     if(Object.keys(S.placedPositions).length>0){
-      const tRow=Math.floor(targetPos/COLS), tCol=targetPos%COLS;
+      const tRow=Math.floor(targetPos/COLS),tCol=targetPos%COLS;
       const adjacent=allPlaced.some(p=>{
-        const pRow=Math.floor(p/COLS), pCol=p%COLS;
+        const pRow=Math.floor(p/COLS),pCol=p%COLS;
         return (tRow===pRow&&Math.abs(tCol-pCol)===1)||(tCol===pCol&&Math.abs(tRow-pRow)===1);
       });
       if(!adjacent){
@@ -1053,47 +1070,30 @@ function handleDrop(bufIdx,targetPos){
         const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
         if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
         setMsg(`⚠ Not adjacent to assembly — connect to an already placed part (errors: ${S.errorCount})`,'err');
-        renderBuffer();
-        return;
+        renderBuffer();return;
       }
     }
-    // ── Démarrer/continuer le chrono de cycle ────────────────────────────────
+    // Start/continue cycle timer
     if(!S.started){
       S.started=true;S.startTime=performance.now();
-      // Wait = depuis quand wipIn > 0 jusqu'au 1er drag
-      if(S.waitStart!==null && S.currentRun){
-        S.cycleWaitMs = S.startTime - S.waitStart;
-        S.currentRun.waitTotalMs += S.cycleWaitMs;
-        S.totalWaitMs += S.cycleWaitMs;
-        S.waitStart = null; // wait ended
-        stopWaitTimer();
-        updateWaitTotal();
+      if(S.waitStart!==null&&S.currentRun){
+        S.cycleWaitMs=S.startTime-S.waitStart;
+        S.currentRun.waitTotalMs+=S.cycleWaitMs;
+        S.totalWaitMs+=S.cycleWaitMs;
+        S.waitStart=null;stopWaitTimer();updateWaitTotal();
       }
       runTimer();
     }
     // Mark buffer piece as consumed
-    S.buffer[bufIdx].placed=true;
-    // Rebuild bufferDisplayOrder (remove this piece)
-    S.bufferDisplayOrder=(S.bufferDisplayOrder||[]).filter(i=>i!==bufIdx);
-    S.placedPositions[targetPos]=comp;
+    S.buffer[actualBufIdx].placed=true;
+    S.placedPositions[targetPos]=actualComp;
     S.currentStep++;
     renderBuffer();renderBoard(targetPos);updateBufferProgress();
     setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
-  } else {
-    S.errorCount++;S.cycleErrors++;
-    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
-    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
-    setMsg(`❌ Wrong position! Errors: ${S.errorCount}`,'err');
-    renderBuffer(); // piece still visible after wrong position
   }
 }
 
-function updateBufferProgress(){
-  const placed=Object.keys(S.placedPositions).length;
-  document.getElementById('bufferProgress').textContent=`${placed} / ${S.myPieces.length}`;
-  updateReplenUI();
-}
 
 document.addEventListener('touchmove',e=>{
   if(!currentDrag)return;
