@@ -268,6 +268,20 @@ body {
   color:var(--cyan); min-width:80px; text-align:center;
 }
 @keyframes pulse { from{opacity:.6} to{opacity:1} }
+
+/* ── REPLENISHMENT PANEL ── */
+.replen-panel{background:var(--panel);border:2px solid var(--cyan);border-radius:10px;padding:16px;margin-bottom:20px;}
+.replen-queue{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+.replen-queue-item{padding:6px 14px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:2px;}
+.replen-queue-item.queued{background:rgba(240,165,0,.15);border:1px solid var(--accent);color:var(--accent);}
+.replen-queue-item.delivering{background:rgba(0,194,168,.15);border:1px solid var(--cyan);color:var(--cyan);}
+.replen-st-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.replen-st-card{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;min-width:100px;text-align:center;}
+.replen-st-sets{font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--accent);}
+.replen-st-sets.low{color:var(--danger);}
+.replen-st-label{font-size:9px;letter-spacing:2px;color:#888;text-transform:uppercase;}
+.replen-delivery-bar{height:4px;background:var(--border);border-radius:2px;margin-top:6px;}
+.replen-delivery-fill{height:100%;background:var(--cyan);border-radius:2px;transition:width .5s;}
 </style>
 </head>
 <body>
@@ -322,6 +336,10 @@ body {
     <div class="setup-field">
       <label>CUSTOMER DEMAND (pcs)</label>
       <input id="cfgDemand" type="number" value="12" min="1" max="9999" oninput="calcTakt();pushDemandUpdate();">
+    </div>
+    <div class="setup-field">
+      <label>REPLEN. DELAY (s)</label>
+      <input id="cfgReplenDelay" type="number" value="30" min="5" max="300">
     </div>
     <div class="setup-field">
       <label>TAKT TIME</label>
@@ -401,6 +419,33 @@ body {
   </table>
 </div>
 
+<!-- REPLENISHMENT PANEL -->
+<div class="replen-panel" id="replenPanel" style="display:none;">
+  <div class="panel-title" style="color:var(--cyan);">📦 Replenishment — Buffer Status &amp; Delivery Queue</div>
+  <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;margin-top:8px;">
+    <!-- Per-station buffer levels -->
+    <div>
+      <div style="font-size:9px;letter-spacing:2px;color:#888;margin-bottom:6px;">BUFFER LEVEL PER STATION (sets remaining / 4)</div>
+      <div class="replen-st-row" id="replenStRow"></div>
+    </div>
+    <!-- Delivery queue -->
+    <div style="flex:1;min-width:200px;">
+      <div style="font-size:9px;letter-spacing:2px;color:#888;margin-bottom:6px;">DELIVERY QUEUE (FIFO — single worker)</div>
+      <div class="replen-queue" id="replenQueueDisp">
+        <span style="color:#555;font-size:11px;">No requests</span>
+      </div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:12px;">
+        <div id="replenWorkerStatus" style="font-size:11px;color:#888;letter-spacing:1px;">Worker: idle</div>
+        <div id="replenDeliveryProgress" style="flex:1;display:none;">
+          <div style="font-size:9px;letter-spacing:1px;color:var(--cyan);margin-bottom:3px;">DELIVERING TO <span id="replenDelivTarget">—</span></div>
+          <div class="replen-delivery-bar"><div class="replen-delivery-fill" id="replenDelivFill" style="width:0%"></div></div>
+          <div style="font-size:10px;color:var(--cyan);margin-top:2px;" id="replenDelivCountdown">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- CHANGEOVER PANEL -->
 <div class="co-panel" id="coPanel" style="display:none;">
   <div class="panel-title">⚙️ Changeover — Design &amp; Push New Assembly Configuration</div>
@@ -477,8 +522,8 @@ function parseGridSize(gs){
   return {N:n,M:m,rows:n,cols:m,total:n*m};
 }
 
-// Converts a 2D array of station numbers into a profile object
-// Reorders station positions using contiguous BFS traversal
+// Converts 2D array of station numbers to profile object
+// Reorders positions d'une station en parcours BFS contigu
 // → guarantees each piece is adjacent to an already-placed piece
 function sortByAdjacency(positions, cols, rows){
   if(positions.length<=1) return positions;
@@ -497,7 +542,7 @@ function sortByAdjacency(positions, cols, rows){
       if(c<cols-1)nb.push(r*cols+(c+1));
       for(const n of nb){if(set.has(n)){ordered.push(n);set.delete(n);found=true;break;}}
     }
-    if(!found)break; // non-connexe — ne devrait pas arriver
+    if(!found)break; // non-contiguous — should not happen
   }
   return ordered.length===positions.length?ordered:positions;
 }
@@ -512,7 +557,7 @@ function patternToProfile(pat){
   return prof;
 }
 
-// 10 profils garantis contigus par taille de grille
+// 10 guaranteed contiguous profiles per grid size
 const PROFILE_DEFS={
   '4x3':[
     {name:'Balanced (3-3-3-3)',        pat:[[1,1,1],[2,2,2],[3,3,3],[4,4,4]]},
@@ -767,6 +812,8 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   renderLinks();
   initGridEditor();
   document.getElementById('coPanel').style.display = 'block';
+  document.getElementById('replenPanel').style.display = 'block';
+  initReplenStation();
   setConn('online', `Session ${F.sessionCode} active`);
   pushSessionToFirebase();
 });
@@ -799,6 +846,7 @@ document.getElementById('btnStop').addEventListener('click', ()=>{
   document.getElementById('btnResetAll').style.display  = 'none';
   document.getElementById('btnCreate').style.display    = 'inline-block';
   document.getElementById('coPanel').style.display      = 'none';
+  document.getElementById('replenPanel').style.display   = 'none';
   setConn('offline', 'Session ended');
   stopSessionFirebase();
 });
@@ -883,7 +931,7 @@ function renderLinks(){
     tbody.appendChild(tr);
   });
 
-  // Trainer link — hardcoded to avoid any confusion
+  // Trainer link — hardcoded pour éviter toute confusion
   const trF = document.createElement('tr');
   const urlF = `${base}/SimLean_Formateur_v3.html?session=${F.sessionCode}`;
   trF.innerHTML = `
@@ -931,7 +979,7 @@ function setConn(state, label){
 }
 
 // ═══════════════════════════════════════════════════════════
-// TODO: Firebase listeners — update station cards
+// TODO: Firebase listeners — mise à jour des cartes stations
 // updateStationCard(idx, data) { ... }
 // ═══════════════════════════════════════════════════════════
 
@@ -989,15 +1037,16 @@ function pushSessionToFirebase(){
     profile: F.profile,
     profile_data: profileData,
     station_modes: getStationModes(),
+    replen_delay: parseInt(document.getElementById('cfgReplenDelay')?.value)||30,
     status: 'running',
     created_at: Date.now()
   });
-  // Init incoming WIP of station 1 to ∞ (use -1 = infinite)
+  // Init WIP entrant de la station 1 à ∞ (on utilise -1 = infini)
   db.ref(`assembly_line/${F.sessionCode}/stations/s1/wip_in`).set(999);
   listenAllStations();
 }
 
-// Listen to all stations in real time
+// Listen to all stations en temps réel
 function listenAllStations(){
   db.ref(`assembly_line/${F.sessionCode}/stations`).on('value', snap=>{
     const data = snap.val() || {};
@@ -1034,7 +1083,7 @@ function listenAllStations(){
       if(el(`scWipIn${i}`))   el(`scWipIn${i}`).textContent   = wipIn === 999 ? '∞' : wipIn;
       if(el(`scWipOut${i}`))  el(`scWipOut${i}`).textContent  = wipOut;
 
-      // Update WIP arrow between stations
+      // Update WIP arrow entre stations
       const arrowEl = document.getElementById(`arrowWip${i}`);
       if(arrowEl) arrowEl.textContent = wipIn === 999 ? '∞' : wipIn;
     }
@@ -1221,7 +1270,7 @@ function buildProfileFromGrid(){
   const nSt=F.nbStations||4;
   const pos={};for(let s=1;s<=nSt;s++)pos[s]=[];
   coState.grid.forEach((st,idx)=>{if(st>0&&st<=nSt)pos[st].push(idx);});
-  // Reorder by adjacency traversal to guarantee assembly sequence
+  // Reorder by adjacency for assembly sequence d'assemblage
   for(let s=1;s<=nSt;s++) pos[s]=sortByAdjacency(pos[s],coState.cols,coState.rows);
   return {cols:coState.cols,rows:coState.rows,...pos};
 }
@@ -1246,14 +1295,14 @@ function initGridEditor(){
 }
 
 function checkGridContiguity(){
-  // Check that each station's pieces form a contiguous block (4-connectivity)
+  // Check that each station pieces forment un bloc contigu (4-connectivité)
   const {cols,rows,grid}=coState;
   const nSt=F.nbStations||4;
   const errors=[];
   for(let s=1;s<=nSt;s++){
     const cells=grid.reduce((a,v,i)=>{if(v===s)a.push(i);return a;},[]);
     if(!cells.length)continue;
-    // BFS from the first cell
+    // BFS from first cell
     const visited=new Set([cells[0]]);
     const queue=[cells[0]];
     while(queue.length){
@@ -1276,7 +1325,7 @@ function triggerChangeover(){
   const assigned=coState.grid.filter(v=>v>0).length;
   if(assigned<total){alert(`All ${total} cells must be assigned (${total-assigned} remaining)`);return;}
   if(coState.active){alert('Changeover already in progress');return;}
-  // ── Contiguity validation ─────────────────────────────────────────────────
+  // ── Contiguity validation ────────────────────────────────────────────────
   const badStations=checkGridContiguity();
   if(badStations.length){
     alert(`❌ Non-contiguous pieces detected:\n${badStations.join(', ')}\n\nEach station's pieces must form a connected block on the grid.\nPlease fix the layout before triggering the changeover.`);
@@ -1324,11 +1373,153 @@ function endChangeover(){
   setConn('online',`Session ${F.sessionCode} — Changeover complete ✓`);
 }
 
+// ══════════════════════════════════════════════════════════
+// REPLENISHMENT MANAGER (Formateur side)
+// ══════════════════════════════════════════════════════════
+let replenState = {
+  queue: [],          // [{key, station, requested_at}] FIFO
+  delivering: null,   // {key, station, started_at, arrives_at, delayMs}
+  workerBusy: false,
+  raf: null,
+  stationBuffers: {}, // {s1: 4, s2: 3, ...}
+};
+
+function initReplenStation(){
+  // Init per-station buffer display
+  const row = document.getElementById('replenStRow');
+  if(!row) return;
+  row.innerHTML = '';
+  for(let i=1; i<=F.nbStations; i++){
+    const card = document.createElement('div');
+    card.className = 'replen-st-card';
+    card.id = `replenSt${i}`;
+    card.innerHTML = `<div class="replen-st-sets" id="replenStSets${i}">4/4</div>
+      <div class="replen-st-label">ASSY ${i}</div>
+      <div style="font-size:9px;color:#555;margin-top:2px;" id="replenStStatus${i}">OK</div>`;
+    row.appendChild(card);
+  }
+  listenReplenRequests();
+  listenStationBuffers();
+}
+
+function listenStationBuffers(){
+  if(!db) return;
+  // Listen for buffer level updates from stations
+  db.ref(`assembly_line/${F.sessionCode}/replenishment/bufferLevels`).on('value', snap=>{
+    const data = snap.val() || {};
+    for(let i=1; i<=F.nbStations; i++){
+      const lvl = data[`s${i}`];
+      if(lvl===undefined) continue;
+      replenState.stationBuffers[`s${i}`] = lvl;
+      const el = document.getElementById(`replenStSets${i}`);
+      const stEl = document.getElementById(`replenStStatus${i}`);
+      if(el){
+        el.textContent = `${lvl}/4`;
+        el.className = 'replen-st-sets' + (lvl===0?' low':lvl<=1?' low':'');
+      }
+      if(stEl) stEl.textContent = lvl===0?'⚠ EMPTY':lvl<=1?'⚠ LOW':'OK';
+    }
+  });
+}
+
+function listenReplenRequests(){
+  if(!db) return;
+  db.ref(`assembly_line/${F.sessionCode}/replenishment/requests`)
+    .orderByChild('requested_at')
+    .on('value', snap=>{
+    const data = snap.val() || {};
+    replenState.queue = [];
+    Object.entries(data).forEach(([key, val])=>{
+      if(val.status === 'queued'){
+        replenState.queue.push({key, station: val.station, requested_at: val.requested_at});
+      }
+    });
+    replenState.queue.sort((a,b)=>a.requested_at-b.requested_at);
+    updateReplenQueueDisplay();
+    if(!replenState.workerBusy && replenState.queue.length>0){
+      processNextDelivery();
+    }
+  });
+}
+
+function processNextDelivery(){
+  if(replenState.workerBusy || replenState.queue.length===0) return;
+  const req = replenState.queue[0];
+  const delaySec = parseInt(document.getElementById('cfgReplenDelay')?.value)||30;
+  const delayMs = delaySec * 1000;
+  const now = Date.now();
+  replenState.workerBusy = true;
+  replenState.delivering = {
+    key: req.key, station: req.station,
+    started_at: now, arrives_at: now + delayMs, delayMs
+  };
+  // Remove from queue (mark as delivering in Firebase)
+  db.ref(`assembly_line/${F.sessionCode}/replenishment/requests/${req.key}`).remove();
+  // Write delivery record to Firebase
+  db.ref(`assembly_line/${F.sessionCode}/replenishment/deliveries/s${req.station}`).set({
+    status: 'delivering',
+    started_at: now,
+    arrives_at: now + delayMs
+  });
+  updateReplenQueueDisplay();
+  tickDelivery();
+}
+
+function tickDelivery(){
+  if(!replenState.delivering) return;
+  const {arrives_at, station, key} = replenState.delivering;
+  const now = Date.now();
+  if(now >= arrives_at){
+    // Delivery complete
+    db.ref(`assembly_line/${F.sessionCode}/replenishment/deliveries/s${station}`).update({status:'arrived'});
+    replenState.workerBusy = false;
+    replenState.delivering = null;
+    cancelAnimationFrame(replenState.raf);
+    document.getElementById('replenDeliveryProgress').style.display='none';
+    document.getElementById('replenWorkerStatus').textContent='Worker: idle';
+    updateReplenQueueDisplay();
+    // Process next if any
+    setTimeout(()=>{ if(replenState.queue.length>0) processNextDelivery(); }, 500);
+    return;
+  }
+  const elapsed = now - replenState.delivering.started_at;
+  const pct = Math.min(100, Math.round(elapsed/replenState.delivering.delayMs*100));
+  const remaining = Math.ceil((arrives_at-now)/1000);
+  document.getElementById('replenDeliveryProgress').style.display='block';
+  document.getElementById('replenDelivTarget').textContent=`ASSY ${station}`;
+  document.getElementById('replenDelivFill').style.width=pct+'%';
+  document.getElementById('replenDelivCountdown').textContent=remaining+'s remaining';
+  document.getElementById('replenWorkerStatus').textContent='🚚 Delivering...';
+  replenState.raf = requestAnimationFrame(tickDelivery);
+}
+
+function updateReplenQueueDisplay(){
+  const disp = document.getElementById('replenQueueDisp');
+  if(!disp) return;
+  disp.innerHTML='';
+  if(replenState.queue.length===0 && !replenState.delivering){
+    disp.innerHTML='<span style="color:#555;font-size:11px;">No requests</span>';
+    return;
+  }
+  if(replenState.delivering){
+    const chip = document.createElement('div');
+    chip.className='replen-queue-item delivering';
+    chip.textContent=`🚚 ASSY ${replenState.delivering.station}`;
+    disp.appendChild(chip);
+  }
+  replenState.queue.forEach((req,i)=>{
+    const chip = document.createElement('div');
+    chip.className='replen-queue-item queued';
+    chip.textContent=`#${i+1} ASSY ${req.station}`;
+    disp.appendChild(chip);
+  });
+}
+
 // Init options grille selon nb stations
 updateStationGridOptions();
 // Compute initial takt
 calcTakt();
-// Init Firebase — wait for all external scripts to be loaded
+// Init Firebase — wait for que tous les scripts externes soient chargés
 function tryInitFirebase(attempt){
   if(typeof firebase !== 'undefined'){
     initFirebase();
