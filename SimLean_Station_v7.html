@@ -672,7 +672,8 @@ function updateReplenUI(){
     el.className = 'replen-sets' + (sets===0?' empty':sets<=1?' low':'');
   }
   const btn = document.getElementById('btnReplen');
-  const canRequest = sets<=1 && S.replenStatus==='idle';
+  // Button active when buffer low/empty AND not already in active delivery
+  const canRequest = sets<=1 && (S.replenStatus==='idle'||S.replenStatus==='arrived');
   if(btn) btn.disabled = !canRequest;
 }
 
@@ -729,7 +730,14 @@ function listenReplenishment(){
   // Listen for delivery targeted at this station
   db.ref(`assembly_line/${SESSION}/replenishment/deliveries/s${STATION}`).on('value', snap=>{
     const data = snap.val();
-    if(!data) return;
+    if(!data){
+      // No delivery data — ensure status is idle and button can be enabled
+      if(S.replenStatus==='delivering'||S.replenStatus==='queued'){
+        S.replenStatus='idle';
+        updateReplenUI();
+      }
+      return;
+    }
     if(data.status === 'delivering' && S.replenStatus !== 'delivering'){
       S.replenStatus = 'delivering';
       showReplenStatus('delivering','🚚 Delivery on the way...');
@@ -1494,6 +1502,9 @@ function listenSessionConfig(){
       S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
       // ← CRITICAL: re-init buffer with correct positions from actual profile
       initBuffer();
+      // Clear stale replenishment data from previous sessions
+      S.replenStatus='idle';
+      if(db) db.ref(`assembly_line/${SESSION}/replenishment/deliveries/s${STATION}`).remove();
       initCycle();
     }
 
