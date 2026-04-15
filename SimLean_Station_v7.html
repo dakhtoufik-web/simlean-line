@@ -199,6 +199,25 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .btn-co-validate.show{display:block;}
 .btn-co-validate:hover{filter:brightness(1.1);}
 .co-error-msg{font-size:11px;color:var(--danger);letter-spacing:1px;min-height:16px;margin-top:4px;}
+
+/* ── REPLENISHMENT ── */
+.replen-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:6px 12px;background:var(--panel2);border:1px solid var(--border);
+  margin-bottom:8px;width:100%;max-width:1060px;}
+.replen-sets{font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);}
+.replen-sets.low{color:var(--danger);animation:pulse .8s infinite alternate;}
+.replen-sets.empty{color:#555;}
+.replen-label{font-size:9px;letter-spacing:2px;color:#888;text-transform:uppercase;font-weight:700;}
+.btn-replen{border:none;padding:8px 18px;font-family:'Barlow Condensed',sans-serif;
+  font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;
+  background:var(--accent);color:#000;border-radius:4px;transition:all .2s;}
+.btn-replen:hover{filter:brightness(1.15);}
+.btn-replen:disabled{background:#2a3040;color:#555;cursor:not-allowed;}
+.replen-status{font-size:11px;font-weight:700;letter-spacing:1px;}
+.replen-status.queued{color:var(--accent);}
+.replen-status.delivering{color:var(--cyan);}
+.replen-status.arrived{color:var(--success);}
+.replen-countdown{font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--cyan);}
 </style>
 </head>
 <body>
@@ -288,6 +307,26 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 </div>
 
 <div class="status-msg" id="statusMsg"></div>
+
+<!-- REPLENISHMENT BAR -->
+<div class="replen-bar" id="replenBar">
+  <div>
+    <div class="replen-label">📦 Buffer Sets</div>
+    <div class="replen-sets" id="replenSetsVal">4 / 4</div>
+  </div>
+  <div style="width:1px;height:32px;background:var(--border);"></div>
+  <button class="btn-replen" id="btnReplen" onclick="requestReplenishment()" disabled>
+    🔔 Request Replenishment
+  </button>
+  <div id="replenStatusWrap" style="display:none;">
+    <div class="replen-label">STATUS</div>
+    <div class="replen-status" id="replenStatus">—</div>
+  </div>
+  <div id="replenCountdownWrap" style="display:none;">
+    <div class="replen-label">DELIVERY IN</div>
+    <div class="replen-countdown" id="replenCountdown">—</div>
+  </div>
+</div>
 <div class="validate-banner" id="validateBanner">
   <div><div class="val-text" id="valText">✅ Assembly completed !</div><div class="val-sub" id="valSub">Validate to send downstream</div></div>
   <div id="batchCounter" style="display:none;font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--accent);letter-spacing:2px;"></div>
@@ -453,7 +492,7 @@ function applyProfile(profileData){
   if(board) board.className='puzzle-board';
 }
 
-// ── PUZZLE BOARD: distinct industrial metals per station ─
+// ── PUZZLE BOARD : distinct industrial metals per station ─
 // S1 → Stainless steel (bluish grey)
 // S2 → Anodized aluminium (warm golden grey)
 // S3 → Grey cast iron (dark matte grey)
@@ -466,13 +505,13 @@ const METAL_PLACED_STROKE = '#6a90a0';
 const METAL_GHOST  = '#2e3d4a';        // cellule vide autre station
 const METAL_GHOST_STROKE = '#1e2d3a';
 
-// ── BUFFER: industrial colors ─────────────────────────
+// ── BUFFER : couleurs industrielles ─────────────────────
 // Safety orange / Industrial blue / Safety yellow / Industrial cyan
 const BUFFER_FILL   = {1:'#e65100',2:'#1565c0',3:'#f9a825',4:'#00695c'};
 const BUFFER_STROKE = {1:'#bf360c',2:'#0d47a1',3:'#f57f17',4:'#004d40'};
 const BUFFER_TEXT   = {1:'#fff',   2:'#fff',   3:'#000',   4:'#fff'};
 
-// Alias for station badge (keeps vivid colors for visual identity)
+// Alias for station badge (garde les couleurs vives pour l'identité visuelle)
 const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8',5:'#c07de0',6:'#80cc44'};
 const ST_STROKE={1:'#a01818',2:'#a06000',3:'#20a050',4:'#007a6a',5:'#7a40a0',6:'#508820'};
 const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000',5:'#fff',6:'#000'};
@@ -524,7 +563,7 @@ let S={
   cycleErrors:0,     // erreurs du cycle courant
   totalWaitMs:0,     // cumul total des temps d'attente session
   customerDemand:0,  // demand set by trainer (Station 1)
-  runOutputStart:0,  // S.output at start of current run (for demand calc per run)
+  runOutputStart:0,  // S.output at start of current run (pour calcul demand par run)
   coRunning:false,
   coProfileLabel:'',
   currentStep:0,
@@ -532,7 +571,7 @@ let S={
   batchMode:false,   // true = batch mode
   batchSize:1,       // nb cycles before sending downstream
   batchCount:0,      // cycles completed in current batch
-  batchResetTimer:null, // timer between batch cycles (cancel if new cycle starts too quickly)
+  batchResetTimer:null, // timer between batch cycles (à annuler si nouveau cycle démarre trop vite)
   currentRun:null,
 };
 
@@ -596,17 +635,162 @@ function startSessionTimer(){
 }
 function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
 function fmt(ms){return Math.round(ms/1000);}
+// ── BUFFER MANAGEMENT ─────────────────────────────────────────
+const BUFFER_SETS = 4; // number of full sets in a box
+
+function initBuffer(){
+  const N = (STATION_POSITIONS[STATION]||[0,1,2,3]).length;
+  S.buffer = [];
+  for(let set=0; set<BUFFER_SETS; set++){
+    S.myPieces.forEach((piece,i)=>{
+      S.buffer.push({...piece, bufId:`${set}_${i}`, setIdx:set, placed:false});
+    });
+  }
+  S.buffer = shuffle(S.buffer); // mix all sets together
+  S.bufferEmpty = false;
+  updateReplenUI();
+  pushBufferLevel();
+}
+
+function setsRemaining(){
+  const N = S.myPieces.length || 4;
+  const unplaced = S.buffer.filter(p=>!p.placed).length;
+  return Math.floor(unplaced / N);
+}
+
+function piecesRemaining(){
+  return S.buffer.filter(p=>!p.placed).length;
+}
+
+function updateReplenUI(){
+  const N = S.myPieces.length || 4;
+  const sets = setsRemaining();
+  const total = BUFFER_SETS;
+  const el = document.getElementById('replenSetsVal');
+  if(el){
+    el.textContent = `${sets} / ${total}`;
+    el.className = 'replen-sets' + (sets===0?' empty':sets<=1?' low':'');
+  }
+  const btn = document.getElementById('btnReplen');
+  const canRequest = sets<=1 && S.replenStatus==='idle';
+  if(btn) btn.disabled = !canRequest;
+}
+
+function requestReplenishment(){
+  if(!db || S.replenStatus !== 'idle') return;
+  S.replenStatus = 'queued';
+  updateReplenUI();
+  showReplenStatus('queued','⏳ In queue...');
+  db.ref(`assembly_line/${SESSION}/replenishment/requests`).push({
+    station: STATION,
+    requested_at: Date.now(),
+    status: 'queued'
+  });
+  if(db) db.ref(`assembly_line/${SESSION}/replenishment/requests`)
+    .orderByChild('station').equalTo(STATION).limitToLast(1)
+    .once('value',snap=>{
+      if(snap.exists()){
+        const key=Object.keys(snap.val())[0];
+        S.replenRequestKey=key;
+      }
+    });
+}
+
+function showReplenStatus(type, text){
+  const sw = document.getElementById('replenStatusWrap');
+  const sel = document.getElementById('replenStatus');
+  if(sw) sw.style.display='block';
+  if(sel){ sel.textContent=text; sel.className='replen-status '+type; }
+}
+
+function hideReplenStatus(){
+  const sw = document.getElementById('replenStatusWrap');
+  if(sw) sw.style.display='none';
+  const cw = document.getElementById('replenCountdownWrap');
+  if(cw) cw.style.display='none';
+}
+
+function startReplenCountdown(arrivesAt){
+  S.replenArrivesAt = arrivesAt;
+  const cw = document.getElementById('replenCountdownWrap');
+  if(cw) cw.style.display='block';
+  function tick(){
+    const remaining = Math.max(0, Math.ceil((S.replenArrivesAt - Date.now())/1000));
+    const el = document.getElementById('replenCountdown');
+    if(el) el.textContent = remaining + 's';
+    if(remaining > 0) S.replenRaf = requestAnimationFrame(tick);
+  }
+  cancelAnimationFrame(S.replenRaf);
+  S.replenRaf = requestAnimationFrame(tick);
+}
+
+function listenReplenishment(){
+  if(!db) return;
+  // Listen for delivery targeted at this station
+  db.ref(`assembly_line/${SESSION}/replenishment/deliveries/s${STATION}`).on('value', snap=>{
+    const data = snap.val();
+    if(!data) return;
+    if(data.status === 'delivering' && S.replenStatus !== 'delivering'){
+      S.replenStatus = 'delivering';
+      showReplenStatus('delivering','🚚 Delivery on the way...');
+      startReplenCountdown(data.arrives_at);
+    }
+    if(data.status === 'arrived' && S.replenStatus !== 'idle'){
+      S.replenStatus = 'arrived';
+      cancelAnimationFrame(S.replenRaf);
+      onDeliveryArrived();
+    }
+  });
+}
+
+function onDeliveryArrived(){
+  // Refill buffer with 4 fresh mixed sets
+  initBuffer();
+  S.replenStatus = 'idle';
+  hideReplenStatus();
+  showReplenStatus('arrived','✅ Delivery received!');
+  setTimeout(hideReplenStatus, 3000);
+  // If buffer was empty and waiting, stop the wait
+  if(S.bufferEmpty){
+    S.bufferEmpty = false;
+    stopWaitTimer();
+  }
+  // Re-render buffer and re-enable start
+  renderBuffer();
+  updateReplenUI();
+  const btn = document.getElementById('btnStart');
+  if(btn && !S.running && !S.wipOut){
+    if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+  }
+  setMsg('📦 Replenishment received — buffer refilled (4 sets)','ok');
+  // Clean up delivery record in Firebase
+  if(db) db.ref(`assembly_line/${SESSION}/replenishment/deliveries/s${STATION}`).remove();
+}
+
+function checkBufferEmpty(){
+  if(piecesRemaining()===0 && !S.bufferEmpty){
+    S.bufferEmpty = true;
+    // Block start button
+    const btn = document.getElementById('btnStart');
+    if(btn){btn.disabled=true;btn.textContent='⏳ Waiting for Replenishment';}
+    // Trigger wait timer
+    startWaitTimer();
+    setMsg('📦 Buffer empty — waiting for replenishment','err');
+  }
+}
+
 function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');el.textContent=txt;el.className=`status-msg show ${type}`;if(!txt)el.classList.remove('show');}
 
 // ── INIT ───────────────────────────────────────────────
 function initStation(){
   applyProfile(DEFAULT_PROFILE);
   ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
-  // dbCO and bbCO updated only by real measured times
+  // dbCO and bbCO updated uniquement par les vrais temps mesurés
   document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLY`;
   const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
   const segStart=(STATION-1)*4;
   S.myPieces=myPositions.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
+  initBuffer();
   initCycle();
   updateWIPDisplay();
   setConn('waiting','Connecting to Firebase...');
@@ -614,9 +798,9 @@ function initStation(){
 }
 
 function initCycle(){
-  // Guard: never reset if a cycle is in progress
+  // Guard: never reset si un cycle est en cours
   if(S.running) return;
-  // Fixed topology per profile — regenerated if needed
+  // Fixed topology per profile — régénérée si nécessaire
   if(!S.topology){
     S.topology=generateTopology();
   }
@@ -626,13 +810,31 @@ function initCycle(){
     S.cornerSides[pos]=getSides(pos,S.topology);
   });
   S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]); // random visual order in buffer
-  S.gamme=[...Array(S.myPieces.length).keys()];  // FIXED assembly sequence: 0,1,2,3...
-  S.cornerComps=S.myPieces.map(p=>({...p}));
+  S.gamme=[...Array(S.myPieces.length).keys()];  // FIXED assembly sequence : 0,1,2,3...
+  // Buffer persists across cycles — only reset per-cycle state
+  if(S.buffer&&S.buffer.length>0){
+    // Re-populate cornerComps from buffer
+    const unplacedByPos={};
+    S.buffer.filter(p=>!p.placed).forEach(p=>{
+      if(!unplacedByPos[p.targetPos]) unplacedByPos[p.targetPos]=[];
+      unplacedByPos[p.targetPos].push(p);
+    });
+    S.cornerComps=S.myPieces.map(p=>{
+      const avail=unplacedByPos[p.targetPos];
+      return avail&&avail.length>0 ? avail[0] : {...p,bufId:'fallback'};
+    });
+    // Rebuild display order (unplaced pieces only, shuffled)
+    const unplacedIdxs=S.buffer.map((p,i)=>(!p.placed?i:null)).filter(i=>i!==null);
+    S.bufferDisplayOrder=shuffle(unplacedIdxs);
+  } else {
+    S.cornerComps=S.myPieces.map(p=>({...p}));
+    S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]);
+  }
   S.placedPositions={};
   S.currentStep=0;
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
   S.cycleErrors=0;S.cycleWaitMs=0;
-  // waitStart intentionally not reset — persists if wipIn > 0
+  // waitStart intentionally not reset — persiste si wipIn > 0
   const scrapEl=document.getElementById('dbScrap');
   if(scrapEl)scrapEl.textContent='0';
   cancelAnimationFrame(S.raf);
@@ -701,7 +903,7 @@ function renderBuffer(){
           currentDrag=null;
           renderBuffer();
         });
-        // ── Click to select (fallback if drag does not work) ─
+        // ── Clic pour sélectionner (fallback si drag ne marche pas) ─
         div.addEventListener('click',()=>{
           if(currentDrag&&currentDrag.idx===i){
             currentDrag=null;
@@ -710,7 +912,7 @@ function renderBuffer(){
             currentDrag={idx:i,comp};
             document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
             div.style.outline='3px solid var(--success)';
-            setMsg('✅ Part selected — now click its target zone on the puzzle','ok');
+            setMsg('✅ Part selected — click its target zone on the puzzle','ok');
           }
         });
         div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
@@ -722,10 +924,10 @@ function renderBuffer(){
 
 // ── RENDER BOARD — FIXED v5.1 ──────────────────────────
 // Corrections :
-// 1. corner-drop: explicit width/height = correctly positioned drop zone
+// 1. corner-drop : width/height explicites = zone de drop correctement positionnée
 // 2. dragover : e.dataTransfer.dropEffect='move' = drop garanti par le navigateur
-// 3. placed pieces: popIn animation to confirm placement
-// 4. other stations pieces: 50% opacity (vs 35%) + lighter grey
+// 3. pieces posées : animation popIn pour confirmer le placement
+// 4. pieces autres stations : opacité 50% (vs 35%) + gris plus clair
 function renderBoard(justPlacedPos=null){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
@@ -811,7 +1013,9 @@ function renderBoard(justPlacedPos=null){
       cell.addEventListener('click',()=>{
         if(currentDrag){
           document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
-          handleDrop(currentDrag.idx,fi);
+          const bIdx=currentDrag.bufIdx!==undefined?currentDrag.bufIdx:currentDrag.idx;
+          handleDrop(bIdx,fi);
+          currentDrag=null;
         }
       });
     }
@@ -821,12 +1025,13 @@ function renderBoard(justPlacedPos=null){
 }
 
 // ── DROP LOGIC ─────────────────────────────────────────
-let currentDrag=null;
+let currentDrag=null; // {bufIdx, comp}
 
-function handleDrop(compIdx,targetPos){
+function handleDrop(bufIdx,targetPos){
   if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
-  const comp=S.cornerComps[compIdx];
-  if(!comp)return;
+  // resolve piece from buffer
+  const comp=S.buffer[bufIdx];
+  if(!comp||comp.placed)return;
   if(comp.targetPos===targetPos){
     // ── Adjacency check: from 2nd part onward, must be adjacent to any placed piece ──
     // Include inheritedState so stations 2+ can place next to upstream stations' pieces
@@ -852,7 +1057,7 @@ function handleDrop(compIdx,targetPos){
         return;
       }
     }
-    // ── Start/continue cycle timer ───────────────────────────────────────────
+    // ── Démarrer/continuer le chrono de cycle ────────────────────────────────
     if(!S.started){
       S.started=true;S.startTime=performance.now();
       // Wait = depuis quand wipIn > 0 jusqu'au 1er drag
@@ -866,6 +1071,10 @@ function handleDrop(compIdx,targetPos){
       }
       runTimer();
     }
+    // Mark buffer piece as consumed
+    S.buffer[bufIdx].placed=true;
+    // Rebuild bufferDisplayOrder (remove this piece)
+    S.bufferDisplayOrder=(S.bufferDisplayOrder||[]).filter(i=>i!==bufIdx);
     S.placedPositions[targetPos]=comp;
     S.currentStep++;
     renderBuffer();renderBoard(targetPos);updateBufferProgress();
@@ -883,6 +1092,7 @@ function handleDrop(compIdx,targetPos){
 function updateBufferProgress(){
   const placed=Object.keys(S.placedPositions).length;
   document.getElementById('bufferProgress').textContent=`${placed} / ${S.myPieces.length}`;
+  updateReplenUI();
 }
 
 document.addEventListener('touchmove',e=>{
@@ -897,7 +1107,7 @@ document.addEventListener('touchend',e=>{
   if(!S.running){currentDrag=null;setMsg('▶ Click "Start Cycle" to begin','err');return;}
   const touch=e.changedTouches[0];
   const el=document.elementFromPoint(touch.clientX,touch.clientY);
-  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.idx,parseInt(cd.dataset.pos));}
+  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.bufIdx!==undefined?currentDrag.bufIdx:currentDrag.idx,parseInt(cd.dataset.pos));}
   document.querySelectorAll('.drag-over').forEach(s=>s.classList.remove('drag-over'));
   currentDrag=null;
 });
@@ -905,8 +1115,9 @@ document.addEventListener('touchend',e=>{
 // ── CYCLE ──────────────────────────────────────────────
 function startCycle(){
   if(S.running)return;
-  if(S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize)){setMsg('⚠ Send the finished product downstream first before starting a new cycle','err');return;}
+  if(S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize)){setMsg('⚠ Envoie d\'abord le produit fini en aval (Send Downstream) avant de démarrer un nouveau cycle','err');return;}
   if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
+  if(piecesRemaining()===0&&S.replenStatus!=='idle'){setMsg('📦 Buffer empty — waiting for replenishment','err');return;}
   startSessionTimer();
   if(STATION>1&&db){
     db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).limitToFirst(1).once('value',snap=>{
@@ -928,7 +1139,7 @@ function startCycle(){
 
 function _doStartCycle(){
   if(S.batchResetTimer){clearTimeout(S.batchResetTimer);S.batchResetTimer=null;}
-  if(!S.currentRun)startRun('Run initial');
+  if(!S.currentRun)startRun('Initial Run');
   S.running=true;
   document.getElementById('timerDisp').classList.add('running');
   setMsg('▶ Pick a part → Place it on the assembly frame','ok');
@@ -943,12 +1154,12 @@ function runTimer(){
 function finishCycle(ok){
   S.running=false;cancelAnimationFrame(S.raf);
   const elapsed=S.startTime?performance.now()-S.startTime:0;
-  // ── SMED: C/O ends at the end of the 1st complete cycle ─────────────────
+  // ── SMED: C/O ends à la fin du 1er cycle complet ─────────────────
   if(S.coRunning) completeCO();
   document.getElementById('timerDisp').classList.remove('running');
   document.getElementById('timerDisp').classList.add('done');
   S.cycles++;
-  // ── Record current cycle data ─────────────────────────────────────────────
+  // ── Enregistrer les données du cycle courant ─────────────────────────────
   if(S.currentRun){
     S.currentRun.cyclesData.push({
       ct: elapsed,
@@ -990,7 +1201,7 @@ function finishCycle(ok){
         document.getElementById('valSub').textContent=`Continue — ${S.batchSize-S.batchCount} more cycle(s)`;
         document.getElementById('batchCounter').style.color='var(--accent)';
         updateFlowModePanel();
-        // Re-enable Start Cycle for the next batch cycle
+        // Re-enable Start Cycle for next batch cycle
         // Use setTimeout to run after all other setters (Firebase, updateWIPDisplay, etc.)
         S.batchResetTimer=setTimeout(()=>{
           S.batchResetTimer=null;
@@ -1013,7 +1224,7 @@ function finishCycle(ok){
       document.getElementById('valSub').textContent='Validate to send downstream';
     }
 
-    // ── If a part is already available, next cycle wait starts now ──
+    // ── If a part is already available, l'attente du prochain cycle commence maintenant ──
     if(STATION===1 || S.wipIn>0){
     }
     checkWaitTimer();
@@ -1074,7 +1285,7 @@ function showCompletePuzzle(){
 
 function validatePiece(){
   const banner=document.getElementById('validateBanner');
-  if(!banner.classList.contains('show')){setMsg('⚠ Assemble all parts before sending downstream','err');return;}
+  if(!banner.classList.contains('show')){setMsg('⚠ Assemble toutes tes pieces avant d\'envoyer en aval','err');return;}
   banner.classList.remove('show');
   document.getElementById('btnValidate').disabled=true;
   document.getElementById('batchCounter').style.display='none';
@@ -1096,10 +1307,10 @@ function validatePiece(){
       setMsg(qty>1?`📦 Batch ×${qty} → ASSY ${STATION+1}`:`📦 Puzzle → ASSY ${STATION+1}`,'info');
     } else {
       db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+qty);
-      setMsg(qty>1?`🏁 Batch ×${qty} delivered to CUSTOMER ✅`:'🏁 Product delivered to CUSTOMER ✅','ok');
+      setMsg(qty>1?`🏁 Batch ×${qty} delivered to CUSTOMER ✅`:'🏁 Produit delivered to CUSTOMER ✅','ok');
     }
   } else {
-    setMsg('🏁 Product delivered to CUSTOMER ✅','ok');
+    setMsg('🏁 Produit delivered to CUSTOMER ✅','ok');
   }
   pushStats();
   setTimeout(()=>{S.inheritedState={};initCycle();},700);
@@ -1111,11 +1322,11 @@ function updateIncomingOrder(){
   const remaining=Math.max(0,S.customerDemand-runOutput);
   const el=document.getElementById('wipIn');
   if(el) el.textContent=remaining;
-  // ── Order exhausted: notify operator to stop ─────────────────
+  // ── Order exhausted: notify l'opérateur d'arrêter ─────────────────
   if(remaining===0){
     const btn=document.getElementById('btnStart');
     if(btn){btn.disabled=true;btn.textContent='⛔ Order Fulfilled';}
-    setMsg('🛑 ORDER COMPLETE — Stop the station, notify the trainer!','err');
+    setMsg('🛑 ORDER COMPLETE — Stop station, notify trainer!','err');
     stopWaitTimer();
   }
 }
@@ -1223,6 +1434,7 @@ function initFirebase(){
     if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
     db=firebase.database();
     listenWipIn();listenSessionConfig();pushStats();
+    listenReplenishment();
     setConn('online',`${ASSY_NAMES[STATION]} connected`);
     if(STATION===1){S.wipIn=999;updateWIPDisplay();checkWaitTimer();}
   }catch(e){
@@ -1236,7 +1448,7 @@ function listenWipIn(){
       const newVal=snap.val()||0;
       S.wipIn=newVal;
       updateWIPDisplay();
-      checkWaitTimer(); // start wait if wipIn > 0 and cycle not started
+      checkWaitTimer(); // start wait if wipIn>0 and cycle not started
     }
   });
 }
@@ -1244,6 +1456,7 @@ function listenSessionConfig(){
   db.ref(`assembly_line/${SESSION}/config`).on('value',snap=>{
     const cfg=snap.val();if(!cfg)return;
     if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}
+    if(cfg.replen_delay){S.replenDelaySec=cfg.replen_delay;}
     if(cfg.nb_stations){NB_STATIONS=cfg.nb_stations;renderPuzzleLegend();}
     if(cfg.station_modes){
       const myMode=cfg.station_modes[`s${STATION}`];
@@ -1270,11 +1483,11 @@ function listenSessionConfig(){
     } else if(!cfg.co_signal&&S.coStart){
       // co_signal removed by trainer
       // → n'aborter que si l'overlay est encore affiché (opérateur pas encore validé)
-      // → if cycle in progress or coRunning, let completeCO() trigger normally
+      // → if cycle in progress or coRunning, laisser completeCO() se déclencher normalement
       const overlayVisible=document.getElementById('coOverlay').classList.contains('show');
       if(overlayVisible){abortCO();initCycle();}
     } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart&&!S.running&&!S.started&&S.cycles===0){
-      // first load only (no reset if a cycle is in progress)
+      // first load only (pas de reset si un cycle est en cours)
       applyProfile(cfg.profile_data);
       const myPos=STATION_POSITIONS[STATION]||[];
       const segStart=(STATION-1)*4;
@@ -1287,6 +1500,8 @@ function listenSessionConfig(){
       S.lastResetSignal=cfg.reset_signal;
       abortCO();
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);S.batchCount=0;
+      S.replenStatus='idle';cancelAnimationFrame(S.replenRaf);hideReplenStatus();
+      initBuffer();
       if(S.batchResetTimer){clearTimeout(S.batchResetTimer);S.batchResetTimer=null;}
       S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;S.totalWaitMs=0;
       if(S.waitRaf){cancelAnimationFrame(S.waitRaf);S.waitRaf=null;}
@@ -1565,22 +1780,22 @@ function validateChangeover(){
     return;
   }
 
-  // All correct — close overlay (C/O timer continues until 1st piece placed)
+  // All correct — close overlay (timer C/O continue jusqu'à la 1ère pièce)
   closeCoOverlay();
   initCycle();
 }
 
-// ── Close C/O overlay — timer CONTINUES until 1st piece placed ──
+// ── Close C/O overlay — le timer CONTINUE jusqu'à la 1ère pièce placée ──
 function closeCoOverlay(){
   cancelAnimationFrame(S.coRaf);
   S.coRaf=null;
   document.getElementById('coOverlay').classList.remove('show');
   // Le timer C/O continue à tourner en arrière-plan
   // Démarrer une animation légère sur la barre de statut pour signaler que C/O n'est pas terminé
-  setMsg('⚙️ Grid validated — Start the cycle and place the 1st part to finalize C/O','info');
+  setMsg('⚙️ Grid validated — Start cycle and place 1st part to finalize C/O','info');
 }
 
-// ── Finalize C/O at end of 1st complete cycle (SMED: signal → 1st good piece) ──
+// ── Finalize C/O at end du 1er cycle complet (SMED : signal → 1ère bonne pièce) ──
 function completeCO(){
   if(!S.coStart)return;
   const elapsed=Date.now()-S.coStart;
@@ -1613,7 +1828,7 @@ function completeCO(){
   setMsg(`✅ C/O completed in ${coSec}s (config + dry run — SMED)`, 'ok');
 }
 
-// ── Force abort/reset C/O (session stop, trainer reset) ──
+// ── Force abort/reset C/O (session stop, reset formateur) ──
 function abortCO(){
   S.coStart=null;
   S.coRunning=false;
@@ -1649,7 +1864,7 @@ function updateCurrentRun(){
   renderRunTable();
 }
 
-// ── Live idle counter (wipIn > 0, no cycle in progress, Send Downstream not active) ──
+// ── Live idle counter (wipIn > 0, pas de cycle en cours, Send Downstream non actif) ──
 // ── Format HH:MM:SS ──────────────────────────────────────────────────────────
 function fmtHMS(ms){
   const t=Math.floor(ms/1000);
@@ -1752,6 +1967,13 @@ function renderRunTable(){
 function pushStats(){
   if(!db)return;
   db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?Math.round(S.history.reduce((a,b)=>a+b,0)/S.history.length/1000):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',co_count:S.coCount,co_avg_s:S.coCount>0?Math.round(S.coTotalMs/S.coCount/1000):0,name:`${ASSY_NAMES[STATION]} — Assembly`,last_updated:Date.now()});
+  pushBufferLevel();
+}
+
+function pushBufferLevel(){
+  if(!db) return;
+  const sets = setsRemaining();
+  db.ref(`assembly_line/${SESSION}/replenishment/bufferLevels/s${STATION}`).set(sets);
 }
 
 function captureVisual(){
@@ -1819,7 +2041,7 @@ function captureVisual(){
     // Titre "Visual de montage"
     ctx.font='bold 18px sans-serif';
     ctx.fillStyle='#dde1ed';
-    ctx.fillText('📋 Assembly Visual — Assembly Sequence',PAD,60);
+    ctx.fillText('📋 Visual de Montage — Gamme d\'Assemblage',PAD,60);
 
     // Date + cycle time
     const now=new Date();
