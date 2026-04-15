@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -167,7 +167,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .wo-bom-ref{font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);}
 .wo-bom-name{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;}
 
-/* Reference grid (formateur layout) */
+/* Reference grid (trainer layout) */
 .ref-grid{display:inline-grid;gap:3px;pointer-events:none;}
 .ref-cell{display:flex;align-items:center;justify-content:center;
   border-radius:3px;font-family:'Share Tech Mono',monospace;font-weight:700;
@@ -224,7 +224,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <!-- Two columns: Reference grid + Operator grid -->
     <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
 
-      <!-- LEFT: Full reference grid from formateur -->
+      <!-- LEFT: Full reference grid from trainer -->
       <div>
         <div class="co-grid-label">📋 New Assembly Plan — All Stations</div>
         <div style="font-size:10px;color:#888;margin-bottom:10px;">
@@ -392,8 +392,8 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <!-- SUIVI PAR CYCLE DE PRODUCTION -->
 <div class="run-history">
   <div class="run-history-header">
-    <span class="run-history-title">📊 Suivi par cycle de production</span>
-    <span style="font-size:9px;color:#555;letter-spacing:1px;">1 ligne = 1 configuration (entre chaque C/O)</span>
+    <span class="run-history-title">📊 Production Run Tracking</span>
+    <span style="font-size:9px;color:#555;letter-spacing:1px;">1 row = 1 configuration (between each C/O)</span>
   </div>
   <table class="run-table" id="runTable">
     <thead>
@@ -406,7 +406,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
       </tr>
     </thead>
     <tbody id="runBody">
-      <tr><td colspan="5" style="color:#444;font-size:10px;padding:10px;text-align:center;">Démarrez un cycle pour commencer le suivi.</td></tr>
+      <tr><td colspan="5" style="color:#444;font-size:10px;padding:10px;text-align:center;">Start a cycle to begin tracking.</td></tr>
     </tbody>
   </table>
 </div>
@@ -453,26 +453,26 @@ function applyProfile(profileData){
   if(board) board.className='puzzle-board';
 }
 
-// ── PUZZLE BOARD : métaux industriels distincts par station ─
-// S1 → Acier inox (gris bleuté)
-// S2 → Aluminium anodisé (gris doré chaud)
-// S3 → Fonte grise (gris foncé mat)
-// S4 → Titane (gris violet froid)
+// ── PUZZLE BOARD: distinct industrial metals per station ─
+// S1 → Stainless steel (bluish grey)
+// S2 → Anodized aluminium (warm golden grey)
+// S3 → Grey cast iron (dark matte grey)
+// S4 → Titanium (cold violet grey)
 const METAL_FILL   = {1:'#7a9bb5',2:'#a09070',3:'#6a7a6a',4:'#8a85a8'};
 const METAL_STROKE = {1:'#3a6080',2:'#705a30',3:'#3a4a3a',4:'#504870'};
 const METAL_TEXT   = {1:'#e8f4ff',2:'#fff4e0',3:'#e0ede0',4:'#f0eeff'};
-const METAL_PLACED = '#c8d8e0';        // pièce posée (brillant neutre)
+const METAL_PLACED = '#c8d8e0';        // placed piece (neutral shine)
 const METAL_PLACED_STROKE = '#6a90a0';
 const METAL_GHOST  = '#2e3d4a';        // cellule vide autre station
 const METAL_GHOST_STROKE = '#1e2d3a';
 
-// ── BUFFER : couleurs industrielles ─────────────────────
-// Orange sécu / Bleu industrie / Jaune sécu / Cyan industrie
+// ── BUFFER: industrial colors ─────────────────────────
+// Safety orange / Industrial blue / Safety yellow / Industrial cyan
 const BUFFER_FILL   = {1:'#e65100',2:'#1565c0',3:'#f9a825',4:'#00695c'};
 const BUFFER_STROKE = {1:'#bf360c',2:'#0d47a1',3:'#f57f17',4:'#004d40'};
 const BUFFER_TEXT   = {1:'#fff',   2:'#fff',   3:'#000',   4:'#fff'};
 
-// Alias pour le badge station (garde les couleurs vives pour l'identité visuelle)
+// Alias for station badge (keeps vivid colors for visual identity)
 const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8',5:'#c07de0',6:'#80cc44'};
 const ST_STROKE={1:'#a01818',2:'#a06000',3:'#20a050',4:'#007a6a',5:'#7a40a0',6:'#508820'};
 const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000',5:'#fff',6:'#000'};
@@ -518,21 +518,21 @@ let S={
   running:false,started:false,startTime:null,raf:null,errorCount:0,
   topology:null,cornerSides:{},bufferDisplayOrder:null,gamme:[],lastResetSignal:null,inheritedState:{},fty:0,
   coCount:0,coTotalMs:0,lastCoSignal:null,coStart:null,coRaf:null,
-  waitStart:null,    // timestamp quand wipIn>0 → début temps d'attente
+  waitStart:null,    // timestamp when wipIn>0 → wait time start
   waitRaf:null,      // RAF pour le compteur wait live
-  cycleWaitMs:0,     // attente capturée au 1er drag du cycle
+  cycleWaitMs:0,     // wait captured at 1st drag of cycle
   cycleErrors:0,     // erreurs du cycle courant
   totalWaitMs:0,     // cumul total des temps d'attente session
-  customerDemand:0,  // commande fixée par le formateur (Station 1)
-  runOutputStart:0,  // S.output au début du run courant (pour calcul demand par run)
+  customerDemand:0,  // demand set by trainer (Station 1)
+  runOutputStart:0,  // S.output at start of current run (for demand calc per run)
   coRunning:false,
   coProfileLabel:'',
   currentStep:0,
   runs:[],
   batchMode:false,   // true = batch mode
-  batchSize:1,       // nb cycles avant envoi en aval
-  batchCount:0,      // cycles complétés dans le batch courant
-  batchResetTimer:null, // timer entre cycles batch (à annuler si nouveau cycle démarre trop vite)
+  batchSize:1,       // nb cycles before sending downstream
+  batchCount:0,      // cycles completed in current batch
+  batchResetTimer:null, // timer between batch cycles (cancel if new cycle starts too quickly)
   currentRun:null,
 };
 
@@ -602,7 +602,7 @@ function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');e
 function initStation(){
   applyProfile(DEFAULT_PROFILE);
   ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
-  // dbCO et bbCO seront mis à jour uniquement par les vrais temps mesurés
+  // dbCO and bbCO updated only by real measured times
   document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLY`;
   const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
   const segStart=(STATION-1)*4;
@@ -614,9 +614,9 @@ function initStation(){
 }
 
 function initCycle(){
-  // Guard : ne jamais réinitialiser si un cycle est en cours
+  // Guard: never reset if a cycle is in progress
   if(S.running) return;
-  // Topologie fixe par profil — régénérée si nécessaire
+  // Fixed topology per profile — regenerated if needed
   if(!S.topology){
     S.topology=generateTopology();
   }
@@ -625,14 +625,14 @@ function initCycle(){
   (STATION_POSITIONS[STATION]||[]).forEach(pos=>{
     S.cornerSides[pos]=getSides(pos,S.topology);
   });
-  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]); // ordre visuel aléatoire dans la caisse
-  S.gamme=[...Array(S.myPieces.length).keys()];  // séquence d'assemblage FIXE : 0,1,2,3...
+  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]); // random visual order in buffer
+  S.gamme=[...Array(S.myPieces.length).keys()];  // FIXED assembly sequence: 0,1,2,3...
   S.cornerComps=S.myPieces.map(p=>({...p}));
   S.placedPositions={};
   S.currentStep=0;
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
   S.cycleErrors=0;S.cycleWaitMs=0;
-  // waitStart intentionnellement non réinitialisé — persiste si wipIn > 0
+  // waitStart intentionally not reset — persists if wipIn > 0
   const scrapEl=document.getElementById('dbScrap');
   if(scrapEl)scrapEl.textContent='0';
   cancelAnimationFrame(S.raf);
@@ -701,7 +701,7 @@ function renderBuffer(){
           currentDrag=null;
           renderBuffer();
         });
-        // ── Clic pour sélectionner (fallback si drag ne marche pas) ─
+        // ── Click to select (fallback if drag does not work) ─
         div.addEventListener('click',()=>{
           if(currentDrag&&currentDrag.idx===i){
             currentDrag=null;
@@ -710,7 +710,7 @@ function renderBuffer(){
             currentDrag={idx:i,comp};
             document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
             div.style.outline='3px solid var(--success)';
-            setMsg('✅ Pièce sélectionnée — cliquez maintenant sur sa zone dans le puzzle','ok');
+            setMsg('✅ Part selected — now click its target zone on the puzzle','ok');
           }
         });
         div.addEventListener('touchstart',()=>{currentDrag={idx:i,comp};},{passive:true});
@@ -722,10 +722,10 @@ function renderBuffer(){
 
 // ── RENDER BOARD — FIXED v5.1 ──────────────────────────
 // Corrections :
-// 1. corner-drop : width/height explicites = zone de drop correctement positionnée
+// 1. corner-drop: explicit width/height = correctly positioned drop zone
 // 2. dragover : e.dataTransfer.dropEffect='move' = drop garanti par le navigateur
-// 3. pièces posées : animation popIn pour confirmer le placement
-// 4. pièces autres stations : opacité 50% (vs 35%) + gris plus clair
+// 3. placed pieces: popIn animation to confirm placement
+// 4. other stations pieces: 50% opacity (vs 35%) + lighter grey
 function renderBoard(justPlacedPos=null){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
@@ -807,7 +807,7 @@ function renderBoard(justPlacedPos=null){
       cell.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';cell.classList.add('drag-over');cell.classList.remove('pulsing');});
       cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
       cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,fi);});
-      // Clic sur zone cible (si pièce sélectionnée par clic dans le buffer)
+      // Click on target zone (if piece selected by click in buffer)
       cell.addEventListener('click',()=>{
         if(currentDrag){
           document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
@@ -852,7 +852,7 @@ function handleDrop(compIdx,targetPos){
         return;
       }
     }
-    // ── Démarrer/continuer le chrono de cycle ────────────────────────────────
+    // ── Start/continue cycle timer ───────────────────────────────────────────
     if(!S.started){
       S.started=true;S.startTime=performance.now();
       // Wait = depuis quand wipIn > 0 jusqu'au 1er drag
@@ -860,7 +860,7 @@ function handleDrop(compIdx,targetPos){
         S.cycleWaitMs = S.startTime - S.waitStart;
         S.currentRun.waitTotalMs += S.cycleWaitMs;
         S.totalWaitMs += S.cycleWaitMs;
-        S.waitStart = null; // attente terminée
+        S.waitStart = null; // wait ended
         stopWaitTimer();
         updateWaitTotal();
       }
@@ -876,7 +876,7 @@ function handleDrop(compIdx,targetPos){
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
     setMsg(`❌ Wrong position! Errors: ${S.errorCount}`,'err');
-    renderBuffer(); // pièce toujours visible après mauvaise position
+    renderBuffer(); // piece still visible after wrong position
   }
 }
 
@@ -905,7 +905,7 @@ document.addEventListener('touchend',e=>{
 // ── CYCLE ──────────────────────────────────────────────
 function startCycle(){
   if(S.running)return;
-  if(S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize)){setMsg('⚠ Envoie d\'abord le produit fini en aval (Send Downstream) avant de démarrer un nouveau cycle','err');return;}
+  if(S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize)){setMsg('⚠ Send the finished product downstream first before starting a new cycle','err');return;}
   if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
   startSessionTimer();
   if(STATION>1&&db){
@@ -943,12 +943,12 @@ function runTimer(){
 function finishCycle(ok){
   S.running=false;cancelAnimationFrame(S.raf);
   const elapsed=S.startTime?performance.now()-S.startTime:0;
-  // ── SMED : C/O se termine à la fin du 1er cycle complet ─────────────────
+  // ── SMED: C/O ends at the end of the 1st complete cycle ─────────────────
   if(S.coRunning) completeCO();
   document.getElementById('timerDisp').classList.remove('running');
   document.getElementById('timerDisp').classList.add('done');
   S.cycles++;
-  // ── Enregistrer les données du cycle courant ─────────────────────────────
+  // ── Record current cycle data ─────────────────────────────────────────────
   if(S.currentRun){
     S.currentRun.cyclesData.push({
       ct: elapsed,
@@ -981,17 +981,17 @@ function finishCycle(ok){
       document.getElementById('batchCounter').style.display='block';
       document.getElementById('batchCounter').textContent=`${S.batchCount} / ${S.batchSize}`;
       if(done){
-        document.getElementById('valSub').textContent=`Batch complet — Envoyez les ${S.batchSize} pièces en aval`;
+        document.getElementById('valSub').textContent=`Batch complete — Send ${S.batchSize} parts downstream`;
         document.getElementById('batchCounter').style.color='var(--success)';
         document.getElementById('btnStart').disabled=true;
         document.getElementById('btnStart').textContent='⏳ Send Downstream First';
         updateFlowModePanel();
       } else {
-        document.getElementById('valSub').textContent=`Continuez — encore ${S.batchSize-S.batchCount} cycle(s)`;
+        document.getElementById('valSub').textContent=`Continue — ${S.batchSize-S.batchCount} more cycle(s)`;
         document.getElementById('batchCounter').style.color='var(--accent)';
         updateFlowModePanel();
-        // Réactiver Start Cycle pour le prochain cycle du batch
-        // Utiliser setTimeout pour passer après tous les autres setters (Firebase, updateWIPDisplay, etc.)
+        // Re-enable Start Cycle for the next batch cycle
+        // Use setTimeout to run after all other setters (Firebase, updateWIPDisplay, etc.)
         S.batchResetTimer=setTimeout(()=>{
           S.batchResetTimer=null;
           // Reset du board pour le prochain cycle (sans toucher wipOut ni batchCount)
@@ -1013,7 +1013,7 @@ function finishCycle(ok){
       document.getElementById('valSub').textContent='Validate to send downstream';
     }
 
-    // ── Si une pièce est déjà disponible, l'attente du prochain cycle commence maintenant ──
+    // ── If a part is already available, next cycle wait starts now ──
     if(STATION===1 || S.wipIn>0){
     }
     checkWaitTimer();
@@ -1074,7 +1074,7 @@ function showCompletePuzzle(){
 
 function validatePiece(){
   const banner=document.getElementById('validateBanner');
-  if(!banner.classList.contains('show')){setMsg('⚠ Assemble toutes tes pièces avant d\'envoyer en aval','err');return;}
+  if(!banner.classList.contains('show')){setMsg('⚠ Assemble all parts before sending downstream','err');return;}
   banner.classList.remove('show');
   document.getElementById('btnValidate').disabled=true;
   document.getElementById('batchCounter').style.display='none';
@@ -1088,7 +1088,7 @@ function validatePiece(){
     Object.keys(S.placedPositions).forEach(pos=>{cumulative[pos]=STATION;});
     const qty=S.batchMode?S.batchSize:1;
     if(STATION<NB_STATIONS){
-      // Envoyer qty puzzles en aval
+      // Send qty puzzles downstream
       for(let i=0;i<qty;i++){
         db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION+1}`).push(cumulative);
       }
@@ -1096,10 +1096,10 @@ function validatePiece(){
       setMsg(qty>1?`📦 Batch ×${qty} → ASSY ${STATION+1}`:`📦 Puzzle → ASSY ${STATION+1}`,'info');
     } else {
       db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+qty);
-      setMsg(qty>1?`🏁 Batch ×${qty} livré au CLIENT ✅`:'🏁 Produit livré au CLIENT ✅','ok');
+      setMsg(qty>1?`🏁 Batch ×${qty} delivered to CUSTOMER ✅`:'🏁 Product delivered to CUSTOMER ✅','ok');
     }
   } else {
-    setMsg('🏁 Produit livré au CLIENT ✅','ok');
+    setMsg('🏁 Product delivered to CUSTOMER ✅','ok');
   }
   pushStats();
   setTimeout(()=>{S.inheritedState={};initCycle();},700);
@@ -1111,11 +1111,11 @@ function updateIncomingOrder(){
   const remaining=Math.max(0,S.customerDemand-runOutput);
   const el=document.getElementById('wipIn');
   if(el) el.textContent=remaining;
-  // ── Commande épuisée : prévenir l'opérateur d'arrêter ─────────────────
+  // ── Order exhausted: notify operator to stop ─────────────────
   if(remaining===0){
     const btn=document.getElementById('btnStart');
-    if(btn){btn.disabled=true;btn.textContent='⛔ Commande terminée';}
-    setMsg('🛑 COMMANDE COMPLÈTE — Arrêtez la station, prévenez le formateur !','err');
+    if(btn){btn.disabled=true;btn.textContent='⛔ Order Fulfilled';}
+    setMsg('🛑 ORDER COMPLETE — Stop the station, notify the trainer!','err');
     stopWaitTimer();
   }
 }
@@ -1236,7 +1236,7 @@ function listenWipIn(){
       const newVal=snap.val()||0;
       S.wipIn=newVal;
       updateWIPDisplay();
-      checkWaitTimer(); // démarre le wait si wipIn > 0 et cycle pas commencé
+      checkWaitTimer(); // start wait if wipIn > 0 and cycle not started
     }
   });
 }
@@ -1268,13 +1268,13 @@ function listenSessionConfig(){
       S.lastCoSignal=cfg.co_signal;
       startChangeover(cfg.co_profile_name||'New Profile', cfg.profile_data, cfg.co_signal);
     } else if(!cfg.co_signal&&S.coStart){
-      // co_signal supprimé par le formateur
+      // co_signal removed by trainer
       // → n'aborter que si l'overlay est encore affiché (opérateur pas encore validé)
-      // → si le cycle est en cours ou coRunning, laisser completeCO() se déclencher normalement
+      // → if cycle in progress or coRunning, let completeCO() trigger normally
       const overlayVisible=document.getElementById('coOverlay').classList.contains('show');
       if(overlayVisible){abortCO();initCycle();}
     } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart&&!S.running&&!S.started&&S.cycles===0){
-      // premier chargement uniquement (pas de reset si un cycle est en cours)
+      // first load only (no reset if a cycle is in progress)
       applyProfile(cfg.profile_data);
       const myPos=STATION_POSITIONS[STATION]||[];
       const segStart=(STATION-1)*4;
@@ -1565,22 +1565,22 @@ function validateChangeover(){
     return;
   }
 
-  // All correct — fermer l'overlay (timer C/O continue jusqu'à la 1ère pièce)
+  // All correct — close overlay (C/O timer continues until 1st piece placed)
   closeCoOverlay();
   initCycle();
 }
 
-// ── Ferme l'overlay C/O — le timer CONTINUE jusqu'à la 1ère pièce placée ──
+// ── Close C/O overlay — timer CONTINUES until 1st piece placed ──
 function closeCoOverlay(){
   cancelAnimationFrame(S.coRaf);
   S.coRaf=null;
   document.getElementById('coOverlay').classList.remove('show');
   // Le timer C/O continue à tourner en arrière-plan
   // Démarrer une animation légère sur la barre de statut pour signaler que C/O n'est pas terminé
-  setMsg('⚙️ Grille validée — Démarrez le cycle et placez la 1ère pièce pour finaliser le C/O','info');
+  setMsg('⚙️ Grid validated — Start the cycle and place the 1st part to finalize C/O','info');
 }
 
-// ── Finalise le C/O à la fin du 1er cycle complet (SMED : signal → 1ère bonne pièce) ──
+// ── Finalize C/O at end of 1st complete cycle (SMED: signal → 1st good piece) ──
 function completeCO(){
   if(!S.coStart)return;
   const elapsed=Date.now()-S.coStart;
@@ -1610,10 +1610,10 @@ function completeCO(){
   startRun(S.coProfileLabel);
   if(S.currentRun)S.currentRun.coSec=coSec;
   pushStats();
-  setMsg(`✅ C/O finalisé en ${coSec}s (config + dry run — SMED)`, 'ok');
+  setMsg(`✅ C/O completed in ${coSec}s (config + dry run — SMED)`, 'ok');
 }
 
-// ── Abandon/reset forcé du C/O (session stop, reset formateur) ──
+// ── Force abort/reset C/O (session stop, trainer reset) ──
 function abortCO(){
   S.coStart=null;
   S.coRunning=false;
@@ -1649,7 +1649,7 @@ function updateCurrentRun(){
   renderRunTable();
 }
 
-// ── Compteur idle live (wipIn > 0, pas de cycle en cours, Send Downstream non actif) ──
+// ── Live idle counter (wipIn > 0, no cycle in progress, Send Downstream not active) ──
 // ── Format HH:MM:SS ──────────────────────────────────────────────────────────
 function fmtHMS(ms){
   const t=Math.floor(ms/1000);
@@ -1671,7 +1671,7 @@ function startWaitTimer(){
     // Live idle row dans la table
     const el=document.getElementById('idleLiveRow');
     if(el) el.querySelector('td').textContent=`⏸  WAIT : ${fmtHMS(currentMs)}`;
-    // Wait Total Time — affiche cumul + attente en cours
+    // Wait Total Time — shows cumulative + current wait
     const totalEl=document.getElementById('waitTotalDisp');
     if(totalEl) totalEl.textContent=fmtHMS(S.totalWaitMs+currentMs);
     S.waitRaf=requestAnimationFrame(tickWait);
@@ -1709,7 +1709,7 @@ function renderRunTable(){
 
   if(!allRuns.length){
     const emptyTr=document.createElement('tr');
-    emptyTr.innerHTML=`<td colspan="5" style="color:#444;font-size:10px;padding:10px;text-align:center;">Démarrez un cycle pour commencer le suivi.</td>`;
+    emptyTr.innerHTML=`<td colspan="5" style="color:#444;font-size:10px;padding:10px;text-align:center;">Start a cycle to begin tracking.</td>`;
     tbody.appendChild(emptyTr);
     return;
   }
@@ -1721,14 +1721,14 @@ function renderRunTable(){
     // ── Séparateur C/O ─────────────────────────────────────────────────────
     const sepTr=document.createElement('tr');
     sepTr.style.cssText='background:rgba(240,165,0,.07);';
-    const coLabel=r.coSec!==null?`⚙ C/O : ${r.coSec}s`:'⚙ Run initial';
-    sepTr.innerHTML=`<td colspan="5" style="font-size:9px;letter-spacing:2px;color:var(--accent);text-align:left;padding:4px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;">${coLabel} — <span style="color:#555;">${r.label}</span>${isCurrent?' <span style="color:var(--success);">▶ EN COURS</span>':''}</td>`;
+    const coLabel=r.coSec!==null?`⚙ C/O : ${r.coSec}s`:'⚙ Initial Run';
+    sepTr.innerHTML=`<td colspan="5" style="font-size:9px;letter-spacing:2px;color:var(--accent);text-align:left;padding:4px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;">${coLabel} — <span style="color:#555;">${r.label}</span>${isCurrent?' <span style="color:var(--success);">▶ IN PROGRESS</span>':''}</td>`;
     tbody.appendChild(sepTr);
     // ── 1 ligne par cycle ───────────────────────────────────────────────────
     const cycles=r.cyclesData||[];
     if(!cycles.length){
       const emptyTr=document.createElement('tr');
-      emptyTr.innerHTML=`<td colspan="5" style="color:#333;font-size:10px;padding:6px;text-align:center;">Aucun cycle</td>`;
+      emptyTr.innerHTML=`<td colspan="5" style="color:#333;font-size:10px;padding:6px;text-align:center;">No cycles</td>`;
       tbody.appendChild(emptyTr);
     } else {
       cycles.slice().reverse().forEach((c,ci)=>{
@@ -1751,7 +1751,7 @@ function renderRunTable(){
 
 function pushStats(){
   if(!db)return;
-  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?Math.round(S.history.reduce((a,b)=>a+b,0)/S.history.length/1000):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',co_count:S.coCount,co_avg_s:S.coCount>0?Math.round(S.coTotalMs/S.coCount/1000):0,name:`${ASSY_NAMES[STATION]} — Assemblage`,last_updated:Date.now()});
+  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?Math.round(S.history.reduce((a,b)=>a+b,0)/S.history.length/1000):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',co_count:S.coCount,co_avg_s:S.coCount>0?Math.round(S.coTotalMs/S.coCount/1000):0,name:`${ASSY_NAMES[STATION]} — Assembly`,last_updated:Date.now()});
 }
 
 function captureVisual(){
@@ -1819,11 +1819,11 @@ function captureVisual(){
     // Titre "Visual de montage"
     ctx.font='bold 18px sans-serif';
     ctx.fillStyle='#dde1ed';
-    ctx.fillText('📋 Visual de Montage — Gamme d\'Assemblage',PAD,60);
+    ctx.fillText('📋 Assembly Visual — Assembly Sequence',PAD,60);
 
     // Date + cycle time
     const now=new Date();
-    const dateStr=now.toLocaleDateString('fr-FR')+' '+now.toLocaleTimeString('fr-FR');
+    const dateStr=now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB');
     const lastCT=S.history.length?Math.round(S.history[S.history.length-1]/1000)+'s':'—';
     ctx.font='11px monospace';
     ctx.fillStyle='#00c2a8';
