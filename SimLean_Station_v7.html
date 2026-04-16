@@ -1394,6 +1394,8 @@ function handleDrop(bufIdx,targetPos){
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');},400);}
     const nextNum = S.currentStep + 1;
+    currentDrag=null; // force re-selection from buffer
+    document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
     setMsg(`❌ Wrong order! You must place part #${nextNum} next (follow the assembly sequence).`,'err');
     renderBuffer();return;
   }
@@ -1435,7 +1437,19 @@ function handleDrop(bufIdx,targetPos){
     S.buffer[actualBufIdx].placed=true;
     S.placedPositions[targetPos]=actualComp;
     S.currentStep++;
+    currentDrag=null; // force re-selection of next piece from buffer
+    document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
     renderBuffer();renderBoard(targetPos);updateBufferProgress();
+    // Highlight next expected cell
+    if(S.currentStep < S.myPieces.length){
+      const nextPos = S.myPieces[S.gamme[S.currentStep]]?.targetPos;
+      if(nextPos !== undefined){
+        setTimeout(()=>{
+          const nextCell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${nextPos}"]`);
+          if(nextCell){nextCell.style.boxShadow='0 0 0 3px var(--success)';nextCell.style.borderColor='var(--success)';}
+        },80);
+      }
+    }
     setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
     if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
   }
