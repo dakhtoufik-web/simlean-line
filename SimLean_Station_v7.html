@@ -1386,6 +1386,18 @@ function handleDrop(bufIdx,targetPos){
     actualComp=S.buffer[match];actualBufIdx=match;
   }
 
+  // ── ORDER CHECK : must follow gamme sequence ──────────────
+  const expectedIdx = S.gamme[S.currentStep];
+  const expectedPos = S.myPieces[expectedIdx]?.targetPos;
+  if(targetPos !== expectedPos){
+    S.errorCount++;S.cycleErrors++;
+    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
+    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');},400);}
+    const nextNum = S.currentStep + 1;
+    setMsg(`❌ Wrong order! You must place part #${nextNum} next (follow the assembly sequence).`,'err');
+    renderBuffer();return;
+  }
+
   if(actualComp.targetPos===targetPos){
     // Adjacency check
     const upstreamPlaced=PIECE_MAP.reduce((acc,st,idx)=>{if(st>0&&st<STATION)acc.push(idx);return acc;},[]);
