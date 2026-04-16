@@ -357,14 +357,6 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <div class="section-label">PRODUCT ASSEMBLY FRAME — <span id="puzzleLegend"></span></div>
     <div class="puzzle-wrap"><div class="puzzle-board" id="puzzleBoard"></div></div>
 
-    <div class="ctrl-row" style="margin-top:12px;">
-      <button class="btn btn-primary" id="btnStart" disabled>▶ Start Cycle</button>
-      <button class="btn btn-ghost" style="font-size:11px;" id="btnReset">↺ Reset</button>
-      <div class="timer-box" style="margin-left:auto;">
-        <div class="timer-val" id="timerDisp">00.000</div>
-        <div class="timer-sub">Cycle Time (s)</div>
-      </div>
-    </div>
   </div>
 
 <div class="flux-arrow"><svg class="flux-arrow-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="#f0a500" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
@@ -419,6 +411,15 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <div class="db-row"><span class="db-key">C/O COUNT</span><span class="db-val accent" id="dbCOcount">0</span></div>
   </div>
   </div><!-- end right column -->
+</div>
+
+<div class="ctrl-row" style="width:100%;max-width:1060px;margin-bottom:8px;padding:10px 12px;background:var(--panel);border:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+  <button class="btn btn-primary" id="btnStart" disabled>▶ Start Cycle</button>
+  <button class="btn" style="font-size:11px;background:#c0392b;color:#fff;border-color:#c0392b;" id="btnReset">↺ Reset</button>
+  <div class="timer-box" style="margin-left:auto;">
+    <div class="timer-val" id="timerDisp">00.000</div>
+    <div class="timer-sub">Cycle Time (s)</div>
+  </div>
 </div>
 
 <div class="bottom-bar">
