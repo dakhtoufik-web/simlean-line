@@ -57,7 +57,8 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .wip-count{font-family:'Share Tech Mono',monospace;font-size:32px;font-weight:700;line-height:1;}
 .wip-in .wip-count{color:var(--cyan);}.wip-out .wip-count{color:var(--success);}
 .wip-sub{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:1px;}
-.flux-arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:22px;padding:0 2px;align-self:center;}
+.flux-arrow{display:flex;align-items:center;justify-content:center;align-self:stretch;padding:0 6px;}
+.flux-arrow-svg{width:48px;height:48px;fill:#f0a500;filter:drop-shadow(0 0 10px rgba(240,165,0,.6));}
 
 .station-area{flex:1;background:var(--panel);border:1px solid var(--border);padding:10px 12px;}
 .station-title{font-size:11px;letter-spacing:2px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
@@ -340,7 +341,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 
 <div class="flux-row">
   <div class="wip-box wip-in"><div class="wip-label">Incoming WIP</div><div class="wip-count" id="wipIn">0</div><div class="wip-sub">parts available</div><button id="btnRefreshDemand" onclick="refreshDemand()" style="display:none;margin-top:6px;font-size:9px;padding:3px 8px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);cursor:pointer;letter-spacing:1px;">↺ Refresh</button></div>
-  <div class="flux-arrow">→</div>
+<div class="flux-arrow"><svg class="flux-arrow-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="#f0a500" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
 
   <div class="station-area">
     <div class="station-title">
@@ -366,7 +367,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     </div>
   </div>
 
-  <div class="flux-arrow">→</div>
+<div class="flux-arrow"><svg class="flux-arrow-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="#f0a500" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
 
   <div style="display:flex;flex-direction:column;gap:8px;align-self:stretch;">
   <!-- FLOW MODE PANEL -->
