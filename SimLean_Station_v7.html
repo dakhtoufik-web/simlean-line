@@ -311,7 +311,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <!-- REPLENISHMENT BAR -->
 <div class="replen-bar" id="replenBar">
   <div>
-    <div class="replen-label">📦 Buffer Sets</div>
+    <div class="replen-label">📦 Storage Area Sets</div>
     <div class="replen-sets" id="replenSetsVal">4 / 4</div>
   </div>
   <div style="width:1px;height:32px;background:var(--border);"></div>
@@ -348,10 +348,10 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
       <span style="font-size:11px;color:var(--muted);font-weight:700;" id="cycleCount">Cycles: 0</span>
     </div>
 
-    <div class="section-label">BUFFER — Incoming Parts (Pick a part → Place it on the assembly frame)
+    <div class="section-label">STORAGE AREA — Incoming Parts (Pick a part → Place it on the assembly frame)
       <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--success);margin-left:8px;" id="bufferProgress">0 / 4</span>
     </div>
-    <div class="buffer-bar" id="bufferBar"><div class="buffer-bar-label">BUFFER</div></div>
+    <div class="buffer-bar" id="bufferBar"><div class="buffer-bar-label">STORAGE AREA</div></div>
 
     <div class="section-label">PRODUCT ASSEMBLY FRAME — <span id="puzzleLegend"></span></div>
     <div class="puzzle-wrap"><div class="puzzle-board" id="puzzleBoard"></div></div>
@@ -789,7 +789,7 @@ function checkBufferEmpty(){
     if(btn){btn.disabled=true;btn.textContent='⏳ Waiting for Replenishment';}
     // Trigger wait timer
     startWaitTimer();
-    setMsg('📦 Buffer empty — waiting for replenishment','err');
+    setMsg('📦 Storage Area empty — waiting for replenishment','err');
   }
 }
 
@@ -878,10 +878,10 @@ function renderBuffer(){
   const bar=document.getElementById('bufferBar');
   const totalPieces=piecesRemaining();
   const lockMsg='<div style="font-size:9px;letter-spacing:1px;color:var(--danger);font-weight:700;text-transform:uppercase;align-self:center;margin-left:4px;">🔒 Start Cycle First</div>';
-  bar.innerHTML='<div class="buffer-bar-label">BUFFER</div>'+(!S.running&&totalPieces>0?lockMsg:'');
+  bar.innerHTML='<div class="buffer-bar-label">STORAGE AREA</div>'+(!S.running&&totalPieces>0?lockMsg:'');
 
   if(totalPieces===0){
-    bar.innerHTML+='<div style="font-size:11px;color:#555;letter-spacing:1px;align-self:center;padding:8px;">📦 Buffer empty — replenishment needed</div>';
+    bar.innerHTML+='<div style="font-size:11px;color:#555;letter-spacing:1px;align-self:center;padding:8px;">📦 Storage Area empty — replenishment needed</div>';
     checkBufferEmpty();
     updateReplenUI();
     return;
@@ -925,7 +925,7 @@ function renderBuffer(){
           currentDrag={bufIdx,comp};
           document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
           div.style.outline='3px solid var(--success)';
-          setMsg('✅ Part selected — click its target zone on the puzzle','ok');
+          setMsg('✅ Part selected — click its target zone on the assembly frame','ok');
         }
       });
       div.addEventListener('touchstart',()=>{currentDrag={bufIdx,comp};},{passive:true});
@@ -1131,7 +1131,7 @@ function startCycle(){
   if(S.running)return;
   if(S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize)){setMsg('⚠ Envoie d\'abord le produit fini en aval (Send Downstream) avant de démarrer un nouveau cycle','err');return;}
   if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
-  if(piecesRemaining()===0&&S.replenStatus!=='idle'){setMsg('📦 Buffer empty — waiting for replenishment','err');return;}
+  if(piecesRemaining()===0&&S.replenStatus!=='idle'){setMsg('📦 Storage Area empty — waiting for replenishment','err');return;}
   startSessionTimer();
   if(STATION>1&&db){
     db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).limitToFirst(1).once('value',snap=>{
@@ -1188,9 +1188,9 @@ function finishCycle(ok){
     const isLast=(STATION===NB_STATIONS);
     if(isLast){
       showCompletePuzzle();
-      document.getElementById('valText').textContent='🏆 PUZZLE COMPLETE — Finished Product!';
+      document.getElementById('valText').textContent='🏆 ASSEMBLY COMPLETE — Finished Product!';
     } else {
-      document.getElementById('valText').textContent=`✅ ASSY ${STATION} done — Puzzle → ASSY ${STATION+1}`;
+      document.getElementById('valText').textContent=`✅ ASSY ${STATION} done — ASSEMBLY → ASSY ${STATION+1}`;
     }
     setMsg(`✅ Assembly completed in ${fmt(elapsed)}s`,'ok');
     document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
@@ -1318,7 +1318,7 @@ function validatePiece(){
         db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION+1}`).push(cumulative);
       }
       db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+qty);
-      setMsg(qty>1?`📦 Batch ×${qty} → ASSY ${STATION+1}`:`📦 Puzzle → ASSY ${STATION+1}`,'info');
+      setMsg(qty>1?`📦 Batch ×${qty} → ASSY ${STATION+1}`:`📦 ASSEMBLY → ASSY ${STATION+1}`,'info');
     } else {
       db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+qty);
       setMsg(qty>1?`🏁 Batch ×${qty} delivered to CUSTOMER ✅`:'🏁 Produit delivered to CUSTOMER ✅','ok');
@@ -1493,7 +1493,7 @@ function listenSessionConfig(){
     if(cfg.co_signal&&cfg.co_signal!==S.lastCoSignal){
       // Nouveau signal C/O → démarrer le changeover
       S.lastCoSignal=cfg.co_signal;
-      startChangeover(cfg.co_profile_name||'New Profile', cfg.profile_data, cfg.co_signal);
+      startChangeover(cfg.co_profile_name||'New Stations Configuration', cfg.profile_data, cfg.co_signal);
     } else if(!cfg.co_signal&&S.coStart){
       // co_signal removed by trainer
       // → n'aborter que si l'overlay est encore affiché (opérateur pas encore validé)
@@ -1588,7 +1588,7 @@ function startChangeover(profileName, profileData, coSignalTime){
   S.coRaf=requestAnimationFrame(tickCO);
 
   document.getElementById('coProfileName').textContent=
-    `New config: ${profileName} — Session ${SESSION.toUpperCase()}`;
+    `New Stations Configuration: ${profileName} — Session ${SESSION.toUpperCase()}`;
 
   // Apply profile to station
   if(profileData){
@@ -2128,4 +2128,3 @@ initStation();
 </script>
 </body>
 </html>
-  
