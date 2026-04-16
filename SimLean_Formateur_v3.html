@@ -315,12 +315,12 @@ body {
       </select>
     </div>
     <div class="setup-field">
-      <label>PUZZLE GRID</label>
+      <label>ASSEMBLY FORMAT</label>
       <select id="cfgGridSize" onchange="updateProfiles()">
       </select>
     </div>
     <div class="setup-field">
-      <label>PROFIL</label>
+      <label>STATIONS CONFIGURATION</label>
       <select id="cfgProfile" onchange="toggleManual()">
         <option value="Balanced (4-4-4-4)">Balanced (4-4-4-4)</option>
         <option value="Bottleneck S2 (2-8-3-3)">Bottleneck S2 (2-8-3-3)</option>
@@ -382,7 +382,7 @@ body {
 <div class="session-info" id="sessionInfo">
   <div><div class="si-label">SESSION</div><div class="si-val" id="siCode">—</div></div>
   <div><div class="si-label">STATIONS</div><div class="si-val" id="siStations">—</div></div>
-  <div><div class="si-label">PUZZLE</div><div class="si-val" id="siGrid" style="color:var(--cyan);">—</div></div>
+  <div><div class="si-label">ASSEMBLY FORMAT</div><div class="si-val" id="siGrid" style="color:var(--cyan);">—</div></div>
   <div><div class="si-label">STATUS</div><div class="si-val" id="siStatus">—</div></div>
   <div><div class="si-label">DURATION</div><div class="si-val" id="siDuration">00:00:00</div></div>
   <div><div class="si-label">TAKT TIME</div><div class="si-val" style="color:var(--success);" id="siTakt">—</div></div>
@@ -421,11 +421,11 @@ body {
 
 <!-- REPLENISHMENT PANEL -->
 <div class="replen-panel" id="replenPanel" style="display:none;">
-  <div class="panel-title" style="color:var(--cyan);">📦 Replenishment — Buffer Status &amp; Delivery Queue</div>
+  <div class="panel-title" style="color:var(--cyan);">📦 Replenishment — Storage Area Status &amp; Delivery Queue</div>
   <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;margin-top:8px;">
     <!-- Per-station buffer levels -->
     <div>
-      <div style="font-size:9px;letter-spacing:2px;color:#888;margin-bottom:6px;">BUFFER LEVEL PER STATION (sets remaining / 4)</div>
+      <div style="font-size:9px;letter-spacing:2px;color:#888;margin-bottom:6px;">STORAGE AREA LEVEL PER STATION (sets remaining / 4)</div>
       <div class="replen-st-row" id="replenStRow"></div>
     </div>
     <!-- Delivery queue -->
@@ -819,7 +819,7 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
 });
 
 document.getElementById('btnResetAll').addEventListener('click', ()=>{
-  if(!confirm('Reset all stations (output, scrap, cycles, WIP, puzzle)?')) return;
+  if(!confirm('Reset all stations (output, scrap, cycles, WIP, assembly)?')) return;
   if(!db || !F.sessionCode) return;
   // Reset all station stats
   for(let i=1;i<=F.nbStations;i++){
@@ -1534,3 +1534,4 @@ window.addEventListener('load', ()=>tryInitFirebase(0));
 </script>
 </body>
 </html>
+
