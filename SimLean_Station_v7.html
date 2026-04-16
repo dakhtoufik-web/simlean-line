@@ -340,7 +340,20 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 </div>
 
 <div class="flux-row">
-  <div class="wip-box wip-in"><div class="wip-label">Incoming WIP</div><div class="wip-count" id="wipIn">0</div><div class="wip-sub">parts available</div><button id="btnRefreshDemand" onclick="refreshDemand()" style="display:none;margin-top:6px;font-size:9px;padding:3px 8px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);cursor:pointer;letter-spacing:1px;">↺ Refresh</button></div>
+
+  <!-- LEFT COLUMN : Incoming Order + Controls -->
+  <div style="display:flex;flex-direction:column;gap:8px;align-self:stretch;min-width:120px;max-width:140px;">
+    <div class="wip-box wip-in" style="flex:1;padding:8px 10px;min-width:unset;"><div class="wip-label">Incoming WIP</div><div class="wip-count" id="wipIn">0</div><div class="wip-sub">parts available</div><button id="btnRefreshDemand" onclick="refreshDemand()" style="display:none;margin-top:6px;font-size:9px;padding:3px 8px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);cursor:pointer;letter-spacing:1px;">↺ Refresh</button></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn btn-primary" id="btnStart" disabled style="flex:1;font-size:11px;padding:7px 6px;">▶ Start Cycle</button>
+      <button class="btn" style="font-size:11px;background:#c0392b;color:#fff;border-color:#c0392b;flex:1;padding:7px 6px;" id="btnReset">↺ Reset</button>
+    </div>
+    <div style="background:var(--panel);border:1px solid var(--border);padding:8px 10px;text-align:center;">
+      <div class="timer-val" id="timerDisp" style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);">00.000</div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-top:2px;">Cycle Time (s)</div>
+    </div>
+  </div>
+
 <div class="flux-arrow"><svg class="flux-arrow-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="#f0a500" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
 
   <div class="station-area">
@@ -411,15 +424,6 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <div class="db-row"><span class="db-key">C/O COUNT</span><span class="db-val accent" id="dbCOcount">0</span></div>
   </div>
   </div><!-- end right column -->
-</div>
-
-<div class="ctrl-row" style="width:100%;max-width:1060px;margin-bottom:8px;padding:10px 12px;background:var(--panel);border:1px solid var(--border);display:flex;align-items:center;gap:12px;">
-  <button class="btn btn-primary" id="btnStart" disabled>▶ Start Cycle</button>
-  <button class="btn" style="font-size:11px;background:#c0392b;color:#fff;border-color:#c0392b;" id="btnReset">↺ Reset</button>
-  <div class="timer-box" style="margin-left:auto;">
-    <div class="timer-val" id="timerDisp">00.000</div>
-    <div class="timer-sub">Cycle Time (s)</div>
-  </div>
 </div>
 
 <div class="bottom-bar">
