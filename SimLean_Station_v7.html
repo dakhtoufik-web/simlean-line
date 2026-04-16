@@ -222,6 +222,288 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .replen-status.delivering{color:var(--cyan);}
 .replen-status.arrived{color:var(--success);}
 .replen-countdown{font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--cyan);}
+
+/* ═══════════════════════════════════════════════
+   VSM FLOW — REDESIGN PRÉSENTATION
+   ═══════════════════════════════════════════════ */
+
+/* --- Flux row : ligne de flux VSM --- */
+.flux-row{
+  width:100%;max-width:1060px;
+  display:flex;align-items:stretch;gap:0;
+  margin-bottom:8px;
+  position:relative;
+}
+
+/* Ligne de flux horizontale (fond) */
+.flux-row::before{
+  content:'';
+  position:absolute;
+  top:50%;left:0;right:0;height:3px;
+  background:linear-gradient(90deg, var(--cyan) 0%, var(--accent) 50%, var(--success) 100%);
+  opacity:.18;
+  z-index:0;
+  pointer-events:none;
+}
+
+/* --- Process Box VSM (station-area) --- */
+.station-area{
+  flex:1;
+  background:var(--panel);
+  border:2px solid var(--border);
+  border-top:3px solid var(--accent);
+  padding:10px 12px;
+  position:relative;
+  z-index:1;
+}
+
+/* Étiquette de processus VSM dans le coin sup gauche */
+.station-area::before{
+  content:'PROCESS';
+  position:absolute;
+  top:-1px; left:12px;
+  font-size:7px;letter-spacing:3px;font-weight:700;
+  color:var(--accent);
+  background:var(--panel);
+  padding:0 6px;
+  text-transform:uppercase;
+}
+
+/* --- Boîtes WIP (stocks) --- */
+.wip-box{
+  background:var(--panel);
+  border:2px solid var(--border);
+  padding:10px 12px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  min-width:110px;
+  position:relative;
+  z-index:1;
+  margin:0 4px;
+}
+.wip-box.wip-in{
+  border-color:var(--cyan);
+  border-top:3px solid var(--cyan);
+}
+.wip-box.wip-out{
+  border-color:var(--success);
+  border-top:3px solid var(--success);
+}
+
+/* Triangle inventaire VSM (coin) */
+.wip-box.wip-in::before{
+  content:'▼ IN';
+  position:absolute; top:-1px; left:8px;
+  font-size:7px;letter-spacing:2px;font-weight:700;
+  color:var(--cyan);background:var(--panel);padding:0 4px;
+}
+.wip-box.wip-out::before{
+  content:'▼ OUT';
+  position:absolute; top:-1px; left:8px;
+  font-size:7px;letter-spacing:2px;font-weight:700;
+  color:var(--success);background:var(--panel);padding:0 4px;
+}
+
+/* --- PUSH arrows VSM --- */
+.push-arrow-wrap{
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  align-self:stretch;
+  padding:0 2px;
+  z-index:2;
+}
+.push-arrow-btn{
+  display:flex;flex-direction:column;align-items:center;
+  gap:4px;padding-bottom:10px;cursor:default;
+}
+.push-label{
+  font-size:9px;letter-spacing:4px;font-weight:700;
+  color:var(--accent);
+  font-family:'Barlow Condensed',sans-serif;
+  text-transform:uppercase;
+  text-shadow:0 0 8px rgba(240,165,0,.6);
+}
+.push-arrow-icon{
+  width:72px;height:46px;
+  filter:drop-shadow(0 0 12px rgba(240,165,0,.65));
+  transition:filter .3s;
+}
+.push-arrow-btn:hover .push-arrow-icon{
+  filter:drop-shadow(0 0 20px rgba(240,165,0,.9));
+}
+
+/* --- Data Box VSM (process data box) --- */
+.data-box{
+  background:var(--panel);
+  border:2px solid var(--border);
+  border-top:3px solid var(--cyan);
+  padding:10px 12px;
+  display:flex;flex-direction:column;
+  min-width:148px;flex:1;
+  position:relative;
+}
+.data-box::before{
+  content:'DATA BOX';
+  display:none; /* géré par .db-title */
+}
+.db-title{
+  font-size:8px;letter-spacing:3px;color:var(--cyan);
+  text-transform:uppercase;margin-bottom:8px;
+  padding-bottom:5px;border-bottom:1px solid var(--border);
+  font-weight:700;
+  display:flex;align-items:center;gap:6px;
+}
+.db-title::before{
+  content:'';
+  display:inline-block;width:3px;height:12px;
+  background:var(--accent);flex-shrink:0;
+}
+
+/* --- OPF / BATCH box --- */
+.wip-box.wip-out{
+  border-color:var(--success);
+  border-top:3px solid var(--success);
+}
+
+/* --- Station title VSM style --- */
+.station-title{
+  font-size:12px;letter-spacing:3px;font-weight:900;
+  color:var(--accent);text-transform:uppercase;
+  margin-bottom:8px;padding-bottom:6px;
+  border-bottom:2px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+}
+
+/* --- Section label --- */
+.section-label{
+  font-size:8px;letter-spacing:3px;color:#4a5570;
+  margin-bottom:5px;text-transform:uppercase;font-weight:700;
+}
+
+/* --- Storage area (buffer) VSM --- */
+.buffer-bar{
+  display:flex;gap:8px;align-items:flex-start;
+  background:#8b3300;
+  border:2px solid #c94e00;
+  border-top:3px solid #ff6a00;
+  padding:14px;margin-bottom:10px;
+  flex-wrap:wrap;min-height:90px;max-height:296px;
+  overflow-y:auto;overflow-x:clip;
+  position:relative;
+}
+.buffer-bar-label{
+  font-size:8px;letter-spacing:4px;font-weight:700;
+  color:rgba(255,255,255,.5);text-transform:uppercase;
+  margin-right:4px;flex-shrink:0;
+  text-shadow:0 1px 3px rgba(0,0,0,.5);
+}
+
+/* --- Boutons Start/Reset VSM --- */
+.btn-primary{
+  background:var(--accent);color:#000;
+  border:none;border-bottom:3px solid #c07800;
+  font-weight:900;letter-spacing:2px;
+  text-transform:uppercase;
+}
+.btn-primary:hover:not(:disabled){
+  background:#ffc030;border-bottom-color:#a06000;
+}
+.btn-primary:disabled{background:#222;color:#444;border-bottom-color:#1a1a1a;cursor:not-allowed;}
+
+/* --- Timer box VSM --- */
+.timer-val{
+  font-family:'Share Tech Mono',monospace;
+  font-size:30px;color:var(--accent);
+  line-height:1;
+  text-shadow:0 0 20px rgba(240,165,0,.4);
+}
+.timer-val.running{
+  color:var(--success);
+  text-shadow:0 0 20px rgba(61,232,138,.4);
+}
+
+/* --- Bottom bar VSM timeline --- */
+.bottom-bar{
+  width:100%;max-width:1060px;
+  display:flex;gap:0;margin-top:6px;
+  background:var(--panel);
+  border:2px solid var(--border);
+  border-top:3px solid var(--accent);
+  overflow:hidden;
+  position:relative;
+}
+.bottom-bar::before{
+  content:'TIMELINE';
+  position:absolute;top:-1px;left:12px;
+  font-size:6px;letter-spacing:3px;font-weight:700;
+  color:var(--accent);background:var(--panel);padding:0 4px;
+}
+.bb-cell{flex:1;padding:6px 8px;text-align:center;border-right:1px solid var(--border);}
+.bb-key{font-size:8px;letter-spacing:2px;color:#3a4560;text-transform:uppercase;font-weight:700;}
+.bb-val{font-size:15px;font-weight:700;color:var(--muted);font-family:'Share Tech Mono',monospace;}
+
+/* --- Wip-count VSM --- */
+.wip-count{
+  font-family:'Share Tech Mono',monospace;
+  font-size:36px;font-weight:700;line-height:1;
+}
+.wip-label{
+  font-size:8px;letter-spacing:3px;color:#4a5570;
+  text-transform:uppercase;font-weight:700;
+}
+.wip-sub{font-size:11px;color:#4a5570;font-weight:700;letter-spacing:1px;}
+
+/* --- Chrono bar VSM info row --- */
+.chrono-bar{
+  width:100%;max-width:1060px;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:4px;margin-bottom:8px;
+}
+.chrono-cell{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-left:3px solid var(--border);
+  padding:5px 8px;text-align:center;
+}
+.chrono-cell:first-child{border-left-color:var(--cyan);}
+.chrono-cell:nth-child(2){border-left-color:var(--accent);}
+.chrono-cell:nth-child(3){border-left-color:var(--danger);}
+.chrono-cell:nth-child(4){border-left-color:var(--success);}
+
+/* --- Puzzle wrap VSM assembly box --- */
+.puzzle-wrap{
+  display:block;overflow:visible;
+  margin-bottom:8px;
+  border:2px solid rgba(255,255,255,.25);
+  box-shadow:0 0 0 1px rgba(255,255,255,.06) inset;
+  padding:8px;width:fit-content;
+  position:relative;
+}
+.puzzle-wrap::before{
+  content:'ASSEMBLY';
+  position:absolute;top:-10px;left:8px;
+  font-size:7px;letter-spacing:3px;font-weight:700;
+  color:rgba(255,255,255,.3);
+  background:var(--panel);padding:0 4px;
+}
+
+/* --- Run history --- */
+.run-history{
+  width:100%;max-width:1060px;
+  margin-top:6px;
+  background:var(--panel);
+  border:2px solid var(--border);
+  border-top:3px solid var(--success);
+  overflow:hidden;
+}
+
+/* Pulse sur le wip-count quand valeur change */
+@keyframes vsm-ping{
+  0%{text-shadow:0 0 0 rgba(240,165,0,0)}
+  50%{text-shadow:0 0 16px rgba(240,165,0,.8)}
+  100%{text-shadow:0 0 0 rgba(240,165,0,0)}
+}
+
 </style>
 </head>
 <body>
@@ -359,10 +641,16 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 
 <div class="push-arrow-wrap">
   <div class="push-arrow-btn">
-    <span class="push-label">PUSH</span>
-    <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" class="push-arrow-icon">
-      <polygon points="0,4 38,4 38,0 60,20 38,40 38,36 0,36" fill="#f0a500"/>
+    <svg viewBox="0 0 72 52" xmlns="http://www.w3.org/2000/svg" class="push-arrow-icon">
+      <!-- Corps flèche -->
+      <polygon points="0,14 44,14 44,6 72,26 44,46 44,38 0,38" fill="#f0a500" opacity=".95"/>
+      <!-- Hachures VSM push -->
+      <line x1="8"  y1="14" x2="8"  y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="18" y1="14" x2="18" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="28" y1="14" x2="28" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="38" y1="14" x2="38" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
     </svg>
+    <span class="push-label">PUSH</span>
   </div>
 </div>
 
@@ -386,10 +674,16 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 
 <div class="push-arrow-wrap">
   <div class="push-arrow-btn">
-    <span class="push-label">PUSH</span>
-    <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" class="push-arrow-icon">
-      <polygon points="0,4 38,4 38,0 60,20 38,40 38,36 0,36" fill="#f0a500"/>
+    <svg viewBox="0 0 72 52" xmlns="http://www.w3.org/2000/svg" class="push-arrow-icon">
+      <!-- Corps flèche -->
+      <polygon points="0,14 44,14 44,6 72,26 44,46 44,38 0,38" fill="#f0a500" opacity=".95"/>
+      <!-- Hachures VSM push -->
+      <line x1="8"  y1="14" x2="8"  y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="18" y1="14" x2="18" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="28" y1="14" x2="28" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="38" y1="14" x2="38" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
     </svg>
+    <span class="push-label">PUSH</span>
   </div>
 </div>
 
@@ -426,7 +720,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
   </div>
 
   <div class="data-box">
-    <div class="db-title"><span style="color:var(--accent);margin-right:4px;">▌</span>DATA BOX</div>
+    <div class="db-title">DATA BOX</div>
     <div class="db-row"><span class="db-key">ACTUAL C/T</span><span class="db-val" id="dbCTact">—</span></div>
     <div class="db-row"><span class="db-key">AVG C/T</span><span class="db-val" id="dbCTmoy">—</span></div>
     <div class="db-row"><span class="db-key">MIN C/T</span><span class="db-val" id="dbCTmin">—</span></div>
