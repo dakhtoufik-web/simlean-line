@@ -107,7 +107,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .timer-val.running{color:var(--success);}.timer-val.done{color:var(--cyan);}
 .timer-sub{font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:4px;font-weight:700;}
 
-.data-box{background:var(--panel);border:1px solid var(--border);padding:12px 14px;display:flex;flex-direction:column;min-width:148px;}
+.data-box{background:var(--panel);border:1px solid var(--border);padding:12px 14px;display:flex;flex-direction:column;min-width:148px;flex:1;}
 .db-title{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);font-weight:700;}
 .db-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(30,37,56,.5);}
 .db-row:last-child{border-bottom:none;}
@@ -368,6 +368,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 
   <div class="flux-arrow">→</div>
 
+  <div style="display:flex;flex-direction:column;gap:8px;align-self:stretch;">
   <!-- FLOW MODE PANEL -->
   <div class="wip-box wip-out" style="min-width:160px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;align-items:center;">
 
@@ -416,6 +417,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <div class="db-row"><span class="db-key">C/O TIME</span><span class="db-val accent" id="dbCOtime">—</span></div>
     <div class="db-row"><span class="db-key">C/O COUNT</span><span class="db-val accent" id="dbCOcount">0</span></div>
   </div>
+  </div><!-- end right column -->
 </div>
 
 <div class="bottom-bar">
