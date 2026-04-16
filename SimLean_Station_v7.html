@@ -57,8 +57,11 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .wip-count{font-family:'Share Tech Mono',monospace;font-size:32px;font-weight:700;line-height:1;}
 .wip-in .wip-count{color:var(--cyan);}.wip-out .wip-count{color:var(--success);}
 .wip-sub{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:1px;}
-.flux-arrow{display:flex;align-items:center;justify-content:center;align-self:stretch;padding:0 6px;}
-.flux-arrow-svg{width:48px;height:48px;fill:#f0a500;filter:drop-shadow(0 0 10px rgba(240,165,0,.6));}
+.flux-arrow{display:flex;align-items:flex-end;justify-content:center;align-self:stretch;padding:0 4px;}
+.push-arrow-wrap{display:flex;align-items:flex-end;justify-content:center;align-self:stretch;padding:0 4px;}
+.push-arrow-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:8px;cursor:default;}
+.push-label{font-size:11px;letter-spacing:3px;font-weight:700;color:#f0a500;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;}
+.push-arrow-icon{width:64px;height:42px;filter:drop-shadow(0 0 10px rgba(240,165,0,.55));}
 
 .station-area{flex:1;background:var(--panel);border:1px solid var(--border);padding:10px 12px;}
 .station-title{font-size:11px;letter-spacing:2px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
@@ -354,7 +357,14 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     </div>
   </div>
 
-<div class="flux-arrow"><svg class="flux-arrow-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="#f0a500" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+<div class="push-arrow-wrap">
+  <div class="push-arrow-btn">
+    <span class="push-label">PUSH</span>
+    <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" class="push-arrow-icon">
+      <polygon points="0,4 38,4 38,0 60,20 38,40 38,36 0,36" fill="#f0a500"/>
+    </svg>
+  </div>
+</div>
 
   <div class="station-area">
     <div class="station-title">
@@ -372,7 +382,14 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 
   </div>
 
-<div class="flux-arrow"><svg class="flux-arrow-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="#f0a500" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+<div class="push-arrow-wrap">
+  <div class="push-arrow-btn">
+    <span class="push-label">PUSH</span>
+    <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" class="push-arrow-icon">
+      <polygon points="0,4 38,4 38,0 60,20 38,40 38,36 0,36" fill="#f0a500"/>
+    </svg>
+  </div>
+</div>
 
   <div style="display:flex;flex-direction:column;gap:8px;align-self:stretch;">
   <!-- FLOW MODE PANEL -->
