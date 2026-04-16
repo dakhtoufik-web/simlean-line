@@ -480,7 +480,13 @@ function sortByAdjacency(positions,cols,rows){
 }
 function applyProfile(profileData){
   const p=profileData||DEFAULT_PROFILE;
-  COLS=p.cols||4; ROWS=p.rows||4;
+  const newCols=p.cols||4, newRows=p.rows||4;
+  if(newCols!==COLS||newRows!==ROWS){
+    // Grid size changed → force topology regeneration
+    S.topology=null;
+    S.cornerSides={};
+  }
+  COLS=newCols; ROWS=newRows;
   STATION_POSITIONS={};
   for(let s=1;s<=6;s++){
     const v=p[s]||p[String(s)];
@@ -2122,3 +2128,4 @@ initStation();
 </script>
 </body>
 </html>
+  
