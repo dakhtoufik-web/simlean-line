@@ -1352,11 +1352,13 @@ function renderBoard(justPlacedPos=null){
       cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,fi);});
       // Clic sur zone cible (si pièce sélectionnée par clic dans le buffer)
       cell.addEventListener('click',()=>{
-        if(currentDrag){
-          document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
-          const bIdx2=currentDrag.bufIdx!==undefined?currentDrag.bufIdx:0;
-          handleDrop(bIdx2,fi);
-        }
+        if(!currentDrag) return; // no piece selected from buffer
+        const sel = S.buffer[currentDrag.bufIdx];
+        if(!sel || sel.placed){ currentDrag=null; return; } // selected piece already consumed
+        document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
+        const bIdx2 = currentDrag.bufIdx;
+        currentDrag = null; // clear BEFORE handleDrop to prevent re-entry
+        handleDrop(bIdx2, fi);
       });
     }
     overlay.appendChild(cell);
@@ -1437,7 +1439,6 @@ function handleDrop(bufIdx,targetPos){
     S.buffer[actualBufIdx].placed=true;
     S.placedPositions[targetPos]=actualComp;
     S.currentStep++;
-    currentDrag=null; // force re-selection of next piece from buffer
     document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
     renderBuffer();renderBoard(targetPos);updateBufferProgress();
     // Highlight next expected cell
@@ -2475,3 +2476,4 @@ initStation();
 </script>
 </body>
 </html>
+  
