@@ -1374,33 +1374,31 @@ function handleDrop(bufIdx,targetPos){
   const comp=S.buffer[bufIdx];
   if(!comp||comp.placed)return;
 
-  // Auto-match: if operator dragged wrong shape, find any unplaced piece for this zone
-  let actualComp=comp, actualBufIdx=bufIdx;
-  if(comp.targetPos!==targetPos){
-    const match=S.buffer.findIndex(p=>!p.placed&&p.targetPos===targetPos);
-    if(match===-1){
-      S.errorCount++;S.cycleErrors++;
-      const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
-      if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
-      setMsg(`❌ Wrong position! No matching part left. Errors: ${S.errorCount}`,'err');
-      renderBuffer();return;
-    }
-    actualComp=S.buffer[match];actualBufIdx=match;
-  }
-
-  // ── ORDER CHECK : must follow gamme sequence ──────────────
+  // ── ORDER CHECK : must click the expected next cell ────────
   const expectedIdx = S.gamme[S.currentStep];
   const expectedPos = S.myPieces[expectedIdx]?.targetPos;
   if(targetPos !== expectedPos){
     S.errorCount++;S.cycleErrors++;
     const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
     if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');},400);}
-    const nextNum = S.currentStep + 1;
-    currentDrag=null; // force re-selection from buffer
+    currentDrag=null;
     document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
-    setMsg(`❌ Wrong order! You must place part #${nextNum} next (follow the assembly sequence).`,'err');
+    setMsg(`❌ Wrong cell! Place part #${S.currentStep+1} — click the highlighted cell.`,'err');
     renderBuffer();return;
   }
+
+  // ── PIECE CHECK : selected piece must match this cell ──────
+  if(comp.targetPos !== targetPos){
+    S.errorCount++;S.cycleErrors++;
+    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
+    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');},400);}
+    currentDrag=null;
+    document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
+    setMsg(`❌ Wrong part! Pick part #${S.currentStep+1} from the Storage Area first.`,'err');
+    renderBuffer();return;
+  }
+
+  const actualComp=comp, actualBufIdx=bufIdx;
 
   if(actualComp.targetPos===targetPos){
     // Adjacency check
@@ -2476,4 +2474,3 @@ initStation();
 </script>
 </body>
 </html>
-  
