@@ -1043,8 +1043,14 @@ function pushSessionToFirebase(){
     status: 'running',
     created_at: Date.now()
   });
-  // Init WIP entrant de la station 1 à ∞ (on utilise -1 = infini)
+  // Init WIP entrant : station 1 = ∞, stations 2-N = 0 (reset stale data)
   db.ref(`assembly_line/${F.sessionCode}/stations/s1/wip_in`).set(999);
+  for(let i=2; i<=F.nbStations; i++){
+    db.ref(`assembly_line/${F.sessionCode}/stations/s${i}/wip_in`).set(0);
+    db.ref(`assembly_line/${F.sessionCode}/stations/s${i}/sfg_count`).set(0);
+    db.ref(`assembly_line/${F.sessionCode}/stations/s${i}/storage_waste_pieces`).set(0);
+    db.ref(`assembly_line/${F.sessionCode}/stations/s${i}/storage_waste_sets`).set(0);
+  }
   listenAllStations();
 }
 
@@ -1056,7 +1062,7 @@ function listenAllStations(){
 
     for(let i=0; i<F.nbStations; i++){
       const st = data[`s${i+1}`] || {};
-      const wipIn   = st.wip_in  || 0;
+      const wipIn   = Math.max(0, st.wip_in || 0);
       const wipOut  = st.wip_out || 0;
       const cycles  = st.cycles  || 0;
       const output  = st.output  || 0;
