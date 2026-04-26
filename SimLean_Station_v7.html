@@ -1921,6 +1921,7 @@ const CO_METAL={1:{fill:'#7a9bb5',stroke:'#3a6080',text:'#e8f4ff'},
 let coGrid={cells:[], targetPositions:[], operatorPositions:[], painting:false};
 
 function startChangeover(profileName, profileData, coSignalTime){
+  const wasRunning = S.running; // capture avant de stopper
   if(S.running){S.running=false;cancelAnimationFrame(S.raf);}
   document.getElementById('btnStart').disabled=true;
   document.getElementById('validateBanner').classList.remove('show');
@@ -1975,11 +1976,11 @@ function startChangeover(profileName, profileData, coSignalTime){
     S.topology=null;
     S.cornerSides={};
   }
-  // Reset sfg_count on CO start (before operator clears)
-  if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(1); // 1 = vidage en attente
+  // sfg_count = 1 seulement si un cycle était en cours quand le C/O a été déclenché
+  if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(wasRunning ? 1 : 0);
   // Reset "Vider" button state
   const btnClear = document.getElementById('btnCoClear');
-  if(btnClear){ btnClear.disabled=false; btnClear.classList.remove('done'); btnClear.textContent='🗑 Vider ma station (Semi-Finished Goods)'; }
+  if(btnClear){ btnClear.disabled=!wasRunning; btnClear.classList.remove('done'); btnClear.textContent= wasRunning ? '🗑 Vider ma station (Semi-Finished Goods)' : '✅ Station déjà vide'; }
 
   setMsg(`⚙️ Changeover — Read your Work Order and configure your grid`,'info');
 }
