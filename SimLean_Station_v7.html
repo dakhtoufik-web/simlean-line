@@ -1578,7 +1578,7 @@ function finishCycle(ok){
         S.batchResetTimer=setTimeout(()=>{
           S.batchResetTimer=null;
           // Reset du board pour le prochain cycle (sans toucher wipOut ni batchCount)
-          S.placedPositions={};S.errorCount=0;S.cycleErrors=0;S.cycleWaitMs=0;
+          S.placedPositions={};S.currentStep=0;S.errorCount=0;S.cycleErrors=0;S.cycleWaitMs=0;
           S.started=false;
           document.getElementById('timerDisp').textContent='00.000';
           document.getElementById('timerDisp').className='timer-val';
