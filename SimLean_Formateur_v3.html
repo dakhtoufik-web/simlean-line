@@ -310,8 +310,6 @@ body {
       <label>NB STATIONS</label>
       <select id="cfgStations" onchange="updateStationGridOptions()">
         <option value="4" selected>4 stations</option>
-        <option value="5">5 stations</option>
-        <option value="6">6 stations</option>
       </select>
     </div>
     <div class="setup-field">
@@ -505,16 +503,14 @@ body {
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
 // ── PROFILES & CONFIGURATION ──────────────────────────
 // ── Grilles disponibles par nombre de stations ──────────────────
 const GRID_OPTIONS = {
-  4: [{v:'4x4',l:'4×4 (16 pieces)'},{v:'4x5',l:'4×5 (20 pieces)'},{v:'4x6',l:'4×6 (24 pieces)'}],
-  5: [{v:'5x5',l:'5×5 (25 pieces)'},{v:'5x6',l:'5×6 (30 pieces)'},{v:'5x7',l:'5×7 (35 pieces)'}],
-  6: [{v:'6x5',l:'6×5 (30 pieces)'},{v:'6x6',l:'6×6 (36 pieces)'},{v:'6x7',l:'6×7 (42 pieces)'}],
+  4: [{v:'4x4',l:'4×4 (16 pieces)'},{v:'4x5',l:'4×5 (20 pieces)'}],
 };
 
 function parseGridSize(gs){
@@ -916,7 +912,7 @@ function renderLinks(){
   tbody.innerHTML = '';
 
   const base = F.baseUrl || window.location.href.replace(/\/[^/]*(\?.*)?$/, '');
-  const stationFile = 'SimLean_Station_v7.html';
+  const stationFile = 'SimLean_Station_v12.html';
 
   F.stations.forEach((st, i)=>{
     const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}`;
@@ -933,7 +929,7 @@ function renderLinks(){
 
   // Trainer link — hardcoded pour éviter toute confusion
   const trF = document.createElement('tr');
-  const urlF = `${base}/SimLean_Formateur_v3.html?session=${F.sessionCode}`;
+  const urlF = `${base}/SimLean_Formateur_v7.html?session=${F.sessionCode}`;
   trF.innerHTML = `
     <td><strong style="color:var(--danger);">Trainer</strong></td>
     <td style="color:#888;">Global View</td>
@@ -1534,4 +1530,3 @@ window.addEventListener('load', ()=>tryInitFirebase(0));
 </script>
 </body>
 </html>
-
