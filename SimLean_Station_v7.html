@@ -201,6 +201,13 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .btn-co-clear:hover:not(:disabled){background:rgba(232,64,64,.25);box-shadow:0 0 12px rgba(232,64,64,.3);}
 .btn-co-clear:disabled{opacity:.4;cursor:default;}
 .btn-co-clear.done{border-color:var(--success);background:rgba(61,232,138,.12);color:var(--success);}
+.btn-co-storage{display:block;width:100%;padding:10px 0;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:2px solid var(--accent);background:rgba(240,165,0,.12);color:var(--accent);margin-top:8px;transition:all .2s;}
+.btn-co-storage:hover:not(:disabled){background:rgba(240,165,0,.25);box-shadow:0 0 12px rgba(240,165,0,.3);}
+.btn-co-storage:disabled{opacity:.4;cursor:default;}
+.btn-co-storage.done{border-color:var(--success);background:rgba(61,232,138,.12);color:var(--success);}
+.co-waste-box{background:rgba(240,165,0,.08);border:1px solid var(--accent);padding:8px 12px;margin-top:10px;font-size:11px;letter-spacing:1px;}
+.co-waste-val{font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;color:var(--accent);margin-top:4px;}
+.co-waste-zero{color:#555;}
 .btn-co-validate{display:none;width:100%;padding:14px;font-family:'Barlow Condensed',sans-serif;
   font-size:16px;font-weight:900;letter-spacing:3px;border:none;cursor:pointer;
   background:var(--success);color:#000;text-transform:uppercase;transition:all .2s;}
@@ -566,6 +573,16 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
           <div class="co-error-msg" id="coErrorMsg"></div>
         </div>
 
+        <!-- Waste zone stockage -->
+        <div class="co-waste-box" id="coWasteBox">
+          <div style="font-size:9px;letter-spacing:2px;color:var(--muted);font-weight:700;">📦 STORAGE AREA WASTE — PIÈCES PÉRIMÉES</div>
+          <div class="co-waste-val" id="coWasteVal">—</div>
+          <div style="font-size:10px;color:#888;margin-top:2px;" id="coWasteSets">Aucun cycle terminé</div>
+        </div>
+        <!-- Vider zone de stockage -->
+        <button class="btn-co-storage" id="btnCoStorage" onclick="viderStorage()">
+          📦 Vider zone de stockage (pièces périmées)
+        </button>
         <!-- Vider la station — opérateur responsable, timer C/O continue -->
         <button class="btn-co-clear" id="btnCoClear" onclick="viderStation()">
           🗑 Vider ma station (Semi-Finished Goods)
@@ -902,6 +919,9 @@ let S={
   coRunning:false,
   coProfileLabel:'',
   currentStep:0,
+  coWastePieces:0,coWasteSets:0,  // gaspillage storage au C/O courant
+  coStorageCleared:true,          // zone de stockage vidée pendant C/O
+  coSfgCleared:true,              // SFG vidé pendant C/O
   runs:[],
   batchMode:false,   // true = batch mode
   batchSize:1,       // nb cycles before sending downstream
@@ -1976,6 +1996,44 @@ function startChangeover(profileName, profileData, coSignalTime){
     S.topology=null;
     S.cornerSides={};
   }
+  // ── Calcul du gaspillage Storage Area ─────────────────────────
+  const unplacedPieces = S.buffer ? S.buffer.filter(p=>!p.placed).length : 0;
+  const piecesPerSet   = S.myPieces ? S.myPieces.length : 1;
+  const wasteSets      = piecesPerSet > 0 ? Math.floor(unplacedPieces / piecesPerSet) : 0;
+  S.coWastePieces = unplacedPieces;
+  S.coWasteSets   = wasteSets;
+  S.coStorageCleared = (unplacedPieces === 0); // déjà vide = pas besoin d'action
+  S.coSfgCleared     = !wasRunning;            // pas de cycle en cours = pas de SFG
+
+  // Afficher dans l'overlay
+  const wasteValEl  = document.getElementById('coWasteVal');
+  const wasteSetsEl = document.getElementById('coWasteSets');
+  if(wasteValEl){
+    if(unplacedPieces > 0){
+      wasteValEl.textContent = `${unplacedPieces} pièce(s) perdues`;
+      wasteValEl.className   = 'co-waste-val';
+      if(wasteSetsEl) wasteSetsEl.textContent = `= ${wasteSets} set(s) complet(s) gaspillé(s)`;
+    } else {
+      wasteValEl.textContent = '0 — Zone déjà vide';
+      wasteValEl.className   = 'co-waste-val co-waste-zero';
+      if(wasteSetsEl) wasteSetsEl.textContent = 'Aucun gaspillage';
+    }
+  }
+
+  // Bouton "Vider stockage" : désactivé si déjà vide
+  const btnStorage = document.getElementById('btnCoStorage');
+  if(btnStorage){
+    if(unplacedPieces === 0){
+      btnStorage.disabled = true;
+      btnStorage.classList.add('done');
+      btnStorage.textContent = '✅ Zone de stockage vide';
+    } else {
+      btnStorage.disabled = false;
+      btnStorage.classList.remove('done');
+      btnStorage.textContent = `📦 Vider zone de stockage (${unplacedPieces} pièces / ${wasteSets} set(s))`;
+    }
+  }
+
   // sfg_count = 1 seulement si un cycle était en cours quand le C/O a été déclenché
   if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(wasRunning ? 1 : 0);
   // Reset "Vider" button state
@@ -1985,22 +2043,50 @@ function startChangeover(profileName, profileData, coSignalTime){
   setMsg(`⚙️ Changeover — Read your Work Order and configure your grid`,'info');
 }
 
+// ── VIDER LA ZONE DE STOCKAGE (pièces périmées au C/O) ──
+function viderStorage(){
+  const btn = document.getElementById('btnCoStorage');
+  if(!btn || btn.disabled) return;
+  // Compter les pièces perdues avant de vider
+  const wasteP = S.coWastePieces || 0;
+  const wasteS = S.coWasteSets   || 0;
+  // Vider buffer local
+  if(S.buffer) S.buffer.forEach(p=>{ p.placed=true; });
+  S.bufferEmpty = true;
+  S.coStorageCleared = true;
+  // Firebase : cumulatif storage_waste
+  if(db && wasteP > 0){
+    const ref = db.ref(`assembly_line/${SESSION}/stations/s${STATION}`);
+    ref.child('storage_waste_pieces').transaction(v=>(v||0)+wasteP);
+    ref.child('storage_waste_sets').transaction(v=>(v||0)+wasteS);
+  }
+  btn.disabled = true;
+  btn.classList.add('done');
+  btn.textContent = `✅ Stockage vidé — ${wasteP} pièce(s) / ${wasteS} set(s) retirés`;
+  setMsg(`📦 Zone de stockage vidée — ${wasteP} pièce(s) périmée(s) retirées. Timer C/O continue.`,'info');
+  checkCOReadiness();
+}
+
 // ── VIDER LA STATION (opérateur responsable pendant C/O) ──
 function viderStation(){
   const btn = document.getElementById('btnCoClear');
   if(!btn || btn.disabled) return;
-  // Vider le buffer local
-  if(S.buffer) S.buffer.forEach(p=>{ p.placed=true; });
-  S.bufferEmpty = true;
   S.placedPositions = {};
   S.currentStep = 0;
-  // Firebase : remettre sfg_count à 0
+  S.coSfgCleared = true;
   if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(0);
-  // UI feedback
   btn.disabled = true;
   btn.classList.add('done');
   btn.textContent = '✅ Station vidée — prête pour le changeover';
   setMsg('✅ Station vidée — WIP remis à zéro. Timer C/O continue.','ok');
+  checkCOReadiness();
+}
+
+// ── Vérifier si les deux actions de vidage sont complètes ──
+function checkCOReadiness(){
+  if(S.coStorageCleared && S.coSfgCleared){
+    setMsg('✅ Station et stockage vidés — Configurez votre grille puis validez le C/O','ok');
+  }
 }
 
 
