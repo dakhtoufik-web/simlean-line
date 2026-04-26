@@ -771,8 +771,8 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
   </table>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 let COLS=4, ROWS=4;
@@ -1505,10 +1505,22 @@ function _doStartCycle(){
   setMsg('▶ Pick a part → Place it on the assembly frame','ok');
   document.getElementById('btnStart').disabled=true;
   renderBuffer();renderBoard();
+  // ── Highlight first expected cell ──────────────────────
+  const _firstPos = S.myPieces[S.gamme[0]]?.targetPos;
+  if(_firstPos !== undefined){
+    setTimeout(()=>{
+      const _firstCell = document.getElementById('puzzleBoard')
+                         .querySelector(`[data-pos="${_firstPos}"]`);
+      if(_firstCell){
+        _firstCell.style.boxShadow   = '0 0 0 3px var(--success)';
+        _firstCell.style.borderColor = 'var(--success)';
+      }
+    }, 80);
+  }
 }
 function runTimer(){
   const el=document.getElementById('timerDisp');
-  function tick(){if(!S.running)return;el.textContent=fmt(performance.now()-S.startTime);S.raf=requestAnimationFrame(tick);}
+  function tick(){if(!S.running)return;el.textContent=((performance.now()-S.startTime)/1000).toFixed(3);S.raf=requestAnimationFrame(tick);}
   S.raf=requestAnimationFrame(tick);
 }
 function finishCycle(ok){
