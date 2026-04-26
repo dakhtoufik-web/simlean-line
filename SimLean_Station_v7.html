@@ -1907,6 +1907,7 @@ function listenSessionConfig(){
       S.lastResetSignal=cfg.reset_signal;
       abortCO();
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);S.batchCount=0;
+      if(db) db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).set(STATION===1?999:0);
       S.replenStatus='idle';cancelAnimationFrame(S.replenRaf);hideReplenStatus();
       initBuffer();
       if(S.batchResetTimer){clearTimeout(S.batchResetTimer);S.batchResetTimer=null;}
@@ -2609,3 +2610,4 @@ initStation();
 </script>
 </body>
 </html
+  
