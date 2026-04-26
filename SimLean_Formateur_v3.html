@@ -92,6 +92,8 @@ body {
 /* FLUX VISUEL */
 .sc-sfg{font-size:10px;letter-spacing:1px;font-weight:700;margin-top:4px;color:#e84040;display:flex;align-items:center;gap:4px;}
 .sc-sfg.zero{color:#555;}
+.sc-waste{font-size:10px;letter-spacing:1px;font-weight:700;margin-top:2px;color:var(--accent);display:flex;align-items:center;gap:4px;}
+.sc-waste.zero{color:#555;}
 .flux-container {
   display:flex; align-items:center; gap:0;
   overflow-x:auto; padding:10px 0; margin-bottom:20px;
@@ -886,7 +888,8 @@ function renderFlux(){
         <span class="sc-wip-in">↓ IN: <span id="scWipIn${i}">0</span></span>
         <span class="sc-wip-out">OUT: <span id="scWipOut${i}">0</span> ↑</span>
       </div>
-      <div class="sc-sfg zero" id="scSfg${i}">▲ SFG: <span id="scSfgVal${i}">0</span></div>`;
+      <div class="sc-sfg zero" id="scSfg${i}">▲ SFG: <span id="scSfgVal${i}">0</span></div>
+      <div class="sc-waste zero" id="scWaste${i}">▼ WASTE: <span id="scWasteVal${i}">0</span>pc / <span id="scWasteSetsVal${i}">0</span>set(s)</div>`;
     container.appendChild(card);
   });
 
@@ -1088,6 +1091,16 @@ function listenAllStations(){
       const sfgValEl = document.getElementById(`scSfgVal${i}`);
       if(sfgValEl) sfgValEl.textContent = sfgCount;
       if(sfgEl){ sfgEl.className = sfgCount > 0 ? 'sc-sfg' : 'sc-sfg zero'; }
+
+      // Storage waste badge (cumulatif)
+      const wasteP = st.storage_waste_pieces || 0;
+      const wasteS = st.storage_waste_sets   || 0;
+      const wasteEl    = document.getElementById(`scWaste${i}`);
+      const wastePEl   = document.getElementById(`scWasteVal${i}`);
+      const wasteSEl   = document.getElementById(`scWasteSetsVal${i}`);
+      if(wastePEl) wastePEl.textContent = wasteP;
+      if(wasteSEl) wasteSEl.textContent = wasteS;
+      if(wasteEl){ wasteEl.className = wasteP > 0 ? 'sc-waste' : 'sc-waste zero'; }
 
       // Update WIP arrow entre stations
       const arrowEl = document.getElementById(`arrowWip${i}`);
