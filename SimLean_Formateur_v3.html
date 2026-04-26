@@ -90,6 +90,8 @@ body {
 .si-url   { font-size:10px; color:#888; word-break:break-all; }
 
 /* FLUX VISUEL */
+.sc-sfg{font-size:10px;letter-spacing:1px;font-weight:700;margin-top:4px;color:#e84040;display:flex;align-items:center;gap:4px;}
+.sc-sfg.zero{color:#555;}
 .flux-container {
   display:flex; align-items:center; gap:0;
   overflow-x:auto; padding:10px 0; margin-bottom:20px;
@@ -883,7 +885,8 @@ function renderFlux(){
       <div class="sc-wip-row">
         <span class="sc-wip-in">↓ IN: <span id="scWipIn${i}">0</span></span>
         <span class="sc-wip-out">OUT: <span id="scWipOut${i}">0</span> ↑</span>
-      </div>`;
+      </div>
+      <div class="sc-sfg zero" id="scSfg${i}">▲ SFG: <span id="scSfgVal${i}">0</span></div>`;
     container.appendChild(card);
   });
 
@@ -1078,6 +1081,13 @@ function listenAllStations(){
       if(el(`scCycles${i}`))  el(`scCycles${i}`).textContent  = cycles;
       if(el(`scWipIn${i}`))   el(`scWipIn${i}`).textContent   = wipIn === 999 ? '∞' : wipIn;
       if(el(`scWipOut${i}`))  el(`scWipOut${i}`).textContent  = wipOut;
+
+      // SFG badge
+      const sfgCount = st.sfg_count || 0;
+      const sfgEl = document.getElementById(`scSfg${i}`);
+      const sfgValEl = document.getElementById(`scSfgVal${i}`);
+      if(sfgValEl) sfgValEl.textContent = sfgCount;
+      if(sfgEl){ sfgEl.className = sfgCount > 0 ? 'sc-sfg' : 'sc-sfg zero'; }
 
       // Update WIP arrow entre stations
       const arrowEl = document.getElementById(`arrowWip${i}`);
