@@ -197,6 +197,10 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .co-prog-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
 .co-prog-bar{height:100%;background:var(--accent);transition:width .3s;border-radius:3px;}
 .co-prog-bar.complete{background:var(--success);}
+.btn-co-clear{display:block;width:100%;padding:10px 0;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:2px solid #e84040;background:rgba(232,64,64,.12);color:#e84040;margin-top:8px;transition:all .2s;}
+.btn-co-clear:hover:not(:disabled){background:rgba(232,64,64,.25);box-shadow:0 0 12px rgba(232,64,64,.3);}
+.btn-co-clear:disabled{opacity:.4;cursor:default;}
+.btn-co-clear.done{border-color:var(--success);background:rgba(61,232,138,.12);color:var(--success);}
 .btn-co-validate{display:none;width:100%;padding:14px;font-family:'Barlow Condensed',sans-serif;
   font-size:16px;font-weight:900;letter-spacing:3px;border:none;cursor:pointer;
   background:var(--success);color:#000;text-transform:uppercase;transition:all .2s;}
@@ -562,6 +566,10 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
           <div class="co-error-msg" id="coErrorMsg"></div>
         </div>
 
+        <!-- Vider la station — opérateur responsable, timer C/O continue -->
+        <button class="btn-co-clear" id="btnCoClear" onclick="viderStation()">
+          🗑 Vider ma station (Semi-Finished Goods)
+        </button>
         <button class="btn-co-validate" id="btnCoValidate" onclick="validateChangeover()"
           style="margin-top:10px;">
           ✅ Validate Changeover
@@ -1501,6 +1509,7 @@ function _doStartCycle(){
   if(S.batchResetTimer){clearTimeout(S.batchResetTimer);S.batchResetTimer=null;}
   if(!S.currentRun)startRun('Initial Run');
   S.running=true;
+  if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(1);
   document.getElementById('timerDisp').classList.add('running');
   setMsg('▶ Pick a part → Place it on the assembly frame','ok');
   document.getElementById('btnStart').disabled=true;
@@ -1542,6 +1551,7 @@ function finishCycle(ok){
   }
   if(ok){
     S.output++;S.wipOut++;S.history.push(elapsed);
+    if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(0);
     if(S.errorCount===0) S.fty++;
     const isLast=(STATION===NB_STATIONS);
     if(isLast){
@@ -1965,8 +1975,34 @@ function startChangeover(profileName, profileData, coSignalTime){
     S.topology=null;
     S.cornerSides={};
   }
+  // Reset sfg_count on CO start (before operator clears)
+  if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(1); // 1 = vidage en attente
+  // Reset "Vider" button state
+  const btnClear = document.getElementById('btnCoClear');
+  if(btnClear){ btnClear.disabled=false; btnClear.classList.remove('done'); btnClear.textContent='🗑 Vider ma station (Semi-Finished Goods)'; }
+
   setMsg(`⚙️ Changeover — Read your Work Order and configure your grid`,'info');
 }
+
+// ── VIDER LA STATION (opérateur responsable pendant C/O) ──
+function viderStation(){
+  const btn = document.getElementById('btnCoClear');
+  if(!btn || btn.disabled) return;
+  // Vider le buffer local
+  if(S.buffer) S.buffer.forEach(p=>{ p.placed=true; });
+  S.bufferEmpty = true;
+  S.placedPositions = {};
+  S.currentStep = 0;
+  // Firebase : remettre sfg_count à 0
+  if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(0);
+  // UI feedback
+  btn.disabled = true;
+  btn.classList.add('done');
+  btn.textContent = '✅ Station vidée — prête pour le changeover';
+  setMsg('✅ Station vidée — WIP remis à zéro. Timer C/O continue.','ok');
+}
+
+
 
 function buildReferenceGrid(profileData){
   // Update profile name display
@@ -2485,4 +2521,4 @@ document.getElementById('btnReset').addEventListener('click',()=>{
 initStation();
 </script>
 </body>
-</html>
+</html
