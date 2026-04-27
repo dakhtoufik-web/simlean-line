@@ -857,6 +857,10 @@ document.getElementById('btnResetAll').addEventListener('click', ()=>{
   db.ref(`assembly_line/${F.sessionCode}/puzzle_queue`).remove();
   // Reset client output
   db.ref(`assembly_line/${F.sessionCode}/stations/s${F.nbStations}/client_output`).set(0);
+  // Clear stop flags on all stations
+  for(let i=1; i<=F.nbStations; i++){
+    db.ref(`assembly_line/${F.sessionCode}/stations/s${i}/stop_active`).set(false);
+  }
   // Signal reset to all stations
   db.ref(`assembly_line/${F.sessionCode}/config/reset_signal`).set(Date.now());
   setConn('online', `Session ${F.sessionCode} — Reset complete ✓`);
@@ -1092,6 +1096,10 @@ function pushSessionToFirebase(){
     db.ref(`assembly_line/${F.sessionCode}/stations/s${i}/sfg_count`).set(0);
     db.ref(`assembly_line/${F.sessionCode}/stations/s${i}/storage_waste_pieces`).set(0);
     db.ref(`assembly_line/${F.sessionCode}/stations/s${i}/storage_waste_sets`).set(0);
+  }
+  // Clear stale stop flags from previous session
+  for(let i=1; i<=F.nbStations; i++){
+    db.ref(`assembly_line/${F.sessionCode}/stations/s${i}/stop_active`).set(false);
   }
   listenAllStations();
 }
