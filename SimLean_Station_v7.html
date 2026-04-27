@@ -29,7 +29,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .conn-dot.waiting{background:var(--accent);animation:pulse .8s infinite alternate;}
 @keyframes pulse{from{opacity:.6}to{opacity:1}}
 
-.chrono-bar{width:100%;max-width:1060px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;}
+.chrono-bar{width:100%;max-width:1060px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;margin-bottom:8px;}
 .chrono-cell{background:var(--panel);border:1px solid var(--border);padding:5px 8px;text-align:center;}
 .chrono-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
 .chrono-val{font-family:'Share Tech Mono',monospace;font-size:18px;line-height:1.1;}
@@ -613,6 +613,11 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
   <div class="chrono-cell"><div class="chrono-label">⏰ Clock</div><div class="chrono-val cv-clock" id="clockDisp">--:--:--</div></div>
   <div class="chrono-cell"><div class="chrono-label">⏱ Time on Station</div><div class="chrono-val cv-time" id="sessionTimerDisp">00:00:00</div></div>
   <div class="chrono-cell"><div class="chrono-label">⏸ WAIT Total Time</div><div class="chrono-val" style="color:var(--danger);" id="waitTotalDisp">00:00:00</div></div>
+  <div class="chrono-cell" id="downtimeChronoCell" style="border-color:rgba(232,64,64,0.4);">
+    <div class="chrono-label" style="color:var(--danger);">⛔ DOWNTIME Total</div>
+    <div class="chrono-val" style="color:var(--danger);" id="downtimeTotalDisp">00:00:00</div>
+    <div style="font-size:9px;color:#555;margin-top:2px;" id="downtimeCountDisp">0 stops</div>
+  </div>
   <div class="chrono-cell"><div class="chrono-label">📊 Utilization Rate</div><div class="chrono-val cv-occ" id="occDisp">—</div><div class="occ-bar-wrap"><div class="occ-bar-fill" id="occBar" style="width:0%"></div></div></div>
   <div class="chrono-cell"><div class="chrono-label">⏱ Takt Time</div><div class="chrono-val" style="color:var(--text);" id="taktDisp">—</div></div>
 </div>
@@ -657,6 +662,18 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
       <button class="btn btn-primary" id="btnStart" disabled style="flex:1;font-size:11px;padding:7px 6px;">▶ Start Cycle</button>
       <button class="btn" style="font-size:11px;background:#c0392b;color:#fff;border-color:#c0392b;flex:1;padding:7px 6px;" id="btnReset">↺ Reset</button>
+    </div>
+    <button id="btnStop" onclick="toggleStop()"
+      style="width:100%;background:#2a0a0a;border:2px solid var(--danger);color:var(--danger);
+             font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;
+             letter-spacing:2px;padding:7px 6px;cursor:pointer;border-radius:6px;
+             text-align:center;transition:all .2s;">
+      🛑 STOP
+    </button>
+    <div id="stopLiveDisp" style="display:none;text-align:center;font-family:'Share Tech Mono',monospace;
+         font-size:14px;color:var(--danger);font-weight:700;letter-spacing:2px;
+         background:rgba(232,64,64,.1);border:1px solid var(--danger);border-radius:4px;padding:4px;">
+      ⛔ <span id="stopLiveTimer">00:00</span>
     </div>
     <div style="background:var(--panel);border:1px solid var(--border);padding:8px 10px;text-align:center;">
       <div class="timer-val" id="timerDisp" style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);">00.000</div>
@@ -786,6 +803,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
         <th style="text-align:left;">RUN / CONFIG</th>
         <th>C/T</th>
         <th>WAIT</th>
+        <th>DOWNTIME</th>
         <th>ERRORS</th>
         <th>PASS</th>
       </tr>
@@ -914,6 +932,12 @@ let S={
   cycleWaitMs:0,     // wait captured at 1st drag of cycle
   cycleErrors:0,     // erreurs du cycle courant
   totalWaitMs:0,     // cumul total des temps d'attente session
+  stopStart:null,    // timestamp when STOP pressed
+  stopRaf:null,      // RAF for stop live display
+  totalStopMs:0,     // cumulative downtime this session
+  stopCount:0,       // number of stop events
+  runStopMs:0,       // downtime accrued in current run (between C/O)
+  cycleStopMs:0,     // downtime in current cycle
   customerDemand:0,  // demand set by trainer (Station 1)
   runOutputStart:0,  // S.output at start of current run (pour calcul demand par run)
   coRunning:false,
@@ -1196,7 +1220,7 @@ function initCycle(){
   S.placedPositions={};
   S.currentStep=0;
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
-  S.cycleErrors=0;S.cycleWaitMs=0;
+  S.cycleErrors=0;S.cycleWaitMs=0;S.cycleStopMs=0;
   // waitStart intentionally not reset — persiste si wipIn > 0
   const scrapEl=document.getElementById('dbScrap');
   if(scrapEl)scrapEl.textContent='0';
@@ -1565,6 +1589,7 @@ function finishCycle(ok){
     S.currentRun.cyclesData.push({
       ct: elapsed,
       waitMs: S.cycleWaitMs,
+      downtimeMs: S.cycleStopMs||0,
       errors: S.cycleErrors,
       passed: ok
     });
@@ -1914,6 +1939,15 @@ function listenSessionConfig(){
       S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;S.totalWaitMs=0;
       if(S.waitRaf){cancelAnimationFrame(S.waitRaf);S.waitRaf=null;}
       S.waitStart=null;updateWaitTotal();
+      // Reset downtime
+      if(S.stopStart!==null){
+        cancelAnimationFrame(S.stopRaf);S.stopRaf=null;S.stopStart=null;
+        const btnStop=document.getElementById('btnStop');
+        if(btnStop){btnStop.style.background='#2a0a0a';btnStop.style.color='var(--danger)';btnStop.textContent='🛑 STOP';}
+        document.getElementById('stopLiveDisp').style.display='none';
+      }
+      S.totalStopMs=0;S.stopCount=0;S.runStopMs=0;S.cycleStopMs=0;
+      updateDowntimeDisplay();
       S.topology=null;S.cornerSides={};
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
       // Réactiver le bouton Start si commande était épuisée
@@ -2398,6 +2432,91 @@ function stopWaitTimer(){
   if(S.waitRaf){cancelAnimationFrame(S.waitRaf);S.waitRaf=null;}
   renderRunTable();
 }
+
+// ── DOWNTIME (manual STOP) ────────────────────────────────────────────────────
+function toggleStop(){
+  if(S.stopStart===null){
+    // --- Activate STOP ---
+    S.stopStart=performance.now();
+    S.stopCount++;
+    // Pause wait timer while stopped
+    if(S.waitStart!==null){
+      S.totalWaitMs+=performance.now()-S.waitStart;
+      S.waitStart=null;
+      stopWaitTimer();
+    }
+    // Disable Start Cycle
+    const btnS=document.getElementById('btnStart');
+    if(btnS){btnS.disabled=true;}
+    // Update STOP button appearance
+    const btnStop=document.getElementById('btnStop');
+    if(btnStop){
+      btnStop.style.background='var(--danger)';
+      btnStop.style.color='#fff';
+      btnStop.textContent='▶ RESUME';
+    }
+    document.getElementById('stopLiveDisp').style.display='block';
+    startStopTimer();
+  } else {
+    // --- Resume ---
+    const elapsed=performance.now()-S.stopStart;
+    S.totalStopMs+=elapsed;
+    S.runStopMs+=elapsed;
+    S.cycleStopMs=(S.cycleStopMs||0)+elapsed;
+    S.stopStart=null;
+    cancelAnimationFrame(S.stopRaf);S.stopRaf=null;
+    document.getElementById('stopLiveDisp').style.display='none';
+    // Restore STOP button
+    const btnStop=document.getElementById('btnStop');
+    if(btnStop){
+      btnStop.style.background='#2a0a0a';
+      btnStop.style.color='var(--danger)';
+      btnStop.textContent='🛑 STOP';
+    }
+    // Re-enable Start Cycle if conditions allow
+    updateStartBtn();
+    // Re-check wait timer
+    checkWaitTimer();
+    updateDowntimeDisplay();
+  }
+}
+
+function updateStartBtn(){
+  if(S.stopStart!==null)return; // still stopped
+  const btn=document.getElementById('btnStart');
+  if(!btn)return;
+  const batchBlocking=S.wipOut>0&&!(S.batchMode&&S.batchCount<S.batchSize);
+  if(S.running)return;
+  if(batchBlocking){btn.disabled=true;btn.textContent='⏳ Send Downstream First';}
+  else if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+  else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
+}
+
+function startStopTimer(){
+  function tickStop(){
+    if(S.stopStart===null)return;
+    const ms=performance.now()-S.stopStart;
+    const el=document.getElementById('stopLiveTimer');
+    if(el){
+      const t=Math.floor(ms/1000);
+      el.textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+    }
+    updateDowntimeDisplay(ms);
+    S.stopRaf=requestAnimationFrame(tickStop);
+  }
+  S.stopRaf=requestAnimationFrame(tickStop);
+}
+
+function updateDowntimeDisplay(liveMs){
+  const total=S.totalStopMs+(liveMs||0);
+  const el=document.getElementById('downtimeTotalDisp');
+  if(el)el.textContent=fmtHMS(total);
+  const cnt=document.getElementById('downtimeCountDisp');
+  if(cnt)cnt.textContent=S.stopCount+' stop'+(S.stopCount!==1?'s':'');
+  // Red glow on chrono cell when active
+  const cell=document.getElementById('downtimeChronoCell');
+  if(cell)cell.style.background=S.stopStart!==null?'rgba(232,64,64,.12)':'';
+}
 function checkWaitTimer(){
   const shouldRun=!S.running&&(STATION===1||S.wipIn>0);
   if(shouldRun&&S.waitStart===null) startWaitTimer();
@@ -2420,12 +2539,12 @@ function renderRunTable(){
   const isWaiting=S.waitStart!==null&&!S.started;
   idleTr.style.cssText='background:rgba(0,194,168,.06);display:'+(isWaiting?'':'none')+';';
   const waitMs=isWaiting?performance.now()-S.waitStart:0;
-  idleTr.innerHTML=`<td colspan="5" style="font-size:11px;letter-spacing:2px;color:var(--cyan);text-align:center;padding:6px;font-family:'Share Tech Mono',monospace;">⏸  WAIT : ${fmtHMS(waitMs)}</td>`;
+  idleTr.innerHTML=`<td colspan="6" style="font-size:11px;letter-spacing:2px;color:var(--cyan);text-align:center;padding:6px;font-family:'Share Tech Mono',monospace;">⏸  WAIT : ${fmtHMS(waitMs)}</td>`;
   tbody.appendChild(idleTr);
 
   if(!allRuns.length){
     const emptyTr=document.createElement('tr');
-    emptyTr.innerHTML=`<td colspan="5" style="color:#444;font-size:10px;padding:10px;text-align:center;">Start a cycle to begin tracking.</td>`;
+    emptyTr.innerHTML=`<td colspan="6" style="color:#444;font-size:10px;padding:10px;text-align:center;">Start a cycle to begin tracking.</td>`;
     tbody.appendChild(emptyTr);
     return;
   }
@@ -2438,25 +2557,27 @@ function renderRunTable(){
     const sepTr=document.createElement('tr');
     sepTr.style.cssText='background:rgba(240,165,0,.07);';
     const coLabel=r.coSec!==null?`⚙ C/O : ${r.coSec}s`:'⚙ Initial Run';
-    sepTr.innerHTML=`<td colspan="5" style="font-size:9px;letter-spacing:2px;color:var(--accent);text-align:left;padding:4px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;">${coLabel} — <span style="color:#555;">${r.label}</span>${isCurrent?' <span style="color:var(--success);">▶ IN PROGRESS</span>':''}</td>`;
+    sepTr.innerHTML=`<td colspan="6" style="font-size:9px;letter-spacing:2px;color:var(--accent);text-align:left;padding:4px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;">${coLabel} — <span style="color:#555;">${r.label}</span>${isCurrent?' <span style="color:var(--success);">▶ IN PROGRESS</span>':''}</td>`;
     tbody.appendChild(sepTr);
     // ── 1 ligne par cycle ───────────────────────────────────────────────────
     const cycles=r.cyclesData||[];
     if(!cycles.length){
       const emptyTr=document.createElement('tr');
-      emptyTr.innerHTML=`<td colspan="5" style="color:#333;font-size:10px;padding:6px;text-align:center;">No cycles</td>`;
+      emptyTr.innerHTML=`<td colspan="6" style="color:#333;font-size:10px;padding:6px;text-align:center;">No cycles</td>`;
       tbody.appendChild(emptyTr);
     } else {
       cycles.slice().reverse().forEach((c,ci)=>{
         const cycleNum=cycles.length-ci;
         const ctMs=c.ct||0;
         const ctOk=ctMs>0&&ctMs<=taktMs;
+        const dtMs=c.downtimeMs||0;
         const tr=document.createElement('tr');
         if(isCurrent&&ci===0)tr.className='run-current';
         tr.innerHTML=`
           <td style="color:#555;font-size:10px;padding:4px 8px;text-align:left;">  Cycle ${cycleNum}</td>
           <td class="${ctMs>0?(ctOk?'good':'bad'):''}">${ctMs>0?Math.round(ctMs/1000)+'s':'—'}</td>
           <td>${(c.waitMs||0)>500?Math.round(c.waitMs/1000)+'s':'—'}</td>
+          <td class="${dtMs>0?'bad':''}" style="${dtMs>0?'color:var(--danger);':''}">${dtMs>500?Math.round(dtMs/1000)+'s':'—'}</td>
           <td class="${(c.errors||0)>0?'bad':''}">${c.errors||0}</td>
           <td class="${c.passed?'good':'bad'}">${c.passed?'✓':'✗'}</td>`;
         tbody.appendChild(tr);
@@ -2603,6 +2724,12 @@ document.getElementById('btnValidate').addEventListener('click',validatePiece);
 document.getElementById('btnReset').addEventListener('click',()=>{
   S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.history=[];S.puzzleState={};
   S.totalWaitMs=0;if(S.waitRaf){cancelAnimationFrame(S.waitRaf);S.waitRaf=null;}S.waitStart=null;
+  S.totalStopMs=0;S.stopCount=0;S.runStopMs=0;S.cycleStopMs=0;
+  if(S.stopStart!==null){cancelAnimationFrame(S.stopRaf);S.stopRaf=null;S.stopStart=null;
+    const btnStop=document.getElementById('btnStop');
+    if(btnStop){btnStop.style.background='#2a0a0a';btnStop.style.color='var(--danger)';btnStop.textContent='🛑 STOP';}
+    document.getElementById('stopLiveDisp').style.display='none';}
+  updateDowntimeDisplay();
   updateWaitTotal();updateWIPDisplay();initCycle();setMsg('Session reset','info');
 });
 
