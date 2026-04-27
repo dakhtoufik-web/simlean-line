@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Station v8</title>
+<title>SimLean Assembly Line — Station</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
 :root{
@@ -235,7 +235,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 .replen-countdown{font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--cyan);}
 
 /* ═══════════════════════════════════════════════
-   VSM FLOW — REDESIGN PRÉSENTATION
+   VSM FLOW — LAYOUT
    ═══════════════════════════════════════════════ */
 
 /* --- Flux row : ligne de flux VSM --- */
@@ -268,7 +268,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
   z-index:1;
 }
 
-/* Étiquette de processus VSM dans le coin sup gauche */
+/* VSM process label — top left corner */
 .station-area::before{
   content:'PROCESS';
   position:absolute;
@@ -280,7 +280,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
   text-transform:uppercase;
 }
 
-/* --- Boîtes WIP (stocks) --- */
+/* --- WIP boxes (inventory) --- */
 .wip-box{
   background:var(--panel);
   border:2px solid var(--border);
@@ -355,7 +355,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 }
 .data-box::before{
   content:'DATA BOX';
-  display:none; /* géré par .db-title */
+  display:none; /* managed by .db-title */
 }
 .db-title{
   font-size:8px;letter-spacing:3px;color:var(--cyan);
@@ -575,15 +575,15 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 
         <!-- Waste zone stockage -->
         <div class="co-waste-box" id="coWasteBox">
-          <div style="font-size:9px;letter-spacing:2px;color:var(--muted);font-weight:700;">📦 STORAGE AREA WASTE — PIÈCES PÉRIMÉES</div>
+          <div style="font-size:9px;letter-spacing:2px;color:var(--muted);font-weight:700;">📦 STORAGE AREA WASTE — EXPIRED PARTS</div>
           <div class="co-waste-val" id="coWasteVal">—</div>
-          <div style="font-size:10px;color:#888;margin-top:2px;" id="coWasteSets">Aucun cycle terminé</div>
+          <div style="font-size:10px;color:#888;margin-top:2px;" id="coWasteSets">No completed cycle yet</div>
         </div>
         <!-- Vider zone de stockage -->
         <button class="btn-co-storage" id="btnCoStorage" onclick="viderStorage()">
-          📦 Vider zone de stockage (pièces périmées)
+          📦 Clear Storage Area (expired parts)
         </button>
-        <!-- Vider la station — opérateur responsable, timer C/O continue -->
+        <!-- Clear station — operator responsibility, C/O timer continues -->
         <button class="btn-co-clear" id="btnCoClear" onclick="viderStation()">
           🗑 Vider ma station (Semi-Finished Goods)
         </button>
@@ -689,7 +689,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <div class="push-arrow-wrap">
   <div class="push-arrow-btn">
     <svg viewBox="0 0 72 52" xmlns="http://www.w3.org/2000/svg" class="push-arrow-icon">
-      <!-- Corps flèche -->
+      <!-- Arrow body -->
       <polygon points="0,14 44,14 44,6 72,26 44,46 44,38 0,38" fill="#f0a500" opacity=".95"/>
       <!-- Hachures VSM push -->
       <line x1="8"  y1="14" x2="8"  y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
@@ -722,7 +722,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <div class="push-arrow-wrap">
   <div class="push-arrow-btn">
     <svg viewBox="0 0 72 52" xmlns="http://www.w3.org/2000/svg" class="push-arrow-icon">
-      <!-- Corps flèche -->
+      <!-- Arrow body -->
       <polygon points="0,14 44,14 44,6 72,26 44,46 44,38 0,38" fill="#f0a500" opacity=".95"/>
       <!-- Hachures VSM push -->
       <line x1="8"  y1="14" x2="8"  y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
@@ -800,7 +800,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <div class="run-history">
   <div class="run-history-header">
     <span class="run-history-title">📊 Production Run Tracking</span>
-    <span style="font-size:9px;color:#555;letter-spacing:1px;">1 row = 1 configuration (between each C/O)</span>
+    <span style="font-size:9px;color:#555;letter-spacing:1px;">1 row = 1 configuration run (between changeovers)</span>
   </div>
   <table class="run-table" id="runTable">
     <thead>
@@ -887,7 +887,7 @@ const BUFFER_FILL   = {1:'#e65100',2:'#1565c0',3:'#f9a825',4:'#00695c'};
 const BUFFER_STROKE = {1:'#bf360c',2:'#0d47a1',3:'#f57f17',4:'#004d40'};
 const BUFFER_TEXT   = {1:'#fff',   2:'#fff',   3:'#000',   4:'#fff'};
 
-// Alias for station badge (garde les couleurs vives pour l'identité visuelle)
+// Station badge alias (keeps vivid colors for visual identity)
 const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8',5:'#c07de0',6:'#80cc44'};
 const ST_STROKE={1:'#a01818',2:'#a06000',3:'#20a050',4:'#007a6a',5:'#7a40a0',6:'#508820'};
 const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000',5:'#fff',6:'#000'};
@@ -955,13 +955,13 @@ let S={
   coProfileLabel:'',
   currentStep:0,
   coWastePieces:0,coWasteSets:0,  // gaspillage storage au C/O courant
-  coStorageCleared:true,          // zone de stockage vidée pendant C/O
-  coSfgCleared:true,              // SFG vidé pendant C/O
+  coStorageCleared:true,          // storage area cleared during C/O
+  coSfgCleared:true,              // SFG cleared during C/O
   runs:[],
   batchMode:false,   // true = batch mode
   batchSize:1,       // nb cycles before sending downstream
   batchCount:0,      // cycles completed in current batch
-  batchResetTimer:null, // timer between batch cycles (à annuler si nouveau cycle démarre trop vite)
+  batchResetTimer:null, // timer between batch cycles (cancel if new cycle starts too quickly)
   currentRun:null,
 };
 
@@ -1189,7 +1189,7 @@ function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');e
 function initStation(){
   applyProfile(DEFAULT_PROFILE);
   ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
-  // dbCO and bbCO updated uniquement par les vrais temps mesurés
+  // dbCO and bbCO updated only from actual measured times
   document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLY`;
   const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
   const segStart=(STATION-1)*4;
@@ -1202,13 +1202,13 @@ function initStation(){
 }
 
 function initCycle(){
-  // Guard: never reset si un cycle est en cours
+  // Guard: never reset if a cycle is in progress
   if(S.running) return;
-  // Fixed topology per profile — régénérée si nécessaire
+  // Fixed topology per profile — regenerated if needed
   if(!S.topology){
     S.topology=generateTopology();
   }
-  // Toujours recalculer cornerSides avec les positions courantes
+  // Always recalculate cornerSides with current positions
   S.cornerSides={};
   (STATION_POSITIONS[STATION]||[]).forEach(pos=>{
     S.cornerSides[pos]=getSides(pos,S.topology);
@@ -1238,7 +1238,7 @@ function initCycle(){
   S.currentStep=0;
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
   S.cycleErrors=0;S.cycleWaitMs=0;S.cycleStopMs=0;S.cycleShortageMs=0;
-  // waitStart intentionally not reset — persiste si wipIn > 0
+  // waitStart intentionally not reset — persists if wipIn > 0
   const scrapEl=document.getElementById('dbScrap');
   if(scrapEl)scrapEl.textContent='0';
   cancelAnimationFrame(S.raf);
@@ -1334,10 +1334,10 @@ function updateBufferProgress(){
 // ── DROP LOGIC ─────────────────────────────────────────
 // ── RENDER BOARD — FIXED v5.1 ──────────────────────────
 // Corrections :
-// 1. corner-drop : width/height explicites = zone de drop correctement positionnée
+// 1. corner-drop: explicit width/height = drop zone correctly positioned
 // 2. dragover : e.dataTransfer.dropEffect='move' = drop garanti par le navigateur
-// 3. pièces posées : animation popIn pour confirmer le placement
-// 4. pièces autres stations : opacité 50% (vs 35%) + gris plus clair
+// 3. placed pieces: popIn animation to confirm placement
+// 4. other station pieces: 50% opacity (vs 35%) + lighter gray
 function renderBoard(justPlacedPos=null){
   const board=document.getElementById('puzzleBoard');
   board.innerHTML='';
@@ -1419,7 +1419,7 @@ function renderBoard(justPlacedPos=null){
       cell.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';cell.classList.add('drag-over');cell.classList.remove('pulsing');});
       cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
       cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,fi);});
-      // Clic sur zone cible (si pièce sélectionnée par clic dans le buffer)
+      // Click on target cell (if piece selected by click in buffer)
       cell.addEventListener('click',()=>{
         if(!currentDrag) return; // no piece selected from buffer
         const sel = S.buffer[currentDrag.bufIdx];
@@ -1544,7 +1544,7 @@ document.addEventListener('touchend',e=>{
 // ── CYCLE ──────────────────────────────────────────────
 function startCycle(){
   if(S.running)return;
-  if(S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize)){setMsg('⚠ Envoie d\'abord le produit fini en aval (Send Downstream) avant de démarrer un nouveau cycle','err');return;}
+  if(S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize)){setMsg('⚠ Please send the finished product downstream before starting a new cycle','err');return;}
   if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
   if(piecesRemaining()===0&&S.replenStatus!=='idle'){setMsg('📦 Storage Area empty — waiting for replenishment','err');return;}
   startSessionTimer();
@@ -1596,12 +1596,12 @@ function runTimer(){
 function finishCycle(ok){
   S.running=false;cancelAnimationFrame(S.raf);
   const elapsed=S.startTime?performance.now()-S.startTime:0;
-  // ── SMED: C/O ends à la fin du 1er cycle complet ─────────────────
+  // ── SMED: C/O ends at the end of the 1st complete cycle ──────────────
   if(S.coRunning) completeCO();
   document.getElementById('timerDisp').classList.remove('running');
   document.getElementById('timerDisp').classList.add('done');
   S.cycles++;
-  // ── Enregistrer les données du cycle courant ─────────────────────────────
+  // ── Record current cycle data ─────────────────────────────────────────
   if(S.currentRun){
     S.currentRun.cyclesData.push({
       ct: elapsed,
@@ -1767,7 +1767,7 @@ function updateIncomingOrder(){
   const remaining=Math.max(0,S.customerDemand-runOutput);
   const el=document.getElementById('wipIn');
   if(el) el.textContent=remaining;
-  // ── Order exhausted: notify l'opérateur d'arrêter ─────────────────
+  // ── Order exhausted: notify operator to stop ──────────────────────────
   if(remaining===0){
     const btn=document.getElementById('btnStart');
     if(btn){btn.disabled=true;btn.textContent='⛔ Order Fulfilled';}
@@ -1922,13 +1922,13 @@ function listenSessionConfig(){
 
     // ── CHANGEOVER SIGNAL ─────────────────────────────────
     if(cfg.co_signal&&cfg.co_signal!==S.lastCoSignal){
-      // Nouveau signal C/O → démarrer le changeover
+      // New C/O signal → start changeover
       S.lastCoSignal=cfg.co_signal;
       startChangeover(cfg.co_profile_name||'New Stations Configuration', cfg.profile_data, cfg.co_signal);
     } else if(!cfg.co_signal&&S.coStart){
       // co_signal removed by trainer
-      // → n'aborter que si l'overlay est encore affiché (opérateur pas encore validé)
-      // → if cycle in progress or coRunning, laisser completeCO() se déclencher normalement
+      // → abort only if overlay is still visible (operator has not yet confirmed)
+      // → if cycle in progress or coRunning, let completeCO() trigger normally
       const overlayVisible=document.getElementById('coOverlay').classList.contains('show');
       if(overlayVisible){abortCO();initCycle();}
     } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart&&!S.running&&!S.started&&S.cycles===0){
@@ -1971,7 +1971,7 @@ function listenSessionConfig(){
       updateDowntimeDisplay();updateShortageDisplay();
       S.topology=null;S.cornerSides={};
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
-      // Réactiver le bouton Start si commande était épuisée
+      // Re-enable Start button if order was exhausted
       const btnSt=document.getElementById('btnStart');
       if(btnSt&&STATION===1){btnSt.disabled=false;btnSt.textContent='▶ Start Cycle';}
       updateWIPDisplay();updateStats();
@@ -2002,7 +2002,7 @@ function startChangeover(profileName, profileData, coSignalTime){
   document.getElementById('btnStart').disabled=true;
   document.getElementById('validateBanner').classList.remove('show');
   document.getElementById('btnValidate').disabled=true;
-  // Réinitialiser le compteur de demande pour le nouveau run
+  // Reset the demand counter for the new run
   S.runOutputStart=S.output;
 
   // Reset timer
@@ -2048,7 +2048,7 @@ function startChangeover(profileName, profileData, coSignalTime){
     S.placedPositions={};
     S.currentStep=0;
     S.inheritedState={};
-    // Forcer régénération des formes pour la nouvelle configuration
+    // Force shape regeneration for the new configuration
     S.topology=null;
     S.cornerSides={};
   }
@@ -2076,7 +2076,7 @@ function startChangeover(profileName, profileData, coSignalTime){
     }
   }
 
-  // Bouton "Vider stockage" : désactivé si déjà vide
+  // "Clear storage" button: disabled if already empty
   const btnStorage = document.getElementById('btnCoStorage');
   if(btnStorage){
     if(unplacedPieces === 0){
@@ -2090,7 +2090,7 @@ function startChangeover(profileName, profileData, coSignalTime){
     }
   }
 
-  // sfg_count = 1 seulement si un cycle était en cours quand le C/O a été déclenché
+  // sfg_count = 1 only if a cycle was in progress when C/O was triggered
   if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(wasRunning ? 1 : 0);
   // Reset "Vider" button state
   const btnClear = document.getElementById('btnCoClear');
@@ -2099,11 +2099,11 @@ function startChangeover(profileName, profileData, coSignalTime){
   setMsg(`⚙️ Changeover — Read your Work Order and configure your grid`,'info');
 }
 
-// ── VIDER LA ZONE DE STOCKAGE (pièces périmées au C/O) ──
+// ── CLEAR STORAGE AREA (expired parts at C/O) ──
 function viderStorage(){
   const btn = document.getElementById('btnCoStorage');
   if(!btn || btn.disabled) return;
-  // Compter les pièces perdues avant de vider
+  // Count lost pieces before clearing
   const wasteP = S.coWastePieces || 0;
   const wasteS = S.coWasteSets   || 0;
   // Vider buffer local
@@ -2123,7 +2123,7 @@ function viderStorage(){
   checkCOReadiness();
 }
 
-// ── VIDER LA STATION (opérateur responsable pendant C/O) ──
+// ── CLEAR STATION (operator responsibility during C/O) ──
 function viderStation(){
   const btn = document.getElementById('btnCoClear');
   if(!btn || btn.disabled) return;
@@ -2138,7 +2138,7 @@ function viderStation(){
   checkCOReadiness();
 }
 
-// ── Vérifier si les deux actions de vidage sont complètes ──
+// ── Check if both clearing actions are complete ──
 function checkCOReadiness(){
   if(S.coStorageCleared && S.coSfgCleared){
     setMsg('✅ Station et stockage vidés — Configurez votre grille puis validez le C/O','ok');
@@ -2336,22 +2336,22 @@ function validateChangeover(){
     return;
   }
 
-  // All correct — close overlay (timer C/O continue jusqu'à la 1ère pièce)
+  // All correct — close overlay (C/O timer continues until 1st piece placed)
   closeCoOverlay();
   initCycle();
 }
 
-// ── Close C/O overlay — le timer CONTINUE jusqu'à la 1ère pièce placée ──
+// ── Close C/O overlay — timer CONTINUES until the first piece is placed ──
 function closeCoOverlay(){
   cancelAnimationFrame(S.coRaf);
   S.coRaf=null;
   document.getElementById('coOverlay').classList.remove('show');
-  // Le timer C/O continue à tourner en arrière-plan
-  // Démarrer une animation légère sur la barre de statut pour signaler que C/O n'est pas terminé
+  // C/O timer keeps running in the background
+  // Start a subtle animation on the status bar to signal C/O is not yet complete
   setMsg('⚙️ Grid validated — Start cycle and place 1st part to finalize C/O','info');
 }
 
-// ── Finalize C/O at end du 1er cycle complet (SMED : signal → 1ère bonne pièce) ──
+// ── Finalize C/O at end of 1st complete cycle (SMED: signal → first good piece) ──
 function completeCO(){
   if(!S.coStart)return;
   const elapsed=Date.now()-S.coStart;
@@ -2367,7 +2367,7 @@ function completeCO(){
     });
   }
 
-  // Mettre à jour l'UI
+  // Update UI
   const totalSec=Math.round(S.coTotalMs/1000);
   const avgSec=Math.round(S.coTotalMs/S.coCount/1000);
   document.getElementById('dbCOtime').textContent=`${totalSec}s total (avg ${avgSec}s)`;
@@ -2377,7 +2377,7 @@ function completeCO(){
   const bbCOel=document.getElementById('bbCO');
   if(bbCOel)bbCOel.textContent=coSec+'s';
 
-  // Nouveau run de production après C/O
+  // New production run after C/O
   startRun(S.coProfileLabel);
   if(S.currentRun)S.currentRun.coSec=coSec;
   pushStats();
@@ -2394,7 +2394,7 @@ function abortCO(){
 }
 
 function startRun(profileName){
-  // Fermer le run précédent s'il existe
+  // Close previous run if it exists
   if(S.currentRun){
     S.currentRun.endTime=Date.now();
     S.runs.push({...S.currentRun});
@@ -2405,7 +2405,7 @@ function startRun(profileName){
     label:profileName||`Run ${S.runs.length+1}`,
     startTime:Date.now(),endTime:null,
     cycles:0,output:0,errors:0,fty:0,coSec:null,waitTotalMs:0,
-    cyclesData:[],  // [{ct, waitMs, errors, passed}] — 1 entrée par cycle
+    cyclesData:[],  // [{ct, waitMs, errors, passed}] — 1 entry per cycle
   };
   renderRunTable();
 }
@@ -2431,7 +2431,7 @@ function updateWaitTotal(){
   const el=document.getElementById('waitTotalDisp');
   if(el) el.textContent=fmtHMS(S.totalWaitMs);
 }
-// ── Démarrer le wait (wipIn > 0, cycle pas commencé) ─────────────────────────
+// ── Start wait timer (wipIn > 0, cycle not started) ──────────────────────────
 function startWaitTimer(){
   if(S.waitStart!==null)return;
   S.waitStart=performance.now();
@@ -2543,7 +2543,7 @@ function updateDowntimeDisplay(liveMs){
   if(cell)cell.style.background=S.stopStart!==null?'rgba(232,64,64,.12)':'';
 }
 
-// ── SHORTAGE TIMER (storage area vide, attente réappro) ───────────────────────
+// ── SHORTAGE TIMER (storage area empty, waiting for replenishment) ────────────
 function startShortageTimer(){
   if(S.shortageStart!==null)return;
   S.shortageStart=performance.now();
@@ -2584,7 +2584,7 @@ function checkWaitTimer(){
   const shouldRun=!S.running&&(STATION===1||S.wipIn>0);
   if(shouldRun&&S.waitStart===null) startWaitTimer();
   else if(!shouldRun&&S.waitStart!==null&&!S.started){
-    // Plus de WIP et pas encore démarré → annuler l'attente
+    // No more WIP and cycle not started → cancel wait
     S.waitStart=null;stopWaitTimer();
   }
 }
@@ -2678,12 +2678,12 @@ function captureVisual(){
 
   html2canvas(target,{
     backgroundColor:'#0b0e13',
-    scale:2,           // haute résolution
+    scale:2,           // high resolution
     useCORS:true,
     logging:false,
   }).then(puzzleCanvas=>{
 
-    // ── Construire l'image finale avec en-tête KEEPLEAN ──
+    // ── Build final image with KEEPLEAN header ──
     const PAD=24, HEAD=90, FOOT=56;
     const W=puzzleCanvas.width+PAD*2;
     const H=puzzleCanvas.height+HEAD+FOOT+PAD;
@@ -2726,7 +2726,7 @@ function captureVisual(){
     ctx.fillText(`ASSY ${STATION} — ${SESSION.toUpperCase()}`,W-PAD-57,26);
     ctx.textAlign='left';
 
-    // Ligne séparateur
+    // Separator line
     ctx.strokeStyle='#1e2538';
     ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(PAD,36);ctx.lineTo(W-PAD,36);ctx.stroke();
@@ -2752,7 +2752,7 @@ function captureVisual(){
     ctx.strokeStyle='#1e2538';
     ctx.beginPath();ctx.moveTo(PAD,fy-4);ctx.lineTo(W-PAD,fy-4);ctx.stroke();
 
-    // Légende stations
+    // Station legend
     let lx=PAD;
     for(let s=1;s<=NB_STATIONS;s++){
       ctx.fillStyle=METAL_FILL[s]||METAL_FILL[1];
@@ -2773,7 +2773,7 @@ function captureVisual(){
     ctx.fillText('keeplean.lu',W-PAD,fy+14);
     ctx.textAlign='left';
 
-    // ── Téléchargement ──
+    // ── Download ──
     const link=document.createElement('a');
     const ts=now.toISOString().slice(0,19).replace(/:/g,'-');
     link.download=`SimLean_ASSY${STATION}_${SESSION}_${ts}.png`;
