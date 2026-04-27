@@ -1,0 +1,2829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimLean Assembly Line — Station</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
+:root{
+  --bg:#0b0e13;--panel:#111520;--panel2:#161b26;--border:#1e2538;
+  --accent:#f0a500;--cyan:#00c2a8;--danger:#e84040;--success:#3de88a;
+  --text:#dde1ed;--muted:#ffffff;
+  --s1:#e84040;--s2:#f0a500;--s3:#3de88a;--s4:#00c2a8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:8px;
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
+  background-size:40px 40px;}
+
+.top-bar{width:100%;max-width:1060px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--accent);padding-bottom:6px;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+.logo{font-size:13px;letter-spacing:4px;color:var(--accent);font-weight:700;}
+.logo span{color:var(--muted);}
+.session-badge{background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:11px;letter-spacing:2px;color:var(--cyan);}
+.station-badge{background:var(--accent);color:#000;border-radius:20px;padding:4px 16px;font-size:13px;font-weight:700;letter-spacing:2px;}
+.conn-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;}
+.conn-dot.online{background:var(--success);box-shadow:0 0 6px var(--success);}
+.conn-dot.offline{background:var(--danger);}
+.conn-dot.waiting{background:var(--accent);animation:pulse .8s infinite alternate;}
+@keyframes pulse{from{opacity:.6}to{opacity:1}}
+
+.chrono-bar{width:100%;max-width:1060px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;margin-bottom:8px;}
+.chrono-cell{background:var(--panel);border:1px solid var(--border);padding:5px 8px;text-align:center;}
+.chrono-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
+.chrono-val{font-family:'Share Tech Mono',monospace;font-size:18px;line-height:1.1;}
+.cv-clock{color:var(--cyan);}.cv-time{color:var(--accent);}
+.cv-occ{color:var(--success);}.cv-occ.low{color:var(--danger);}.cv-occ.mid{color:var(--accent);}
+.occ-bar-wrap{margin-top:4px;height:3px;background:var(--border);}
+.occ-bar-fill{height:100%;background:var(--success);transition:width .5s;}
+.occ-bar-fill.low{background:var(--danger);}.occ-bar-fill.mid{background:var(--accent);}
+
+.status-msg{width:100%;max-width:1060px;padding:5px 10px;font-size:11px;letter-spacing:1px;margin-bottom:5px;display:none;border:1px solid var(--border);background:var(--panel);}
+.status-msg.show{display:block;}
+.status-msg.ok{border-color:var(--success);color:var(--success);}
+.status-msg.err{border-color:var(--danger);color:var(--danger);}
+.status-msg.info{border-color:var(--cyan);color:var(--cyan);}
+
+.validate-banner{display:none;width:100%;max-width:1060px;background:rgba(61,232,138,.1);border:2px solid var(--success);padding:8px 14px;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+.validate-banner.show{display:flex;}
+.val-text{font-size:14px;font-weight:700;color:var(--success);}
+.val-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px;}
+
+.flux-row{width:100%;max-width:1060px;display:flex;align-items:stretch;gap:8px;margin-bottom:8px;}
+.wip-box{background:var(--panel);border:1px solid var(--border);padding:12px 14px;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:100px;}
+.wip-box.wip-in{border-color:var(--cyan);}.wip-box.wip-out{border-color:var(--success);}
+.wip-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
+.wip-count{font-family:'Share Tech Mono',monospace;font-size:32px;font-weight:700;line-height:1;}
+.wip-in .wip-count{color:var(--cyan);}.wip-out .wip-count{color:var(--success);}
+.wip-sub{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:1px;}
+.flux-arrow{display:flex;align-items:flex-end;justify-content:center;align-self:stretch;padding:0 4px;}
+.push-arrow-wrap{display:flex;align-items:flex-end;justify-content:center;align-self:stretch;padding:0 4px;}
+.push-arrow-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:8px;cursor:default;}
+.push-label{font-size:11px;letter-spacing:3px;font-weight:700;color:#f0a500;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;}
+.push-arrow-icon{width:64px;height:42px;filter:drop-shadow(0 0 10px rgba(240,165,0,.55));}
+
+.station-area{flex:1;background:var(--panel);border:1px solid var(--border);padding:10px 12px;}
+.station-title{font-size:11px;letter-spacing:2px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.section-label{font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;font-weight:700;}
+
+/* BUFFER */
+.buffer-bar{display:flex;gap:8px;align-items:flex-start;background:#b34700;border:2px solid #ff6a00;padding:14px;margin-bottom:10px;flex-wrap:wrap;min-height:90px;max-height:296px;overflow-y:auto;overflow-x:clip;}
+.buffer-bar-label{font-size:10px;letter-spacing:3px;font-weight:700;color:#fff;text-transform:uppercase;margin-right:4px;flex-shrink:0;text-shadow:0 1px 3px rgba(0,0,0,.5);}
+.buffer-piece{position:relative;width:72px;height:72px;cursor:grab;flex-shrink:0;overflow:visible;transition:transform .15s,filter .15s;}
+.buffer-piece:hover{transform:scale(1.08) translateY(-3px);filter:brightness(1.2);}
+.buffer-piece:active{cursor:grabbing;}
+.buffer-piece.used{opacity:.15;cursor:default;filter:grayscale(1);}
+.buffer-piece.dragging{opacity:.3;}
+.bp-num{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-weight:700;font-size:15px;text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none;z-index:10;}
+.bp-ref{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:'Share Tech Mono',monospace;font-weight:700;font-size:9px;text-shadow:0 1px 2px rgba(0,0,0,.9);pointer-events:none;z-index:10;}
+.bp-name{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:7px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.3px;pointer-events:none;z-index:10;}
+
+/* PUZZLE BOARD */
+.puzzle-wrap{display:block;overflow:visible;margin-bottom:8px;border:2px solid #ffffff;padding:8px;width:fit-content;}
+.puzzle-board{position:relative;display:block;}
+.piece-st-num{font-family:'Share Tech Mono',monospace;font-weight:700;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+.buffer-piece svg,.buffer-piece path,.buffer-piece span{pointer-events:none;}
+
+/* CORNER DROP ZONES */
+.corner-drop{position:relative;display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);background:rgba(255,255,255,.02);transition:all .2s;overflow:visible;}
+.corner-drop .drop-hint{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-weight:700;text-align:center;pointer-events:none;}
+.corner-drop.drag-over{border-color:var(--success);border-style:solid;background:rgba(61,232,138,.15);transform:scale(1.06);box-shadow:0 0 12px rgba(61,232,138,.3);}
+.corner-drop.filled{border:none;background:transparent;}
+.corner-drop.error-flash{border-color:var(--danger);border-style:solid;background:rgba(232,64,64,.12);animation:shake .35s;}
+.corner-drop.pulsing{border-color:var(--s1);border-style:solid;animation:blink .7s infinite alternate;}
+.cp-num{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;z-index:10;}
+.cp-ref{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;z-index:10;}
+
+@keyframes popIn{0%{transform:scale(1.25);filter:brightness(1.6)}100%{transform:scale(1);filter:brightness(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@keyframes blink{from{opacity:.5}to{opacity:1}}
+@keyframes completeFlash{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
+
+.btn{border:none;padding:10px 20px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#000;}.btn-primary:hover{opacity:.85;}
+.btn-primary:disabled{background:#333;color:#666;cursor:not-allowed;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}.btn-ghost:hover{border-color:var(--cyan);}
+.ctrl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+.timer-box{background:var(--panel);border:1px solid var(--border);padding:12px 16px;text-align:center;min-width:130px;}
+.timer-val{font-family:'Share Tech Mono',monospace;font-size:30px;color:var(--accent);line-height:1;}
+.timer-val.running{color:var(--success);}.timer-val.done{color:var(--cyan);}
+.timer-sub{font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:4px;font-weight:700;}
+
+.data-box{background:var(--panel);border:1px solid var(--border);padding:12px 14px;display:flex;flex-direction:column;min-width:148px;flex:1;}
+.db-title{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);font-weight:700;}
+.db-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(30,37,56,.5);}
+.db-row:last-child{border-bottom:none;}
+.db-key{font-size:10px;letter-spacing:1px;color:var(--muted);font-weight:700;text-transform:uppercase;}
+.db-val{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);font-weight:700;}
+.db-val.good{color:var(--success);}.db-val.bad{color:var(--danger);}.db-val.accent{color:var(--accent);}
+.db-divider{height:1px;background:var(--border);margin:4px 0;}
+
+.bottom-bar{width:100%;max-width:1060px;display:flex;gap:0;margin-top:6px;background:var(--panel);border:1px solid var(--border);overflow:hidden;}
+.bb-cell{flex:1;padding:5px 8px;text-align:center;border-right:1px solid var(--border);}
+.bb-cell:last-child{border-right:none;}
+.bb-key{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;}
+.bb-val{font-size:14px;font-weight:700;color:var(--muted);font-family:'Share Tech Mono',monospace;}
+.bb-val.good{color:var(--success);}.bb-val.bad{color:var(--danger);}
+
+/* ── PRODUCTION RUN HISTORY ── */
+.run-history{width:100%;max-width:1060px;margin-top:6px;background:var(--panel);border:1px solid var(--border);overflow:hidden;}
+.run-history-header{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;border-bottom:1px solid var(--border);background:var(--panel2);}
+.run-history-title{font-size:9px;letter-spacing:3px;color:var(--accent);font-weight:700;text-transform:uppercase;}
+.run-table{width:100%;border-collapse:collapse;}
+.run-table th{font-size:8px;letter-spacing:2px;color:#555;text-align:center;padding:4px 6px;border-bottom:1px solid var(--border);text-transform:uppercase;}
+.run-table td{font-size:11px;font-family:'Share Tech Mono',monospace;text-align:center;padding:4px 6px;border-bottom:1px solid rgba(30,37,56,.5);color:var(--text);}
+.run-table tr:last-child td{border-bottom:none;}
+.run-table td.run-label{font-size:9px;letter-spacing:1px;color:#666;text-align:left;font-family:'Barlow Condensed',sans-serif;font-weight:700;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.run-table td.good{color:var(--success);}.run-table td.bad{color:var(--danger);}.run-table td.accent{color:var(--accent);}
+.run-current{background:rgba(0,194,168,.05);}
+.run-current td{color:var(--cyan)!important;}
+
+/* ── CHANGEOVER OVERLAY ── */
+.co-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;
+  flex-direction:column;align-items:center;overflow-y:auto;padding:20px 16px;}
+.co-overlay.show{display:flex;}
+.co-overlay-inner{width:100%;max-width:900px;display:flex;flex-direction:column;gap:14px;}
+
+/* Header */
+.co-header{display:flex;justify-content:space-between;align-items:center;
+  border-bottom:2px solid var(--accent);padding-bottom:10px;flex-wrap:wrap;gap:10px;}
+.co-title{font-size:22px;font-weight:900;letter-spacing:5px;color:var(--accent);text-transform:uppercase;}
+.co-timer-wrap{display:flex;flex-direction:column;align-items:center;}
+.co-timer{font-family:'Share Tech Mono',monospace;font-size:52px;color:var(--cyan);line-height:1;}
+.co-timer-label{font-size:9px;letter-spacing:2px;color:#888;margin-top:2px;}
+
+/* Work Order document */
+.wo-doc{background:#111820;border:1px solid var(--accent);padding:14px 18px;}
+.wo-header{display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.wo-logo{font-size:11px;letter-spacing:4px;color:var(--accent);font-weight:700;}
+.wo-ref{font-size:10px;color:#888;text-align:right;line-height:1.6;}
+.wo-title{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:8px;}
+.wo-bom{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-top:8px;}
+.wo-bom-item{background:var(--panel2);border:1px solid var(--border);padding:6px 10px;
+  display:flex;align-items:center;gap:8px;}
+.wo-bom-icon{width:28px;height:28px;border-radius:3px;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+.wo-bom-text{display:flex;flex-direction:column;}
+.wo-bom-ref{font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);}
+.wo-bom-name{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;}
+
+/* Reference grid (trainer layout) */
+.ref-grid{display:inline-grid;gap:3px;pointer-events:none;}
+.ref-cell{display:flex;align-items:center;justify-content:center;
+  border-radius:3px;font-family:'Share Tech Mono',monospace;font-weight:700;
+  font-size:12px;border:1px solid transparent;}
+.ref-cell.unassigned{background:#141c28;border-color:#1e2a3a;color:#2a3a50;}
+
+/* Mini grid for operator */
+.co-grid-section{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;}
+.co-grid-label{font-size:10px;letter-spacing:2px;color:#888;text-transform:uppercase;
+  margin-bottom:8px;font-weight:700;}
+.co-grid{display:inline-grid;gap:3px;cursor:crosshair;user-select:none;}
+.co-cell{display:flex;align-items:center;justify-content:center;
+  border:2px solid #2a3550;border-radius:3px;font-family:'Share Tech Mono',monospace;
+  font-size:13px;font-weight:700;transition:all .1s;}
+.co-cell.empty{background:#141c28;color:#2a3a50;}
+.co-cell.filled{border-color:transparent;}
+.co-cell.correct{border-color:var(--success)!important;box-shadow:0 0 8px rgba(61,232,138,.4);}
+.co-cell.wrong{border-color:var(--danger)!important;animation:shake .3s;}
+
+/* Progress & validation */
+.co-progress{background:var(--panel);border:1px solid var(--border);padding:12px 16px;}
+.co-prog-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.co-prog-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.co-prog-bar{height:100%;background:var(--accent);transition:width .3s;border-radius:3px;}
+.co-prog-bar.complete{background:var(--success);}
+.btn-co-clear{display:block;width:100%;padding:10px 0;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:2px solid #e84040;background:rgba(232,64,64,.12);color:#e84040;margin-top:8px;transition:all .2s;}
+.btn-co-clear:hover:not(:disabled){background:rgba(232,64,64,.25);box-shadow:0 0 12px rgba(232,64,64,.3);}
+.btn-co-clear:disabled{opacity:.4;cursor:default;}
+.btn-co-clear.done{border-color:var(--success);background:rgba(61,232,138,.12);color:var(--success);}
+.btn-co-storage{display:block;width:100%;padding:10px 0;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:2px solid var(--accent);background:rgba(240,165,0,.12);color:var(--accent);margin-top:8px;transition:all .2s;}
+.btn-co-storage:hover:not(:disabled){background:rgba(240,165,0,.25);box-shadow:0 0 12px rgba(240,165,0,.3);}
+.btn-co-storage:disabled{opacity:.4;cursor:default;}
+.btn-co-storage.done{border-color:var(--success);background:rgba(61,232,138,.12);color:var(--success);}
+.co-waste-box{background:rgba(240,165,0,.08);border:1px solid var(--accent);padding:8px 12px;margin-top:10px;font-size:11px;letter-spacing:1px;}
+.co-waste-val{font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;color:var(--accent);margin-top:4px;}
+.co-waste-zero{color:#555;}
+.btn-co-validate{display:none;width:100%;padding:14px;font-family:'Barlow Condensed',sans-serif;
+  font-size:16px;font-weight:900;letter-spacing:3px;border:none;cursor:pointer;
+  background:var(--success);color:#000;text-transform:uppercase;transition:all .2s;}
+.btn-co-validate.show{display:block;}
+.btn-co-validate:hover{filter:brightness(1.1);}
+.co-error-msg{font-size:11px;color:var(--danger);letter-spacing:1px;min-height:16px;margin-top:4px;}
+
+/* ── REPLENISHMENT ── */
+.replen-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:6px 12px;background:var(--panel2);border:1px solid var(--border);
+  margin-bottom:8px;width:100%;max-width:1060px;}
+.replen-sets{font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);}
+.replen-sets.low{color:var(--danger);animation:pulse .8s infinite alternate;}
+.replen-sets.empty{color:#555;}
+.replen-label{font-size:9px;letter-spacing:2px;color:#888;text-transform:uppercase;font-weight:700;}
+.btn-replen{border:none;padding:8px 18px;font-family:'Barlow Condensed',sans-serif;
+  font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;
+  background:var(--accent);color:#000;border-radius:4px;transition:all .2s;}
+.btn-replen:hover{filter:brightness(1.15);}
+.btn-replen:disabled{background:#2a3040;color:#555;cursor:not-allowed;}
+.replen-status{font-size:11px;font-weight:700;letter-spacing:1px;}
+.replen-status.queued{color:var(--accent);}
+.replen-status.delivering{color:var(--cyan);}
+.replen-status.arrived{color:var(--success);}
+.replen-countdown{font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--cyan);}
+
+/* ═══════════════════════════════════════════════
+   VSM FLOW — LAYOUT
+   ═══════════════════════════════════════════════ */
+
+/* --- Flux row : ligne de flux VSM --- */
+.flux-row{
+  width:100%;max-width:1060px;
+  display:flex;align-items:stretch;gap:0;
+  margin-bottom:8px;
+  position:relative;
+}
+
+/* Ligne de flux horizontale (fond) */
+.flux-row::before{
+  content:'';
+  position:absolute;
+  top:50%;left:0;right:0;height:3px;
+  background:linear-gradient(90deg, var(--cyan) 0%, var(--accent) 50%, var(--success) 100%);
+  opacity:.18;
+  z-index:0;
+  pointer-events:none;
+}
+
+/* --- Process Box VSM (station-area) --- */
+.station-area{
+  flex:1;
+  background:var(--panel);
+  border:2px solid var(--border);
+  border-top:3px solid var(--accent);
+  padding:10px 12px;
+  position:relative;
+  z-index:1;
+}
+
+/* VSM process label — top left corner */
+.station-area::before{
+  content:'PROCESS';
+  position:absolute;
+  top:-1px; left:12px;
+  font-size:7px;letter-spacing:3px;font-weight:700;
+  color:var(--accent);
+  background:var(--panel);
+  padding:0 6px;
+  text-transform:uppercase;
+}
+
+/* --- WIP boxes (inventory) --- */
+.wip-box{
+  background:var(--panel);
+  border:2px solid var(--border);
+  padding:10px 12px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  min-width:110px;
+  position:relative;
+  z-index:1;
+  margin:0 4px;
+}
+.wip-box.wip-in{
+  border-color:var(--cyan);
+  border-top:3px solid var(--cyan);
+}
+.wip-box.wip-out{
+  border-color:var(--success);
+  border-top:3px solid var(--success);
+}
+
+/* Triangle inventaire VSM (coin) */
+.wip-box.wip-in::before{
+  content:'▼ IN';
+  position:absolute; top:-1px; left:8px;
+  font-size:7px;letter-spacing:2px;font-weight:700;
+  color:var(--cyan);background:var(--panel);padding:0 4px;
+}
+.wip-box.wip-out::before{
+  content:'▼ OUT';
+  position:absolute; top:-1px; left:8px;
+  font-size:7px;letter-spacing:2px;font-weight:700;
+  color:var(--success);background:var(--panel);padding:0 4px;
+}
+
+/* --- PUSH arrows VSM --- */
+.push-arrow-wrap{
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  align-self:stretch;
+  padding:0 2px;
+  z-index:2;
+}
+.push-arrow-btn{
+  display:flex;flex-direction:column;align-items:center;
+  gap:4px;padding-bottom:10px;cursor:default;
+}
+.push-label{
+  font-size:9px;letter-spacing:4px;font-weight:700;
+  color:var(--accent);
+  font-family:'Barlow Condensed',sans-serif;
+  text-transform:uppercase;
+  text-shadow:0 0 8px rgba(240,165,0,.6);
+}
+.push-arrow-icon{
+  width:72px;height:46px;
+  filter:drop-shadow(0 0 12px rgba(240,165,0,.65));
+  transition:filter .3s;
+}
+.push-arrow-btn:hover .push-arrow-icon{
+  filter:drop-shadow(0 0 20px rgba(240,165,0,.9));
+}
+
+/* --- Data Box VSM (process data box) --- */
+.data-box{
+  background:var(--panel);
+  border:2px solid var(--border);
+  border-top:3px solid var(--cyan);
+  padding:10px 12px;
+  display:flex;flex-direction:column;
+  min-width:148px;flex:1;
+  position:relative;
+}
+.data-box::before{
+  content:'DATA BOX';
+  display:none; /* managed by .db-title */
+}
+.db-title{
+  font-size:8px;letter-spacing:3px;color:var(--cyan);
+  text-transform:uppercase;margin-bottom:8px;
+  padding-bottom:5px;border-bottom:1px solid var(--border);
+  font-weight:700;
+  display:flex;align-items:center;gap:6px;
+}
+.db-title::before{
+  content:'';
+  display:inline-block;width:3px;height:12px;
+  background:var(--accent);flex-shrink:0;
+}
+
+/* --- OPF / BATCH box --- */
+.wip-box.wip-out{
+  border-color:var(--success);
+  border-top:3px solid var(--success);
+}
+
+/* --- Station title VSM style --- */
+.station-title{
+  font-size:12px;letter-spacing:3px;font-weight:900;
+  color:var(--accent);text-transform:uppercase;
+  margin-bottom:8px;padding-bottom:6px;
+  border-bottom:2px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+}
+
+/* --- Section label --- */
+.section-label{
+  font-size:8px;letter-spacing:3px;color:#4a5570;
+  margin-bottom:5px;text-transform:uppercase;font-weight:700;
+}
+
+/* --- Storage area (buffer) VSM --- */
+.buffer-bar{
+  display:flex;gap:8px;align-items:flex-start;
+  background:#8b3300;
+  border:2px solid #c94e00;
+  border-top:3px solid #ff6a00;
+  padding:14px;margin-bottom:10px;
+  flex-wrap:wrap;min-height:90px;max-height:296px;
+  overflow-y:auto;overflow-x:clip;
+  position:relative;
+}
+.buffer-bar-label{
+  font-size:8px;letter-spacing:4px;font-weight:700;
+  color:rgba(255,255,255,.5);text-transform:uppercase;
+  margin-right:4px;flex-shrink:0;
+  text-shadow:0 1px 3px rgba(0,0,0,.5);
+}
+
+/* --- Boutons Start/Reset VSM --- */
+.btn-primary{
+  background:var(--accent);color:#000;
+  border:none;border-bottom:3px solid #c07800;
+  font-weight:900;letter-spacing:2px;
+  text-transform:uppercase;
+}
+.btn-primary:hover:not(:disabled){
+  background:#ffc030;border-bottom-color:#a06000;
+}
+.btn-primary:disabled{background:#222;color:#444;border-bottom-color:#1a1a1a;cursor:not-allowed;}
+
+/* --- Timer box VSM --- */
+.timer-val{
+  font-family:'Share Tech Mono',monospace;
+  font-size:30px;color:var(--accent);
+  line-height:1;
+  text-shadow:0 0 20px rgba(240,165,0,.4);
+}
+.timer-val.running{
+  color:var(--success);
+  text-shadow:0 0 20px rgba(61,232,138,.4);
+}
+
+/* --- Bottom bar VSM timeline --- */
+.bottom-bar{
+  width:100%;max-width:1060px;
+  display:flex;gap:0;margin-top:6px;
+  background:var(--panel);
+  border:2px solid var(--border);
+  border-top:3px solid var(--accent);
+  overflow:hidden;
+  position:relative;
+}
+.bottom-bar::before{
+  content:'TIMELINE';
+  position:absolute;top:-1px;left:12px;
+  font-size:6px;letter-spacing:3px;font-weight:700;
+  color:var(--accent);background:var(--panel);padding:0 4px;
+}
+.bb-cell{flex:1;padding:6px 8px;text-align:center;border-right:1px solid var(--border);}
+.bb-key{font-size:8px;letter-spacing:2px;color:#3a4560;text-transform:uppercase;font-weight:700;}
+.bb-val{font-size:15px;font-weight:700;color:var(--muted);font-family:'Share Tech Mono',monospace;}
+
+/* --- Wip-count VSM --- */
+.wip-count{
+  font-family:'Share Tech Mono',monospace;
+  font-size:36px;font-weight:700;line-height:1;
+}
+.wip-label{
+  font-size:8px;letter-spacing:3px;color:#4a5570;
+  text-transform:uppercase;font-weight:700;
+}
+.wip-sub{font-size:11px;color:#4a5570;font-weight:700;letter-spacing:1px;}
+
+/* --- Chrono bar VSM info row --- */
+.chrono-bar{
+  width:100%;max-width:1060px;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:4px;margin-bottom:8px;
+}
+.chrono-cell{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-left:3px solid var(--border);
+  padding:5px 8px;text-align:center;
+}
+.chrono-cell:first-child{border-left-color:var(--cyan);}
+.chrono-cell:nth-child(2){border-left-color:var(--accent);}
+.chrono-cell:nth-child(3){border-left-color:var(--danger);}
+.chrono-cell:nth-child(4){border-left-color:var(--success);}
+
+/* --- Puzzle wrap VSM assembly box --- */
+.puzzle-wrap{
+  display:block;overflow:visible;
+  margin-bottom:8px;
+  border:2px solid rgba(255,255,255,.25);
+  box-shadow:0 0 0 1px rgba(255,255,255,.06) inset;
+  padding:8px;width:fit-content;
+  position:relative;
+}
+.puzzle-wrap::before{
+  content:'ASSEMBLY';
+  position:absolute;top:-10px;left:8px;
+  font-size:7px;letter-spacing:3px;font-weight:700;
+  color:rgba(255,255,255,.3);
+  background:var(--panel);padding:0 4px;
+}
+
+/* --- Run history --- */
+.run-history{
+  width:100%;max-width:1060px;
+  margin-top:6px;
+  background:var(--panel);
+  border:2px solid var(--border);
+  border-top:3px solid var(--success);
+  overflow:hidden;
+}
+
+/* Pulse sur le wip-count quand valeur change */
+@keyframes vsm-ping{
+  0%{text-shadow:0 0 0 rgba(240,165,0,0)}
+  50%{text-shadow:0 0 16px rgba(240,165,0,.8)}
+  100%{text-shadow:0 0 0 rgba(240,165,0,0)}
+}
+
+</style>
+</head>
+<body>
+
+<!-- CHANGEOVER OVERLAY — REFERENCE GRID + OPERATOR GRID -->
+<div class="co-overlay" id="coOverlay">
+  <div class="co-overlay-inner">
+
+    <!-- Header -->
+    <div class="co-header">
+      <div>
+        <div class="co-title">⚙️ Changeover</div>
+        <div style="font-size:11px;letter-spacing:2px;color:#888;margin-top:4px;" id="coProfileName">
+          New configuration loading...
+        </div>
+      </div>
+      <div class="co-timer-wrap">
+        <div class="co-timer" id="coTimer">0</div>
+        <div class="co-timer-label">C/O TIME</div>
+      </div>
+    </div>
+
+    <!-- Two columns: Reference grid + Operator grid -->
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
+
+      <!-- LEFT: Full reference grid from trainer -->
+      <div>
+        <div class="co-grid-label">📋 New Assembly Plan — All Stations</div>
+        <div style="font-size:10px;color:#888;margin-bottom:10px;">
+          Identify your station's positions, then reproduce them on your grid →
+        </div>
+        <!-- Legend -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;" id="coRefLegend"></div>
+        <!-- Reference grid (read-only, full color) -->
+        <div class="ref-grid" id="coRefGrid"></div>
+      </div>
+
+      <!-- RIGHT: Operator interactive grid + progress -->
+      <div style="flex:1;min-width:220px;">
+        <div class="co-grid-label">🖌 Your Station — Configure Your Grid</div>
+        <div style="font-size:10px;color:#888;margin-bottom:10px;" id="coBomHint">
+          Click the cells that belong to your station
+        </div>
+        <div class="co-grid" id="coGrid"></div>
+
+        <!-- Progress -->
+        <div class="co-progress" style="margin-top:12px;">
+          <div class="co-prog-row">
+            <span style="font-size:11px;color:#888;letter-spacing:1px;">PARTS PLACED</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--muted);"
+              id="coProgVal">0 / 0</span>
+          </div>
+          <div class="co-prog-bar-wrap">
+            <div class="co-prog-bar" id="coProgBar" style="width:0%"></div>
+          </div>
+          <div class="co-error-msg" id="coErrorMsg"></div>
+        </div>
+
+        <!-- Waste zone stockage -->
+        <div class="co-waste-box" id="coWasteBox">
+          <div style="font-size:9px;letter-spacing:2px;color:var(--muted);font-weight:700;">📦 STORAGE AREA WASTE — EXPIRED PARTS</div>
+          <div class="co-waste-val" id="coWasteVal">—</div>
+          <div style="font-size:10px;color:#888;margin-top:2px;" id="coWasteSets">No completed cycle yet</div>
+        </div>
+        <!-- Vider zone de stockage -->
+        <button class="btn-co-storage" id="btnCoStorage" onclick="viderStorage()">
+          📦 Clear Storage Area (expired parts)
+        </button>
+        <!-- Clear station — operator responsibility, C/O timer continues -->
+        <button class="btn-co-clear" id="btnCoClear" onclick="viderStation()">
+          🗑 Vider ma station (Semi-Finished Goods)
+        </button>
+        <button class="btn-co-validate" id="btnCoValidate" onclick="validateChangeover()"
+          style="margin-top:10px;">
+          ✅ Validate Changeover
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="top-bar">
+  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line</span></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <span class="session-badge">SESSION: <span id="sessionId">—</span></span>
+    <span class="station-badge" id="stationBadge">ASSY —</span>
+    <span style="font-size:11px;color:var(--muted);font-weight:700;">
+      <span class="conn-dot waiting" id="connDot"></span>
+      <span id="connLabel">Waiting...</span>
+    </span>
+  </div>
+</div>
+
+<div class="chrono-bar">
+  <div class="chrono-cell"><div class="chrono-label">⏰ Clock</div><div class="chrono-val cv-clock" id="clockDisp">--:--:--</div></div>
+  <div class="chrono-cell"><div class="chrono-label">⏱ Time on Station</div><div class="chrono-val cv-time" id="sessionTimerDisp">00:00:00</div></div>
+  <div class="chrono-cell"><div class="chrono-label">⏸ WAIT Total Time</div><div class="chrono-val" style="color:var(--danger);" id="waitTotalDisp">00:00:00</div></div>
+  <div class="chrono-cell" id="downtimeChronoCell" style="border-color:rgba(232,64,64,0.4);">
+    <div class="chrono-label" style="color:var(--danger);">⛔ DOWNTIME Total</div>
+    <div class="chrono-val" style="color:var(--danger);" id="downtimeTotalDisp">00:00:00</div>
+    <div style="font-size:9px;color:#555;margin-top:2px;" id="downtimeCountDisp">0 stops</div>
+  </div>
+  <div class="chrono-cell" id="shortageChronoCell" style="border-color:rgba(240,165,0,0.4);">
+    <div class="chrono-label" style="color:var(--accent);">📦 SHORTAGE Total</div>
+    <div class="chrono-val" style="color:var(--accent);" id="shortageTotalDisp">00:00:00</div>
+    <div style="font-size:9px;color:#555;margin-top:2px;" id="shortageCountDisp">0 ruptures</div>
+  </div>
+  <div class="chrono-cell"><div class="chrono-label">📊 Utilization Rate</div><div class="chrono-val cv-occ" id="occDisp">—</div><div class="occ-bar-wrap"><div class="occ-bar-fill" id="occBar" style="width:0%"></div></div></div>
+  <div class="chrono-cell"><div class="chrono-label">⏱ Takt Time</div><div class="chrono-val" style="color:var(--text);" id="taktDisp">—</div></div>
+</div>
+
+<div class="status-msg" id="statusMsg"></div>
+
+<!-- REPLENISHMENT BAR -->
+<div class="replen-bar" id="replenBar">
+  <div>
+    <div class="replen-label">📦 Storage Area Sets</div>
+    <div class="replen-sets" id="replenSetsVal">4 / 4</div>
+  </div>
+  <div style="width:1px;height:32px;background:var(--border);"></div>
+  <button class="btn-replen" id="btnReplen" onclick="requestReplenishment()" disabled>
+    🔔 Request Replenishment
+  </button>
+  <div id="replenStatusWrap" style="display:none;">
+    <div class="replen-label">STATUS</div>
+    <div class="replen-status" id="replenStatus">—</div>
+  </div>
+  <div id="replenCountdownWrap" style="display:none;">
+    <div class="replen-label">DELIVERY IN</div>
+    <div class="replen-countdown" id="replenCountdown">—</div>
+  </div>
+</div>
+<div class="validate-banner" id="validateBanner">
+  <div><div class="val-text" id="valText">✅ Assembly completed !</div><div class="val-sub" id="valSub">Validate to send downstream</div></div>
+  <div id="batchCounter" style="display:none;font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--accent);letter-spacing:2px;"></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <button class="btn" style="background:var(--cyan);color:#000;font-size:12px;" id="btnCapture" onclick="captureVisual()">
+      📸 Capture Visual
+    </button>
+    <button class="btn" style="background:var(--success);color:#000;" id="btnValidate" disabled>→ Send Downstream</button>
+  </div>
+</div>
+
+<div class="flux-row">
+
+  <!-- LEFT COLUMN : Incoming Order + Controls -->
+  <div style="display:flex;flex-direction:column;gap:8px;align-self:stretch;min-width:120px;max-width:140px;">
+    <div class="wip-box wip-in" style="flex:1;padding:8px 10px;min-width:unset;"><div class="wip-label">Incoming WIP</div><div class="wip-count" id="wipIn">0</div><div class="wip-sub">parts available</div><button id="btnRefreshDemand" onclick="refreshDemand()" style="display:none;margin-top:6px;font-size:9px;padding:3px 8px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);cursor:pointer;letter-spacing:1px;">↺ Refresh</button></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn btn-primary" id="btnStart" disabled style="flex:1;font-size:11px;padding:7px 6px;">▶ Start Cycle</button>
+      <button class="btn" style="font-size:11px;background:#c0392b;color:#fff;border-color:#c0392b;flex:1;padding:7px 6px;" id="btnReset">↺ Reset</button>
+    </div>
+    <button id="btnStop" onclick="toggleStop()"
+      style="width:100%;background:#2a0a0a;border:2px solid var(--danger);color:var(--danger);
+             font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;
+             letter-spacing:2px;padding:7px 6px;cursor:pointer;border-radius:6px;
+             text-align:center;transition:all .2s;">
+      🛑 STOP
+    </button>
+    <div id="stopLiveDisp" style="display:none;text-align:center;font-family:'Share Tech Mono',monospace;
+         font-size:14px;color:var(--danger);font-weight:700;letter-spacing:2px;
+         background:rgba(232,64,64,.1);border:1px solid var(--danger);border-radius:4px;padding:4px;">
+      ⛔ <span id="stopLiveTimer">00:00</span>
+    </div>
+    <div style="background:var(--panel);border:1px solid var(--border);padding:8px 10px;text-align:center;">
+      <div class="timer-val" id="timerDisp" style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);">00.000</div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-top:2px;">Cycle Time (s)</div>
+    </div>
+  </div>
+
+<div class="push-arrow-wrap">
+  <div class="push-arrow-btn">
+    <svg viewBox="0 0 72 52" xmlns="http://www.w3.org/2000/svg" class="push-arrow-icon">
+      <!-- Arrow body -->
+      <polygon points="0,14 44,14 44,6 72,26 44,46 44,38 0,38" fill="#f0a500" opacity=".95"/>
+      <!-- Hachures VSM push -->
+      <line x1="8"  y1="14" x2="8"  y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="18" y1="14" x2="18" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="28" y1="14" x2="28" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="38" y1="14" x2="38" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+    </svg>
+    <span class="push-label">PUSH</span>
+  </div>
+</div>
+
+  <div class="station-area">
+    <div class="station-title">
+      <span id="stationName">ASSY — ASSEMBLY</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:700;" id="cycleCount">Cycles: 0</span>
+    </div>
+
+    <div class="section-label">STORAGE AREA — Incoming Parts (Pick a part → Place it on the assembly frame)
+      <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--success);margin-left:8px;" id="bufferProgress">0 / 4</span>
+    </div>
+    <div class="buffer-bar" id="bufferBar"><div class="buffer-bar-label">STORAGE AREA</div></div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;margin-top:8px;">
+      <div class="section-label" style="align-self:flex-start;margin-bottom:5px;">PRODUCT ASSEMBLY FRAME — <span id="puzzleLegend"></span></div>
+      <div class="puzzle-wrap"><div class="puzzle-board" id="puzzleBoard"></div></div>
+    </div>
+
+  </div>
+
+<div class="push-arrow-wrap">
+  <div class="push-arrow-btn">
+    <svg viewBox="0 0 72 52" xmlns="http://www.w3.org/2000/svg" class="push-arrow-icon">
+      <!-- Arrow body -->
+      <polygon points="0,14 44,14 44,6 72,26 44,46 44,38 0,38" fill="#f0a500" opacity=".95"/>
+      <!-- Hachures VSM push -->
+      <line x1="8"  y1="14" x2="8"  y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="18" y1="14" x2="18" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="28" y1="14" x2="28" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+      <line x1="38" y1="14" x2="38" y2="38" stroke="#c07800" stroke-width="1.5" opacity=".5"/>
+    </svg>
+    <span class="push-label">PUSH</span>
+  </div>
+</div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;align-self:stretch;">
+  <!-- FLOW MODE PANEL -->
+  <div class="wip-box wip-out" style="min-width:160px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;align-items:center;">
+
+    <!-- Toggle OPF / BATCH -->
+    <div style="display:flex;gap:0;width:100%;border:1px solid var(--border);overflow:hidden;">
+      <div id="fmOPF" style="flex:1;text-align:center;font-size:9px;letter-spacing:1px;font-weight:700;padding:5px 4px;font-family:'Share Tech Mono',monospace;transition:all .3s;">ONE PIECE<br>FLOW</div>
+      <div style="width:1px;background:var(--border);"></div>
+      <div id="fmBatch" style="flex:1;text-align:center;font-size:9px;letter-spacing:1px;font-weight:700;padding:5px 4px;font-family:'Share Tech Mono',monospace;transition:all .3s;">BATCH</div>
+    </div>
+
+    <!-- Batch Size -->
+    <div id="fmBatchSize" style="font-size:10px;letter-spacing:1px;color:var(--accent);font-weight:700;display:none;">Batch Size = <span id="fmBatchSizeVal">—</span></div>
+
+    <!-- Outgoing WIP -->
+    <div class="wip-label" style="margin-top:4px;">Outgoing WIP</div>
+    <div class="wip-count" id="wipOut">0</div>
+    <div class="wip-sub">parts produced</div>
+
+    <!-- Batch Count -->
+    <div id="fmBatchCountRow" style="display:none;width:100%;text-align:center;margin-top:4px;">
+      <div style="font-size:9px;letter-spacing:1px;color:var(--muted);font-weight:700;">BATCH COUNT</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);" id="fmBatchCount">0 / —</div>
+    </div>
+
+    <!-- Batch Ready Flag -->
+    <div id="fmBatchReady" style="display:none;width:100%;text-align:center;background:rgba(61,232,138,.15);border:1px solid var(--success);padding:5px;margin-top:2px;">
+      <span style="font-size:10px;letter-spacing:2px;font-weight:700;color:var(--success);">✓ BATCH READY</span>
+    </div>
+
+  </div>
+
+  <div class="data-box">
+    <div class="db-title">DATA BOX</div>
+    <div class="db-row"><span class="db-key">ACTUAL C/T</span><span class="db-val" id="dbCTact">—</span></div>
+    <div class="db-row"><span class="db-key">AVG C/T</span><span class="db-val" id="dbCTmoy">—</span></div>
+    <div class="db-row"><span class="db-key">MIN C/T</span><span class="db-val" id="dbCTmin">—</span></div>
+    <div class="db-divider"></div>
+    <div class="db-row"><span class="db-key">TAKT TIME</span><span class="db-val accent" id="dbTakt">—</span></div>
+    <div class="db-row"><span class="db-key">C/O</span><span class="db-val accent" id="dbCO">—</span></div>
+    <div class="db-divider"></div>
+    <div class="db-row"><span class="db-key">AVAIL %</span><span class="db-val good" id="dbDispo">100%</span></div>
+    <div class="db-row"><span class="db-key">OUTPUT</span><span class="db-val good" id="dbOutput">0</span></div>
+    <div class="db-row"><span class="db-key">ERRORS</span><span class="db-val bad" id="dbScrap">0</span></div>
+    <div class="db-row"><span class="db-key">FTY %</span><span class="db-val good" id="dbFTY">—</span></div>
+    <div class="db-divider"></div>
+    <div class="db-row"><span class="db-key">C/O TIME</span><span class="db-val accent" id="dbCOtime">—</span></div>
+    <div class="db-row"><span class="db-key">C/O COUNT</span><span class="db-val accent" id="dbCOcount">0</span></div>
+  </div>
+  </div><!-- end right column -->
+</div>
+
+<div class="bottom-bar">
+  <div class="bb-cell"><div class="bb-key">C/T</div><div class="bb-val" id="bbCT">—</div></div>
+  <div class="bb-cell"><div class="bb-key">TAKT</div><div class="bb-val" id="bbTakt">—</div></div>
+  <div class="bb-cell"><div class="bb-key">C/O</div><div class="bb-val" id="bbCO">—</div></div>
+  <div class="bb-cell"><div class="bb-key">AVAIL</div><div class="bb-val good" id="bbDispo">100%</div></div>
+  <div class="bb-cell"><div class="bb-key">OUTPUT</div><div class="bb-val good" id="bbOutput">0</div></div>
+  <div class="bb-cell"><div class="bb-key">FTY %</div><div class="bb-val good" id="bbFTY">—</div></div>
+  <div class="bb-cell"><div class="bb-key">WIP IN</div><div class="bb-val" id="bbWipIn">0</div></div>
+</div>
+
+<!-- SUIVI PAR CYCLE DE PRODUCTION -->
+<div class="run-history">
+  <div class="run-history-header">
+    <span class="run-history-title">📊 Production Run Tracking</span>
+    <span style="font-size:9px;color:#555;letter-spacing:1px;">1 row = 1 configuration run (between changeovers)</span>
+  </div>
+  <table class="run-table" id="runTable">
+    <thead>
+      <tr>
+        <th style="text-align:left;">RUN / CONFIG</th>
+        <th>C/T</th>
+        <th>WAIT</th>
+        <th>SHORTAGE</th>
+        <th>DOWNTIME</th>
+        <th>ERRORS</th>
+        <th>PASS</th>
+      </tr>
+    </thead>
+    <tbody id="runBody">
+      <tr><td colspan="5" style="color:#444;font-size:10px;padding:10px;text-align:center;">Start a cycle to begin tracking.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+let COLS=4, ROWS=4;
+let PIECE_MAP=[];
+let STATION_POSITIONS={ 1:[0,3,12,15], 2:[1,4,11,14], 3:[2,7,8,13], 4:[5,6,9,10] };
+const DEFAULT_PROFILE={cols:4,rows:4,1:[0,3,12,15],2:[1,4,11,14],3:[2,7,8,13],4:[5,6,9,10]};
+
+function sortByAdjacency(positions,cols,rows){
+  if(!positions||positions.length<=1)return positions||[];
+  const set=new Set(positions);
+  const ordered=[positions[0]];set.delete(positions[0]);
+  while(set.size>0){
+    let found=false;
+    for(let i=ordered.length-1;i>=0&&!found;i--){
+      const idx=ordered[i],r=Math.floor(idx/cols),c=idx%cols;
+      const nb=[];
+      if(r>0)nb.push((r-1)*cols+c);if(r<rows-1)nb.push((r+1)*cols+c);
+      if(c>0)nb.push(r*cols+(c-1));if(c<cols-1)nb.push(r*cols+(c+1));
+      for(const n of nb){if(set.has(n)){ordered.push(n);set.delete(n);found=true;break;}}
+    }
+    if(!found)break;
+  }
+  // Si le BFS n'a pas couvert toutes les positions (profil non-contigu),
+  // retourner l'ordre d'origine pour ne pas casser les anciens profils
+  return ordered.length===positions.length?ordered:positions;
+}
+function applyProfile(profileData){
+  const p=profileData||DEFAULT_PROFILE;
+  const newCols=p.cols||4, newRows=p.rows||4;
+  if(newCols!==COLS||newRows!==ROWS){
+    // Grid size changed → force topology regeneration
+    S.topology=null;
+    S.cornerSides={};
+  }
+  COLS=newCols; ROWS=newRows;
+  STATION_POSITIONS={};
+  for(let s=1;s<=6;s++){
+    const v=p[s]||p[String(s)];
+    if(v&&v.length) STATION_POSITIONS[s]=sortByAdjacency(v,COLS,ROWS);
+  }
+  PIECE_MAP=new Array(COLS*ROWS).fill(0);
+  for(let st=1;st<=6;st++){(STATION_POSITIONS[st]||[]).forEach(idx=>{PIECE_MAP[idx]=st;});}
+  const board=document.getElementById('puzzleBoard');
+  if(board) board.className='puzzle-board';
+}
+
+// ── PUZZLE BOARD : distinct industrial metals per station ─
+// S1 → Stainless steel (bluish grey)
+// S2 → Anodized aluminium (warm golden grey)
+// S3 → Grey cast iron (dark matte grey)
+// S4 → Titanium (cold violet grey)
+const METAL_FILL   = {1:'#7a9bb5',2:'#a09070',3:'#6a7a6a',4:'#8a85a8'};
+const METAL_STROKE = {1:'#3a6080',2:'#705a30',3:'#3a4a3a',4:'#504870'};
+const METAL_TEXT   = {1:'#e8f4ff',2:'#fff4e0',3:'#e0ede0',4:'#f0eeff'};
+const METAL_PLACED = '#c8d8e0';        // placed piece (neutral shine)
+const METAL_PLACED_STROKE = '#6a90a0';
+const METAL_GHOST  = '#2e3d4a';        // cellule vide autre station
+const METAL_GHOST_STROKE = '#1e2d3a';
+
+// ── BUFFER : couleurs industrielles ─────────────────────
+// Safety orange / Industrial blue / Safety yellow / Industrial cyan
+const BUFFER_FILL   = {1:'#e65100',2:'#1565c0',3:'#f9a825',4:'#00695c'};
+const BUFFER_STROKE = {1:'#bf360c',2:'#0d47a1',3:'#f57f17',4:'#004d40'};
+const BUFFER_TEXT   = {1:'#fff',   2:'#fff',   3:'#000',   4:'#fff'};
+
+// Station badge alias (keeps vivid colors for visual identity)
+const ST_COLOR={1:'#e84040',2:'#f0a500',3:'#3de88a',4:'#00c2a8',5:'#c07de0',6:'#80cc44'};
+const ST_STROKE={1:'#a01818',2:'#a06000',3:'#20a050',4:'#007a6a',5:'#7a40a0',6:'#508820'};
+const ST_TEXT={1:'#fff',2:'#000',3:'#000',4:'#000',5:'#fff',6:'#000'};
+
+const COMPONENT_POOL=[
+  {id:'A1',name:'Shaft Ø6'},{id:'B2',name:'Bushing'},{id:'C3',name:'Housing'},
+  {id:'D4',name:'Sleeve'},{id:'E5',name:'Nut M8'},{id:'F6',name:'Flange'},
+  {id:'G7',name:'Pin'},{id:'H8',name:'Hex M10'},{id:'J9',name:'Gasket'},
+  {id:'K10',name:'Spring'},{id:'L11',name:'Lever'},{id:'M12',name:'Coupling'},
+  {id:'N13',name:'Nut Block'},{id:'P14',name:'Pivot'},{id:'R15',name:'Washer'},
+  {id:'S16',name:'Ring'},{id:'T17',name:'Rod Ø4'},{id:'U18',name:'Unit'},
+  {id:'V19',name:'Screw M6'},{id:'W20',name:'Cap'},{id:'X21',name:'Bracket'},
+  {id:'Y22',name:'Yoke'},{id:'Z23',name:'Circlip'},{id:'Q24',name:'Cam'},
+];
+
+const params=new URLSearchParams(window.location.search);
+const STATION=parseInt(params.get('station')||'1');
+const SESSION=params.get('session')||'demo';
+const ASSY_NAMES={1:'ASSY 1',2:'ASSY 2',3:'ASSY 3',4:'ASSY 4',5:'ASSY 5',6:'ASSY 6'};
+document.getElementById('stationBadge').textContent=ASSY_NAMES[STATION]||`ASSY ${STATION}`;
+document.getElementById('stationBadge').style.background=ST_COLOR[STATION]||'var(--accent)';
+document.getElementById('stationBadge').style.color=ST_TEXT[STATION]||'#000';
+document.getElementById('sessionId').textContent=SESSION.toUpperCase();
+
+const legendEl=document.getElementById('puzzleLegend');
+let NB_STATIONS=4,sessionStart=null,sessionInterval=null,db=null;
+function renderPuzzleLegend(){
+  legendEl.innerHTML='';
+  for(let s=1;s<=NB_STATIONS;s++){
+    const sp=document.createElement('span');
+    sp.style.cssText=`color:${ST_COLOR[s]||'#aaa'};margin-right:12px;font-weight:700;`;
+    sp.textContent=`■ ASSY ${s}`;
+    legendEl.appendChild(sp);
+  }
+}
+renderPuzzleLegend();
+
+let CFG={takt:15,co:30};
+
+let S={
+  wipIn:0,wipOut:0,cycles:0,output:0,scrap:0,history:[],
+  myPieces:[],cornerComps:[],placedPositions:{},puzzleState:{},
+  running:false,started:false,startTime:null,raf:null,errorCount:0,
+  topology:null,cornerSides:{},bufferDisplayOrder:null,gamme:[],lastResetSignal:null,inheritedState:{},fty:0,
+  coCount:0,coTotalMs:0,lastCoSignal:null,coStart:null,coRaf:null,
+  waitStart:null,    // timestamp when wipIn>0 → wait time start
+  waitRaf:null,      // RAF pour le compteur wait live
+  cycleWaitMs:0,     // wait captured at 1st drag of cycle
+  cycleErrors:0,     // erreurs du cycle courant
+  totalWaitMs:0,     // cumul total des temps d'attente session
+  stopStart:null,    // timestamp when STOP pressed
+  stopRaf:null,      // RAF for stop live display
+  totalStopMs:0,     // cumulative downtime this session
+  stopCount:0,       // number of stop events
+  runStopMs:0,       // downtime accrued in current run (between C/O)
+  cycleStopMs:0,     // downtime in current cycle
+  shortageStart:null,  // timestamp when storage area went empty
+  shortageRaf:null,    // RAF for shortage live display
+  totalShortageMs:0,   // cumulative shortage time this session
+  shortageCount:0,     // number of shortage events
+  cycleShortageMs:0,   // shortage time in current cycle
+  customerDemand:0,  // demand set by trainer (Station 1)
+  runOutputStart:0,  // S.output at start of current run (pour calcul demand par run)
+  coRunning:false,
+  coProfileLabel:'',
+  currentStep:0,
+  coWastePieces:0,coWasteSets:0,  // gaspillage storage au C/O courant
+  coStorageCleared:true,          // storage area cleared during C/O
+  coSfgCleared:true,              // SFG cleared during C/O
+  runs:[],
+  batchMode:false,   // true = batch mode
+  batchSize:1,       // nb cycles before sending downstream
+  batchCount:0,      // cycles completed in current batch
+  batchResetTimer:null, // timer between batch cycles (cancel if new cycle starts too quickly)
+  currentRun:null,
+};
+
+// ── SVG ENGINE ──────────────────────────────────────────
+function generateTopology(){
+  const h=[],v=[];
+  for(let r=0;r<ROWS-1;r++){h[r]=[];for(let c=0;c<COLS;c++)h[r][c]=Math.random()>.5?1:-1;}
+  for(let r=0;r<ROWS;r++){v[r]=[];for(let c=0;c<COLS-1;c++)v[r][c]=Math.random()>.5?1:-1;}
+  return{h,v};
+}
+function getSides(flatIdx,topo,cols,rows){
+  cols=cols||COLS;rows=rows||ROWS;
+  const row=Math.floor(flatIdx/cols),col=flatIdx%cols;
+  const{h,v}=topo;
+  return{
+    top:   row===0      ?0:h[row-1][col],
+    bottom:row===rows-1 ?0:-h[row][col],
+    left:  col===0      ?0:v[row][col-1],
+    right: col===cols-1 ?0:-v[row][col],
+  };
+}
+function piecePath(sides,SZ){
+  const T=SZ*.18,W=SZ*.28,C=SZ/2;
+  function tab(from,to,dir,out){
+    const dx=to[0]-from[0],dy=to[1]-from[1],len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len,px=-uy*dir,py=ux*dir,m=out*T;
+    const p=(a,b)=>`${a.toFixed(1)},${b.toFixed(1)}`;
+    const x1=from[0]+ux*(C-W)+px*m*.3,y1=from[1]+uy*(C-W)+py*m*.3;
+    const x2=from[0]+ux*(C-W)+px*m,  y2=from[1]+uy*(C-W)+py*m;
+    const x3=from[0]+ux*(C+W)+px*m,  y3=from[1]+uy*(C+W)+py*m;
+    const x4=from[0]+ux*(C+W)+px*m*.3,y4=from[1]+uy*(C+W)+py*m*.3;
+    return `L${p(x1,y1)} L${p(x2,y2)} L${p(x3,y3)} L${p(x4,y4)} L${p(to[0],to[1])}`;
+  }
+  let d=`M0,0 `;
+  d+=sides.top===0?`L${SZ},0 `:tab([0,0],[SZ,0],-1,sides.top);
+  d+=sides.right===0?`L${SZ},${SZ} `:tab([SZ,0],[SZ,SZ],1,sides.right);
+  d+=sides.bottom===0?`L0,${SZ} `:tab([SZ,SZ],[0,SZ],1,sides.bottom);
+  d+=sides.left===0?`L0,0 `:tab([0,SZ],[0,0],-1,sides.left);
+  return d+'Z';
+}
+function makeSVG(sides,sz,fill,stroke){
+  const d=piecePath(sides,sz);
+  return `<svg viewBox="0 0 ${sz} ${sz}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;width:${sz}px;height:${sz}px;display:block;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+}
+
+// ── CLOCK ──────────────────────────────────────────────
+function tickClock(){const n=new Date();document.getElementById('clockDisp').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');}
+setInterval(tickClock,1000);tickClock();
+function startSessionTimer(){
+  if(sessionStart)return;sessionStart=Date.now();
+  setInterval(()=>{
+    const e=Date.now()-sessionStart;
+    document.getElementById('sessionTimerDisp').textContent=[Math.floor(e/3600000),Math.floor((e%3600000)/60000),Math.floor((e%60000)/1000)].map(x=>String(x).padStart(2,'0')).join(':');
+    const prod=S.history.reduce((a,b)=>a+b,0);
+    const pct=Math.min(Math.round((prod/e)*100),100)||0;
+    document.getElementById('occDisp').textContent=pct+'%';
+    document.getElementById('occDisp').className='chrono-val cv-occ '+(pct<40?'low':pct<70?'mid':'');
+    document.getElementById('occBar').className='occ-bar-fill '+(pct<40?'low':pct<70?'mid':'');
+    document.getElementById('occBar').style.width=pct+'%';
+  },1000);
+}
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
+function fmt(ms){return Math.round(ms/1000);}
+// ── BUFFER MANAGEMENT ─────────────────────────────────────────
+const BUFFER_SETS = 4; // number of full sets in a box
+
+function initBuffer(){
+  const N = (STATION_POSITIONS[STATION]||[0,1,2,3]).length;
+  S.buffer = [];
+  for(let set=0; set<BUFFER_SETS; set++){
+    S.myPieces.forEach((piece,i)=>{
+      S.buffer.push({...piece, bufId:`${set}_${i}`, setIdx:set, placed:false});
+    });
+  }
+  S.buffer = shuffle(S.buffer); // mix all sets together
+  S.bufferEmpty = false;
+  updateReplenUI();
+  pushBufferLevel();
+}
+
+function initBufferEmpty(){
+  // Start with empty storage area — operator must request replenishment
+  S.buffer = [];
+  S.bufferEmpty = true;
+  updateReplenUI();
+  pushBufferLevel();
+  // Immediately trigger shortage timer (we have WIP or are station 1)
+  if(S.shortageStart===null){
+    startShortageTimer();
+  }
+  // Disable start button — no parts to assemble
+  const btn = document.getElementById('btnStart');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Waiting for Replenishment';}
+  setMsg('📦 Storage Area empty — request replenishment to begin','err');
+}
+
+function setsRemaining(){
+  const N = S.myPieces.length || 4;
+  const unplaced = S.buffer.filter(p=>!p.placed).length;
+  return Math.floor(unplaced / N);
+}
+
+function piecesRemaining(){
+  return S.buffer.filter(p=>!p.placed).length;
+}
+
+function updateReplenUI(){
+  const N = S.myPieces.length || 4;
+  const sets = setsRemaining();
+  const total = BUFFER_SETS;
+  const el = document.getElementById('replenSetsVal');
+  if(el){
+    el.textContent = `${sets} / ${total}`;
+    el.className = 'replen-sets' + (sets===0?' empty':sets<=1?' low':'');
+  }
+  const btn = document.getElementById('btnReplen');
+  // Button active when buffer empty or low AND not already in active delivery
+  const canRequest = sets<=1 && (S.replenStatus==='idle'||S.replenStatus==='arrived');
+  if(btn) btn.disabled = !canRequest;
+}
+
+function requestReplenishment(){
+  if(!db || S.replenStatus !== 'idle') return;
+  S.replenStatus = 'queued';
+  updateReplenUI();
+  showReplenStatus('queued','⏳ In queue...');
+  db.ref(`assembly_line/${SESSION}/replenishment/requests`).push({
+    station: STATION,
+    requested_at: Date.now(),
+    status: 'queued'
+  });
+  if(db) db.ref(`assembly_line/${SESSION}/replenishment/requests`)
+    .orderByChild('station').equalTo(STATION).limitToLast(1)
+    .once('value',snap=>{
+      if(snap.exists()){
+        const key=Object.keys(snap.val())[0];
+        S.replenRequestKey=key;
+      }
+    });
+}
+
+function showReplenStatus(type, text){
+  const sw = document.getElementById('replenStatusWrap');
+  const sel = document.getElementById('replenStatus');
+  if(sw) sw.style.display='block';
+  if(sel){ sel.textContent=text; sel.className='replen-status '+type; }
+}
+
+function hideReplenStatus(){
+  const sw = document.getElementById('replenStatusWrap');
+  if(sw) sw.style.display='none';
+  const cw = document.getElementById('replenCountdownWrap');
+  if(cw) cw.style.display='none';
+}
+
+function startReplenCountdown(arrivesAt){
+  S.replenArrivesAt = arrivesAt;
+  const cw = document.getElementById('replenCountdownWrap');
+  if(cw) cw.style.display='block';
+  function tick(){
+    const remaining = Math.max(0, Math.ceil((S.replenArrivesAt - Date.now())/1000));
+    const el = document.getElementById('replenCountdown');
+    if(el) el.textContent = remaining + 's';
+    if(remaining > 0) S.replenRaf = requestAnimationFrame(tick);
+  }
+  cancelAnimationFrame(S.replenRaf);
+  S.replenRaf = requestAnimationFrame(tick);
+}
+
+function listenReplenishment(){
+  if(!db) return;
+  // Listen for delivery targeted at this station
+  db.ref(`assembly_line/${SESSION}/replenishment/deliveries/s${STATION}`).on('value', snap=>{
+    const data = snap.val();
+    if(!data){
+      // No delivery data — ensure status is idle and button can be enabled
+      if(S.replenStatus==='delivering'||S.replenStatus==='queued'){
+        S.replenStatus='idle';
+        updateReplenUI();
+      }
+      return;
+    }
+    if(data.status === 'delivering' && S.replenStatus !== 'delivering'){
+      S.replenStatus = 'delivering';
+      showReplenStatus('delivering','🚚 Delivery on the way...');
+      startReplenCountdown(data.arrives_at);
+    }
+    if(data.status === 'arrived' && S.replenStatus !== 'idle'){
+      S.replenStatus = 'arrived';
+      cancelAnimationFrame(S.replenRaf);
+      onDeliveryArrived();
+    }
+  });
+}
+
+function onDeliveryArrived(){
+  // Refill buffer with 4 fresh mixed sets
+  initBuffer();
+  S.replenStatus = 'idle';
+  hideReplenStatus();
+  showReplenStatus('arrived','✅ Delivery received!');
+  setTimeout(hideReplenStatus, 3000);
+  // If buffer was empty and waiting, stop the SHORTAGE timer
+  if(S.bufferEmpty){
+    S.bufferEmpty = false;
+    stopShortageTimer();
+  }
+  // Re-render buffer and re-enable start
+  renderBuffer();
+  updateReplenUI();
+  const btn = document.getElementById('btnStart');
+  if(btn && !S.running && !S.wipOut){
+    if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+  }
+  setMsg('📦 Replenishment received — buffer refilled (4 sets)','ok');
+  // Clean up delivery record in Firebase
+  if(db) db.ref(`assembly_line/${SESSION}/replenishment/deliveries/s${STATION}`).remove();
+}
+
+function checkBufferEmpty(){
+  if(piecesRemaining()===0 && !S.bufferEmpty){
+    S.bufferEmpty = true;
+    // Block start button
+    const btn = document.getElementById('btnStart');
+    if(btn){btn.disabled=true;btn.textContent='⏳ Waiting for Replenishment';}
+    // Stop wait timer if running (different cause) and start SHORTAGE timer
+    if(S.waitStart!==null){
+      S.totalWaitMs+=performance.now()-S.waitStart;
+      S.waitStart=null;
+      stopWaitTimer();
+      updateWaitTotal();
+    }
+    startShortageTimer();
+    setMsg('📦 Storage Area empty — waiting for replenishment','err');
+  }
+}
+
+function setMsg(txt,type='info'){const el=document.getElementById('statusMsg');el.textContent=txt;el.className=`status-msg show ${type}`;if(!txt)el.classList.remove('show');}
+
+// ── INIT ───────────────────────────────────────────────
+function initStation(){
+  applyProfile(DEFAULT_PROFILE);
+  ['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=CFG.takt+'s');
+  // dbCO and bbCO updated only from actual measured times
+  document.getElementById('stationName').textContent=`${ASSY_NAMES[STATION]} — ASSEMBLY`;
+  const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
+  const segStart=(STATION-1)*4;
+  S.myPieces=myPositions.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
+  initBufferEmpty();  // starts empty — operator must request replenishment
+  initCycle();
+  updateWIPDisplay();
+  setConn('waiting','Connecting to Firebase...');
+  initFirebase();
+}
+
+function initCycle(){
+  // Guard: never reset if a cycle is in progress
+  if(S.running) return;
+  // Fixed topology per profile — regenerated if needed
+  if(!S.topology){
+    S.topology=generateTopology();
+  }
+  // Always recalculate cornerSides with current positions
+  S.cornerSides={};
+  (STATION_POSITIONS[STATION]||[]).forEach(pos=>{
+    S.cornerSides[pos]=getSides(pos,S.topology);
+  });
+  S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]); // random visual order in buffer
+  S.gamme=[...Array(S.myPieces.length).keys()];  // FIXED assembly sequence : 0,1,2,3...
+  // Buffer persists across cycles — only reset per-cycle state
+  if(S.buffer&&S.buffer.length>0){
+    // Re-populate cornerComps from buffer
+    const unplacedByPos={};
+    S.buffer.filter(p=>!p.placed).forEach(p=>{
+      if(!unplacedByPos[p.targetPos]) unplacedByPos[p.targetPos]=[];
+      unplacedByPos[p.targetPos].push(p);
+    });
+    S.cornerComps=S.myPieces.map(p=>{
+      const avail=unplacedByPos[p.targetPos];
+      return avail&&avail.length>0 ? avail[0] : {...p,bufId:'fallback'};
+    });
+    // Rebuild display order (unplaced pieces only, shuffled)
+    const unplacedIdxs=S.buffer.map((p,i)=>(!p.placed?i:null)).filter(i=>i!==null);
+    S.bufferDisplayOrder=shuffle(unplacedIdxs);
+  } else {
+    S.cornerComps=S.myPieces.map(p=>({...p}));
+    S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]);
+  }
+  S.placedPositions={};
+  S.currentStep=0;
+  S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
+  S.cycleErrors=0;S.cycleWaitMs=0;S.cycleStopMs=0;S.cycleShortageMs=0;
+  // waitStart intentionally not reset — persists if wipIn > 0
+  const scrapEl=document.getElementById('dbScrap');
+  if(scrapEl)scrapEl.textContent='0';
+  cancelAnimationFrame(S.raf);
+  const td=document.getElementById('timerDisp');td.textContent='00.000';td.className='timer-val';
+  document.getElementById('validateBanner').classList.remove('show');
+  document.getElementById('btnValidate').disabled=true;
+  setMsg('');
+  renderBuffer();renderBoard();updateBufferProgress();
+  const btn=document.getElementById('btnStart');
+  const batchBlocking=S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize);
+  if(batchBlocking){btn.disabled=true;btn.textContent='⏳ Send Downstream First';}
+  else if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+  else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
+  // Station 1: relabel Incoming WIP as Incoming Order
+  if(STATION===1){
+    const lbl=document.querySelector(".wip-box.wip-in .wip-label");
+    const sub=document.querySelector(".wip-box.wip-in .wip-sub");
+    if(lbl) lbl.textContent="Incoming Order";
+    if(sub) sub.textContent="set by trainer";
+    const rb=document.getElementById('btnRefreshDemand');
+    if(rb) rb.style.display='inline-block';
+  }
+}
+
+// ── RENDER BUFFER ──────────────────────────────────────
+function renderBuffer(){
+  const bar=document.getElementById('bufferBar');
+  const totalPieces=piecesRemaining();
+  const lockMsg='<div style="font-size:9px;letter-spacing:1px;color:var(--danger);font-weight:700;text-transform:uppercase;align-self:center;margin-left:4px;">🔒 Start Cycle First</div>';
+  bar.innerHTML='<div class="buffer-bar-label">STORAGE AREA</div>'+(!S.running&&totalPieces>0?lockMsg:'');
+
+  if(totalPieces===0){
+    bar.innerHTML+='<div style="font-size:11px;color:#555;letter-spacing:1px;align-self:center;padding:8px;">📦 Storage Area empty — replenishment needed</div>';
+    checkBufferEmpty();
+    updateReplenUI();
+    return;
+  }
+
+  // Scan S.buffer directly — shows ALL unplaced pieces (all 4 sets mixed)
+  S.buffer.forEach((comp, bufIdx)=>{
+    if(comp.placed) return;
+    const div=document.createElement('div');
+    div.className='buffer-piece';
+    div.dataset.bufIdx=bufIdx;
+    const fill=METAL_FILL[STATION];
+    const stroke=METAL_STROKE[STATION];
+    const sides=S.cornerSides[comp.targetPos]||{top:0,right:0,bottom:0,left:0};
+    const pad=14,vs=60+pad*2,d=piecePath(sides,60);
+    div.innerHTML=`<svg viewBox="${-pad} ${-pad} ${vs} ${vs}" xmlns="http://www.w3.org/2000/svg" width="72" height="72" style="display:block;margin:auto;overflow:visible;pointer-events:none;"><path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+    const numEl=document.createElement('span');
+    numEl.className='bp-num';
+    numEl.textContent=STATION;
+    numEl.style.color=METAL_TEXT[STATION];
+    div.appendChild(numEl);
+
+    if(!S.running){
+      div.style.cursor='not-allowed';div.style.opacity='0.6';
+    } else {
+      div.draggable=true;div.style.cursor='grab';
+      div.style.userSelect='none';div.style.webkitUserSelect='none';
+      div.addEventListener('dragstart',e=>{
+        div.classList.add('dragging');
+        e.dataTransfer.setData('compIdx',String(bufIdx));
+        e.dataTransfer.effectAllowed='move';
+        currentDrag={bufIdx,comp};
+      });
+      div.addEventListener('dragend',()=>{
+        div.classList.remove('dragging');currentDrag=null;renderBuffer();
+      });
+      div.addEventListener('click',()=>{
+        if(currentDrag&&currentDrag.bufIdx===bufIdx){
+          currentDrag=null;renderBuffer();
+        } else {
+          currentDrag={bufIdx,comp};
+          document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
+          div.style.outline='3px solid var(--success)';
+          setMsg('✅ Part selected — click its target zone on the assembly frame','ok');
+        }
+      });
+      div.addEventListener('touchstart',()=>{currentDrag={bufIdx,comp};},{passive:true});
+    }
+    bar.appendChild(div);
+  });
+  updateReplenUI();
+}
+
+function updateBufferProgress(){
+  const placed=Object.keys(S.placedPositions).length;
+  document.getElementById('bufferProgress').textContent=`${placed} / ${S.myPieces.length}`;
+  updateReplenUI();
+}
+
+// ── DROP LOGIC ─────────────────────────────────────────
+// ── RENDER BOARD — FIXED v5.1 ──────────────────────────
+// Corrections :
+// 1. corner-drop: explicit width/height = drop zone correctly positioned
+// 2. dragover : e.dataTransfer.dropEffect='move' = drop garanti par le navigateur
+// 3. placed pieces: popIn animation to confirm placement
+// 4. other station pieces: 50% opacity (vs 35%) + lighter gray
+function renderBoard(justPlacedPos=null){
+  const board=document.getElementById('puzzleBoard');
+  board.innerHTML='';
+  const SZ=COLS===5?52:62;
+  const W=COLS*SZ,H=ROWS*SZ;
+  board.style.width=W+'px';board.style.height=H+'px';
+
+  // ── Single SVG for all piece graphics ──────────────────
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width',W);svg.setAttribute('height',H);
+  svg.style.cssText='display:block;overflow:visible;position:absolute;top:0;left:0;pointer-events:none;';
+
+  // 3 layers: ghosts first, inherited, placed last (tabs render on top)
+  const layers=[[],[],[]];
+  for(let fi=0;fi<COLS*ROWS;fi++){
+    const sides=getSides(fi,S.topology);
+    const ownerStation=PIECE_MAP[fi];
+    const isMyPos=(STATION_POSITIONS[STATION]||[]).includes(fi);
+    const alreadyPlaced=!!S.placedPositions[fi];
+    // prevPlaced: from inheritedState only (Firebase data after upstream station finishes)
+    const inheritedVal=S.inheritedState&&S.inheritedState[fi];
+    const prevPlaced=inheritedVal||0;
+    if(isMyPos&&!alreadyPlaced) continue;
+    const col=fi%COLS,row=Math.floor(fi/COLS);
+    const tx=col*SZ,ty=row*SZ;
+    const stNum=alreadyPlaced?STATION:(prevPlaced||ownerStation);
+    const fill=alreadyPlaced?METAL_PLACED:(prevPlaced?METAL_FILL[prevPlaced]:METAL_GHOST);
+    const stroke=alreadyPlaced?METAL_PLACED_STROKE:(prevPlaced?METAL_STROKE[prevPlaced]:METAL_GHOST_STROKE);
+    const d=piecePath(sides,SZ);
+    const g=document.createElementNS(NS,'g');
+    g.setAttribute('transform',`translate(${tx},${ty})`);
+    if(!alreadyPlaced&&!prevPlaced) g.setAttribute('opacity','0.25');
+    const path=document.createElementNS(NS,'path');
+    path.setAttribute('d',d);path.setAttribute('fill',fill);
+    path.setAttribute('stroke',stroke);path.setAttribute('stroke-width','1.5');
+    path.setAttribute('stroke-linejoin','round');
+    if(alreadyPlaced && fi===justPlacedPos){
+      const anim=document.createElementNS(NS,'animate');
+      anim.setAttribute('attributeName','opacity');anim.setAttribute('from','0');
+      anim.setAttribute('to','1');anim.setAttribute('dur','0.25s');anim.setAttribute('fill','freeze');
+      path.appendChild(anim);
+    }
+    g.appendChild(path);
+    const txt=document.createElementNS(NS,'text');
+    txt.setAttribute('x',String(SZ/2));txt.setAttribute('y',String(SZ/2));
+    txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','central');
+    txt.setAttribute('fill',(alreadyPlaced||prevPlaced)?METAL_TEXT[stNum]:'#3a5060');
+    txt.setAttribute('font-size',String(Math.round(SZ*.2)));
+    txt.setAttribute('font-family',"'Barlow Condensed',sans-serif");
+    txt.setAttribute('font-weight','700');txt.setAttribute('pointer-events','none');
+    txt.textContent=String(stNum);
+    g.appendChild(txt);
+    layers[alreadyPlaced?2:(prevPlaced?1:0)].push(g);
+  }
+  layers[0].forEach(g=>svg.appendChild(g));
+  layers[1].forEach(g=>svg.appendChild(g));
+  layers[2].forEach(g=>svg.appendChild(g));
+  board.appendChild(svg);
+
+  // ── Drop zone overlay (absolute positioned) ─────────────
+  const overlay=document.createElement('div');
+  overlay.style.cssText=`position:absolute;top:0;left:0;width:${W}px;height:${H}px;pointer-events:none;`;
+  for(let fi=0;fi<COLS*ROWS;fi++){
+    const isMyPos=(STATION_POSITIONS[STATION]||[]).includes(fi);
+    const alreadyPlaced=!!S.placedPositions[fi];
+    if(!(isMyPos&&!alreadyPlaced)) continue;
+    const col=fi%COLS,row=Math.floor(fi/COLS);
+    const comp=S.cornerComps.find(c=>c.targetPos===fi);
+    const compIdx=S.cornerComps.indexOf(comp);
+    const chronoNum=S.gamme.indexOf(compIdx)+1;
+    const cell=document.createElement('div');
+    cell.className='corner-drop'+(S.running?' pulsing':'');
+    cell.style.cssText=`position:absolute;left:${col*SZ}px;top:${row*SZ}px;width:${SZ}px;height:${SZ}px;pointer-events:all;box-sizing:border-box;`;
+    cell.dataset.pos=fi;
+    cell.innerHTML=`<span class="drop-hint" style="font-size:13px;font-weight:900;opacity:0.9;font-family:'Share Tech Mono',monospace;color:var(--accent);">${chronoNum}</span>`;
+    if(S.running){
+      cell.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';cell.classList.add('drag-over');cell.classList.remove('pulsing');});
+      cell.addEventListener('dragleave',()=>{cell.classList.remove('drag-over');cell.classList.add('pulsing');});
+      cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');const idx=parseInt(e.dataTransfer.getData('compIdx'));handleDrop(idx,fi);});
+      // Click on target cell (if piece selected by click in buffer)
+      cell.addEventListener('click',()=>{
+        if(!currentDrag) return; // no piece selected from buffer
+        const sel = S.buffer[currentDrag.bufIdx];
+        if(!sel || sel.placed){ currentDrag=null; return; } // selected piece already consumed
+        document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
+        const bIdx2 = currentDrag.bufIdx;
+        currentDrag = null; // clear BEFORE handleDrop to prevent re-entry
+        handleDrop(bIdx2, fi);
+      });
+    }
+    overlay.appendChild(cell);
+  }
+  board.appendChild(overlay);
+}
+
+
+let currentDrag=null; // {bufIdx, comp}
+
+function handleDrop(bufIdx,targetPos){
+  if(!S.running){setMsg('▶ Click "Start Cycle" to begin','err');return;}
+  const comp=S.buffer[bufIdx];
+  if(!comp||comp.placed)return;
+
+  // ── ORDER CHECK : must click the expected next cell ────────
+  const expectedIdx = S.gamme[S.currentStep];
+  const expectedPos = S.myPieces[expectedIdx]?.targetPos;
+  if(targetPos !== expectedPos){
+    S.errorCount++;S.cycleErrors++;
+    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
+    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');},400);}
+    currentDrag=null;
+    document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
+    setMsg(`❌ Wrong cell! Place part #${S.currentStep+1} — click the highlighted cell.`,'err');
+    renderBuffer();return;
+  }
+
+  // ── PIECE CHECK : selected piece must match this cell ──────
+  if(comp.targetPos !== targetPos){
+    S.errorCount++;S.cycleErrors++;
+    const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
+    if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');},400);}
+    currentDrag=null;
+    document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
+    setMsg(`❌ Wrong part! Pick part #${S.currentStep+1} from the Storage Area first.`,'err');
+    renderBuffer();return;
+  }
+
+  const actualComp=comp, actualBufIdx=bufIdx;
+
+  if(actualComp.targetPos===targetPos){
+    // Adjacency check
+    const upstreamPlaced=PIECE_MAP.reduce((acc,st,idx)=>{if(st>0&&st<STATION)acc.push(idx);return acc;},[]);
+    const allPlaced=[
+      ...Object.keys(S.placedPositions).map(Number),
+      ...Object.keys(S.inheritedState||{}).map(Number),
+      ...upstreamPlaced
+    ];
+    if(Object.keys(S.placedPositions).length>0){
+      const tRow=Math.floor(targetPos/COLS),tCol=targetPos%COLS;
+      const adjacent=allPlaced.some(p=>{
+        const pRow=Math.floor(p/COLS),pCol=p%COLS;
+        return (tRow===pRow&&Math.abs(tCol-pCol)===1)||(tCol===pCol&&Math.abs(tRow-pRow)===1);
+      });
+      if(!adjacent){
+        S.errorCount++;S.cycleErrors++;
+        const cell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${targetPos}"]`);
+        if(cell){cell.classList.add('error-flash');setTimeout(()=>{cell.classList.remove('error-flash');if(S.running)cell.classList.add('pulsing');},400);}
+        setMsg(`⚠ Not adjacent to assembly — connect to an already placed part (errors: ${S.errorCount})`,'err');
+        renderBuffer();return;
+      }
+    }
+    // Start/continue cycle timer
+    if(!S.started){
+      S.started=true;S.startTime=performance.now();
+      if(S.waitStart!==null&&S.currentRun){
+        S.cycleWaitMs=S.startTime-S.waitStart;
+        S.currentRun.waitTotalMs+=S.cycleWaitMs;
+        S.totalWaitMs+=S.cycleWaitMs;
+        S.waitStart=null;stopWaitTimer();updateWaitTotal();
+      }
+      runTimer();
+    }
+    // Mark buffer piece as consumed
+    S.buffer[actualBufIdx].placed=true;
+    S.placedPositions[targetPos]=actualComp;
+    S.currentStep++;
+    document.querySelectorAll('.buffer-piece').forEach(d=>d.style.outline='');
+    renderBuffer();renderBoard(targetPos);updateBufferProgress();
+    // Highlight next expected cell
+    if(S.currentStep < S.myPieces.length){
+      const nextPos = S.myPieces[S.gamme[S.currentStep]]?.targetPos;
+      if(nextPos !== undefined){
+        setTimeout(()=>{
+          const nextCell=document.getElementById('puzzleBoard').querySelector(`[data-pos="${nextPos}"]`);
+          if(nextCell){nextCell.style.boxShadow='0 0 0 3px var(--success)';nextCell.style.borderColor='var(--success)';}
+        },80);
+      }
+    }
+    setMsg(`✓ Part placed (${Object.keys(S.placedPositions).length}/${S.myPieces.length})`,'ok');
+    if(Object.keys(S.placedPositions).length===S.myPieces.length)finishCycle(true);
+  }
+}
+
+
+document.addEventListener('touchmove',e=>{
+  if(!currentDrag)return;
+  const touch=e.touches[0];
+  document.querySelectorAll('.corner-drop.drag-over').forEach(s=>s.classList.remove('drag-over'));
+  const el=document.elementFromPoint(touch.clientX,touch.clientY);
+  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)cd.classList.add('drag-over');}
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!currentDrag)return;
+  if(!S.running){currentDrag=null;setMsg('▶ Click "Start Cycle" to begin','err');return;}
+  const touch=e.changedTouches[0];
+  const el=document.elementFromPoint(touch.clientX,touch.clientY);
+  if(el){const cd=el.closest('.corner-drop[data-pos]');if(cd)handleDrop(currentDrag.bufIdx!==undefined?currentDrag.bufIdx:currentDrag.idx,parseInt(cd.dataset.pos));}
+  document.querySelectorAll('.drag-over').forEach(s=>s.classList.remove('drag-over'));
+  currentDrag=null;
+});
+
+// ── CYCLE ──────────────────────────────────────────────
+function startCycle(){
+  if(S.running)return;
+  if(S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize)){setMsg('⚠ Please send the finished product downstream before starting a new cycle','err');return;}
+  if(STATION>1&&S.wipIn<=0){setMsg('⏳ No parts in incoming WIP!','err');return;}
+  if(piecesRemaining()===0&&S.replenStatus!=='idle'){setMsg('📦 Storage Area empty — waiting for replenishment','err');return;}
+  startSessionTimer();
+  if(STATION>1&&db){
+    db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).limitToFirst(1).once('value',snap=>{
+      if(snap.exists()){
+        const key=Object.keys(snap.val())[0];
+        S.inheritedState=snap.val()[key]||{};
+        db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}/${key}`).remove();
+      } else {
+        S.inheritedState={};
+      }
+      db.ref(`assembly_line/${SESSION}/stations/s${STATION}/wip_in`).transaction(v=>Math.max(0,(v||0)-1));
+      _doStartCycle();
+    });
+  } else {
+    S.inheritedState={};
+    _doStartCycle();
+  }
+}
+
+function _doStartCycle(){
+  if(S.batchResetTimer){clearTimeout(S.batchResetTimer);S.batchResetTimer=null;}
+  if(!S.currentRun)startRun('Initial Run');
+  S.running=true;
+  if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(1);
+  document.getElementById('timerDisp').classList.add('running');
+  setMsg('▶ Pick a part → Place it on the assembly frame','ok');
+  document.getElementById('btnStart').disabled=true;
+  renderBuffer();renderBoard();
+  // ── Highlight first expected cell ──────────────────────
+  const _firstPos = S.myPieces[S.gamme[0]]?.targetPos;
+  if(_firstPos !== undefined){
+    setTimeout(()=>{
+      const _firstCell = document.getElementById('puzzleBoard')
+                         .querySelector(`[data-pos="${_firstPos}"]`);
+      if(_firstCell){
+        _firstCell.style.boxShadow   = '0 0 0 3px var(--success)';
+        _firstCell.style.borderColor = 'var(--success)';
+      }
+    }, 80);
+  }
+}
+function runTimer(){
+  const el=document.getElementById('timerDisp');
+  function tick(){if(!S.running)return;el.textContent=((performance.now()-S.startTime)/1000).toFixed(3);S.raf=requestAnimationFrame(tick);}
+  S.raf=requestAnimationFrame(tick);
+}
+function finishCycle(ok){
+  S.running=false;cancelAnimationFrame(S.raf);
+  const elapsed=S.startTime?performance.now()-S.startTime:0;
+  // ── SMED: C/O ends at the end of the 1st complete cycle ──────────────
+  if(S.coRunning) completeCO();
+  document.getElementById('timerDisp').classList.remove('running');
+  document.getElementById('timerDisp').classList.add('done');
+  S.cycles++;
+  // ── Record current cycle data ─────────────────────────────────────────
+  if(S.currentRun){
+    S.currentRun.cyclesData.push({
+      ct: elapsed,
+      waitMs: S.cycleWaitMs,
+      shortageMs: S.cycleShortageMs||0,
+      downtimeMs: S.cycleStopMs||0,
+      errors: S.cycleErrors,
+      passed: ok
+    });
+  }
+  if(ok){
+    S.output++;S.wipOut++;S.history.push(elapsed);
+    if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(0);
+    if(S.errorCount===0) S.fty++;
+    const isLast=(STATION===NB_STATIONS);
+    if(isLast){
+      showCompletePuzzle();
+      document.getElementById('valText').textContent='🏆 ASSEMBLY COMPLETE — Finished Product!';
+    } else {
+      document.getElementById('valText').textContent=`✅ ASSY ${STATION} done — ASSEMBLY → ASSY ${STATION+1}`;
+    }
+    setMsg(`✅ Assembly completed in ${fmt(elapsed)}s`,'ok');
+    document.getElementById('cycleCount').textContent=`Cycles: ${S.cycles}`;
+    updateStats();updateWIPDisplay();pushStats();
+    updateCurrentRun();
+
+    // ── BATCH MODE ──────────────────────────────────────────
+    if(S.batchMode){
+      S.batchCount++;
+      const done=S.batchCount>=S.batchSize;
+      document.getElementById('validateBanner').classList.add('show');
+      document.getElementById('btnValidate').disabled=!done;
+      document.getElementById('batchCounter').style.display='block';
+      document.getElementById('batchCounter').textContent=`${S.batchCount} / ${S.batchSize}`;
+      if(done){
+        document.getElementById('valSub').textContent=`Batch complete — Send ${S.batchSize} parts downstream`;
+        document.getElementById('batchCounter').style.color='var(--success)';
+        document.getElementById('btnStart').disabled=true;
+        document.getElementById('btnStart').textContent='⏳ Send Downstream First';
+        updateFlowModePanel();
+      } else {
+        document.getElementById('valSub').textContent=`Continue — ${S.batchSize-S.batchCount} more cycle(s)`;
+        document.getElementById('batchCounter').style.color='var(--accent)';
+        updateFlowModePanel();
+        // Re-enable Start Cycle for next batch cycle
+        // Use setTimeout to run after all other setters (Firebase, updateWIPDisplay, etc.)
+        S.batchResetTimer=setTimeout(()=>{
+          S.batchResetTimer=null;
+          // Reset du board pour le prochain cycle (sans toucher wipOut ni batchCount)
+          S.placedPositions={};S.currentStep=0;S.errorCount=0;S.cycleErrors=0;S.cycleWaitMs=0;
+          S.started=false;
+          document.getElementById('timerDisp').textContent='00.000';
+          document.getElementById('timerDisp').className='timer-val';
+          renderBuffer();renderBoard();
+          // Forcer Start actif — doit passer en dernier
+          document.getElementById('btnStart').disabled=false;
+          document.getElementById('btnStart').textContent='▶ Start Cycle';
+        },500);
+      }
+    } else {
+      // OPF — comportement normal
+      document.getElementById('validateBanner').classList.add('show');
+      document.getElementById('btnValidate').disabled=false;
+      document.getElementById('batchCounter').style.display='none';
+      document.getElementById('valSub').textContent='Validate to send downstream';
+    }
+
+    // ── If a part is already available, l'attente du prochain cycle commence maintenant ──
+    if(STATION===1 || S.wipIn>0){
+    }
+    checkWaitTimer();
+  } else {
+    setTimeout(()=>initCycle(),700);
+  }
+}
+
+function showCompletePuzzle(){
+  const board=document.getElementById('puzzleBoard');
+  board.innerHTML='';
+  const SZ=COLS===5?52:62;
+  const W=COLS*SZ,H=ROWS*SZ;
+  board.style.width=W+'px';board.style.height=H+'px';
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width',W);svg.setAttribute('height',H);
+  svg.style.cssText='display:block;overflow:visible;position:absolute;top:0;left:0;pointer-events:none;';
+  // Build full picture: inheritedState + placedPositions override PIECE_MAP
+  const fullPicture={};
+  // 1. Start with PIECE_MAP as base (station ownership)
+  for(let i=0;i<COLS*ROWS;i++) if(PIECE_MAP[i]) fullPicture[i]=PIECE_MAP[i];
+  // 2. Override with actual inherited data (more reliable)
+  Object.keys(S.inheritedState||{}).forEach(k=>{if(S.inheritedState[k]) fullPicture[Number(k)]=S.inheritedState[k];});
+  // 3. Override with this station's placed pieces
+  Object.keys(S.placedPositions||{}).forEach(k=>{fullPicture[Number(k)]=STATION;});
+  for(let fi=0;fi<COLS*ROWS;fi++){
+    const sides=getSides(fi,S.topology);
+    const stNum=fullPicture[fi]||1;
+    const col=fi%COLS,row=Math.floor(fi/COLS);
+    const tx=col*SZ,ty=row*SZ;
+    const g=document.createElementNS(NS,'g');
+    g.setAttribute('transform',`translate(${tx},${ty})`);
+    // No CSS animation on SVG <g> — use SVG animate instead for pop effect
+    const path=document.createElementNS(NS,'path');
+    path.setAttribute('d',piecePath(sides,SZ));
+    path.setAttribute('fill',METAL_FILL[stNum]||METAL_PLACED);
+    path.setAttribute('stroke',METAL_STROKE[stNum]||METAL_PLACED_STROKE);
+    path.setAttribute('stroke-width','1.5');
+    path.setAttribute('stroke-linejoin','round');
+    g.appendChild(path);
+    const txt=document.createElementNS(NS,'text');
+    txt.setAttribute('x',String(SZ/2));txt.setAttribute('y',String(SZ/2));
+    txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','central');
+    txt.setAttribute('fill',METAL_TEXT[stNum]||'#e8f0f4');
+    txt.setAttribute('font-size',String(Math.round(SZ*.2)));
+    txt.setAttribute('font-family',"'Barlow Condensed',sans-serif");
+    txt.setAttribute('font-weight','700');txt.setAttribute('pointer-events','none');
+    txt.textContent=String(stNum);
+    g.appendChild(txt);
+    svg.appendChild(g);
+  }
+  board.appendChild(svg);
+  // Flash the whole board to celebrate
+  svg.style.animation='completeFlash .6s ease 2';
+}
+
+function validatePiece(){
+  const banner=document.getElementById('validateBanner');
+  if(!banner.classList.contains('show')){setMsg('⚠ Assemble toutes tes pieces avant d\'envoyer en aval','err');return;}
+  banner.classList.remove('show');
+  document.getElementById('btnValidate').disabled=true;
+  document.getElementById('batchCounter').style.display='none';
+  document.getElementById('valSub').textContent='Validate to send downstream';
+  S.batchCount=0;
+  S.wipOut=0;
+  updateWIPDisplay();checkWaitTimer();
+  updateFlowModePanel();
+  if(db){
+    const cumulative={...S.inheritedState};
+    Object.keys(S.placedPositions).forEach(pos=>{cumulative[pos]=STATION;});
+    const qty=S.batchMode?S.batchSize:1;
+    if(STATION<NB_STATIONS){
+      // Send qty puzzles downstream
+      for(let i=0;i<qty;i++){
+        db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION+1}`).push(cumulative);
+      }
+      db.ref(`assembly_line/${SESSION}/stations/s${STATION+1}/wip_in`).transaction(v=>(v||0)+qty);
+      setMsg(qty>1?`📦 Batch ×${qty} → ASSY ${STATION+1}`:`📦 ASSEMBLY → ASSY ${STATION+1}`,'info');
+    } else {
+      db.ref(`assembly_line/${SESSION}/stations/s${STATION}/client_output`).transaction(v=>(v||0)+qty);
+      setMsg(qty>1?`🏁 Batch ×${qty} delivered to CUSTOMER ✅`:'🏁 Produit delivered to CUSTOMER ✅','ok');
+    }
+  } else {
+    setMsg('🏁 Produit delivered to CUSTOMER ✅','ok');
+  }
+  pushStats();
+  setTimeout(()=>{S.inheritedState={};initCycle();},700);
+}
+
+function updateIncomingOrder(){
+  if(STATION!==1||!S.customerDemand)return;
+  const runOutput=S.output-S.runOutputStart;
+  const remaining=Math.max(0,S.customerDemand-runOutput);
+  const el=document.getElementById('wipIn');
+  if(el) el.textContent=remaining;
+  // ── Order exhausted: notify operator to stop ──────────────────────────
+  if(remaining===0){
+    const btn=document.getElementById('btnStart');
+    if(btn){btn.disabled=true;btn.textContent='⛔ Order Fulfilled';}
+    setMsg('🛑 ORDER COMPLETE — Stop station, notify trainer!','err');
+    stopWaitTimer();
+  }
+}
+function refreshDemand(){
+  if(STATION!==1||!db)return;
+  db.ref(`assembly_line/${SESSION}/config/customer_demand`).once('value',snap=>{
+    const d=snap.val();
+    if(d){
+      S.customerDemand=d;
+      S.runOutputStart=S.output; // rebase sur la production actuelle
+      const btn=document.getElementById('btnStart');
+      if(btn){
+        if(S.wipOut>0){btn.disabled=true;btn.textContent='⏳ Send Downstream First';}
+        else{btn.disabled=false;btn.textContent='▶ Start Cycle';}
+      }
+      setMsg(`↺ Demand refreshed — ${d} pcs`,'info');
+      updateIncomingOrder();
+    }
+  });
+}
+function updateBatchUI(){
+  updateFlowModePanel();
+}
+
+function updateFlowModePanel(batchDone){
+  const isB=S.batchMode;
+  // Toggle highlight
+  const opfEl=document.getElementById('fmOPF');
+  const batEl=document.getElementById('fmBatch');
+  if(opfEl){
+    opfEl.style.background=isB?'transparent':'var(--cyan)';
+    opfEl.style.color=isB?'#444':'#000';
+  }
+  if(batEl){
+    batEl.style.background=isB?'var(--accent)':'transparent';
+    batEl.style.color=isB?'#000':'#444';
+  }
+  // Batch size label
+  const bsRow=document.getElementById('fmBatchSize');
+  const bsVal=document.getElementById('fmBatchSizeVal');
+  if(bsRow){bsRow.style.display=isB?'block':'none';}
+  if(bsVal&&isB){bsVal.textContent=S.batchSize;}
+  // Batch count row
+  const bcRow=document.getElementById('fmBatchCountRow');
+  const bcEl=document.getElementById('fmBatchCount');
+  if(bcRow){bcRow.style.display=isB?'block':'none';}
+  if(bcEl&&isB){bcEl.textContent=`${S.batchCount} / ${S.batchSize}`;}
+  // Batch ready flag
+  const done=isB&&S.batchCount>=S.batchSize;
+  const readyEl=document.getElementById('fmBatchReady');
+  if(readyEl){readyEl.style.display=done?'block':'none';}
+}
+
+function updateWIPDisplay(){
+  if(STATION===1){
+    updateIncomingOrder();
+  } else {
+    document.getElementById('wipIn').textContent=S.wipIn===999?'∞':S.wipIn;
+  }
+  document.getElementById('wipOut').textContent=S.wipOut;
+  document.getElementById('bbWipIn').textContent=S.wipIn===999?'∞':S.wipIn;
+  document.getElementById('bbOutput').textContent=S.output;
+  const btn=document.getElementById('btnStart');
+  const banner=document.getElementById('validateBanner');
+  if(!S.running){
+    const batchBlocking=S.wipOut>0 && !(S.batchMode && S.batchCount<S.batchSize);
+    if(batchBlocking){
+      btn.disabled=true;btn.textContent='⏳ Send Downstream First';
+      // S'assurer que le banner Send Downstream est visible
+      if(banner&&!banner.classList.contains('show')){
+        banner.classList.add('show');
+        document.getElementById('btnValidate').disabled=false;
+      }
+    } else if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+    else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
+  }
+}
+function updateStats(){
+  if(!S.history.length)return;
+  const last=S.history[S.history.length-1],moy=S.history.reduce((a,b)=>a+b,0)/S.history.length,min=Math.min(...S.history),taktMs=CFG.takt*1000;
+  document.getElementById('dbCTact').textContent=Math.round(last/1000)+'s';
+  document.getElementById('dbCTact').className='db-val '+(last<=taktMs?'good':'bad');
+  document.getElementById('dbCTmoy').textContent=Math.round(moy/1000)+'s';
+  document.getElementById('dbCTmin').textContent=Math.round(min/1000)+'s';
+  document.getElementById('bbCT').textContent=Math.round(last/1000)+'s';
+  document.getElementById('bbCT').className='bb-val '+(last<=taktMs?'good':'bad');
+  document.getElementById('dbOutput').textContent=S.output;
+  document.getElementById('dbScrap').textContent=S.errorCount;
+  const ftyPct=S.output>0?Math.round((S.fty/S.output)*100):100;
+  const ftyEl=document.getElementById('dbFTY');
+  if(ftyEl){ftyEl.textContent=ftyPct+'%';ftyEl.className='db-val '+(ftyPct>=95?'good':ftyPct>=80?'accent':'bad');}
+  const ftyBbEl=document.getElementById('bbFTY');
+  if(ftyBbEl){ftyBbEl.textContent=ftyPct+'%';ftyBbEl.className='bb-val '+(ftyPct>=95?'good':ftyPct>=80?'accent':'bad');}
+  const dispo=S.cycles>0?Math.round((S.output/S.cycles)*100):100,dc=dispo>=80?'good':dispo>=60?'accent':'bad';
+  document.getElementById('dbDispo').textContent=dispo+'%';document.getElementById('dbDispo').className='db-val '+dc;
+  document.getElementById('bbDispo').textContent=dispo+'%';document.getElementById('bbDispo').className='bb-val '+dc;
+}
+
+// ── FIREBASE ───────────────────────────────────────────
+const firebaseConfig={apiKey:"AIzaSyDIE-YJ68VQkMj60n1vklQWei9-32Dv-Oo",authDomain:"keeplean-beergame.firebaseapp.com",databaseURL:"https://keeplean-beergame-default-rtdb.europe-west1.firebasedatabase.app",projectId:"keeplean-beergame",storageBucket:"keeplean-beergame.firebasestorage.app",messagingSenderId:"731779808067",appId:"1:731779808067:web:e4312b55afe16e72b6cdf6"};
+const stKey=`s${STATION}`;
+function setConn(s,l){document.getElementById('connDot').className='conn-dot '+s;document.getElementById('connLabel').textContent=l;}
+function initFirebase(){
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+    db=firebase.database();
+    listenWipIn();listenSessionConfig();pushStats();
+    listenReplenishment();
+    setConn('online',`${ASSY_NAMES[STATION]} connected`);
+    if(STATION===1){S.wipIn=999;updateWIPDisplay();checkWaitTimer();}
+  }catch(e){
+    setConn('offline','Local mode');
+    if(STATION===1){S.wipIn=999;document.getElementById('btnStart').disabled=S.wipOut>0;document.getElementById('btnStart').textContent=S.wipOut>0?'⏳ Send Downstream First':'▶ Start Cycle';}
+  }
+}
+function listenWipIn(){
+  db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).on('value',snap=>{
+    if(STATION>1){
+      const newVal=snap.val()||0;
+      S.wipIn=newVal;
+      updateWIPDisplay();
+      checkWaitTimer(); // start wait if wipIn>0 and cycle not started
+    }
+  });
+}
+function listenSessionConfig(){
+  db.ref(`assembly_line/${SESSION}/config`).on('value',snap=>{
+    const cfg=snap.val();if(!cfg)return;
+    if(cfg.takt){CFG.takt=cfg.takt;['taktDisp','dbTakt','bbTakt'].forEach(id=>document.getElementById(id).textContent=cfg.takt+'s');}
+    if(cfg.replen_delay){S.replenDelaySec=cfg.replen_delay;}
+    if(cfg.nb_stations){NB_STATIONS=cfg.nb_stations;renderPuzzleLegend();}
+    if(cfg.station_modes){
+      const myMode=cfg.station_modes[`s${STATION}`];
+      if(myMode){
+        S.batchMode=(myMode.mode==='batch');
+        S.batchSize=S.batchMode?(myMode.size||2):1;
+        updateBatchUI();
+      }
+    }
+    if(cfg.topology&&!S.topology){
+      S.topology=cfg.topology;
+      // cornerSides will be recalculated in initCycle() after applyProfile
+    }
+    if(STATION===1&&cfg.customer_demand){
+      S.customerDemand=cfg.customer_demand;
+      updateIncomingOrder();
+    }
+
+    // ── CHANGEOVER SIGNAL ─────────────────────────────────
+    if(cfg.co_signal&&cfg.co_signal!==S.lastCoSignal){
+      // New C/O signal → start changeover
+      S.lastCoSignal=cfg.co_signal;
+      startChangeover(cfg.co_profile_name||'New Stations Configuration', cfg.profile_data, cfg.co_signal);
+    } else if(!cfg.co_signal&&S.coStart){
+      // co_signal removed by trainer
+      // → abort only if overlay is still visible (operator has not yet confirmed)
+      // → if cycle in progress or coRunning, let completeCO() trigger normally
+      const overlayVisible=document.getElementById('coOverlay').classList.contains('show');
+      if(overlayVisible){abortCO();initCycle();}
+    } else if(cfg.profile_data&&!cfg.co_signal&&!S.coStart&&!S.running&&!S.started&&S.cycles===0){
+      // first load only (pas de reset si un cycle est en cours)
+      applyProfile(cfg.profile_data);
+      const myPos=STATION_POSITIONS[STATION]||[];
+      const segStart=(STATION-1)*4;
+      S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
+      // ← CRITICAL: re-init buffer with correct positions from actual profile — starts empty
+      initBufferEmpty();
+      // Clear stale replenishment data from previous sessions
+      S.replenStatus='idle';
+      if(db) db.ref(`assembly_line/${SESSION}/replenishment/deliveries/s${STATION}`).remove();
+      initCycle();
+    }
+
+    if(cfg.status==='stopped'){abortCO();setMsg('⏹ Session stopped','err');document.getElementById('btnStart').disabled=true;}
+    if(cfg.reset_signal&&cfg.reset_signal!==S.lastResetSignal){
+      S.lastResetSignal=cfg.reset_signal;
+      abortCO();
+      S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);S.batchCount=0;
+      if(db) db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).set(STATION===1?999:0);
+      S.replenStatus='idle';cancelAnimationFrame(S.replenRaf);hideReplenStatus();
+      initBufferEmpty();  // reset → starts empty again
+      if(S.batchResetTimer){clearTimeout(S.batchResetTimer);S.batchResetTimer=null;}
+      S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;S.totalWaitMs=0;
+      if(S.waitRaf){cancelAnimationFrame(S.waitRaf);S.waitRaf=null;}
+      S.waitStart=null;updateWaitTotal();
+      // Reset downtime
+      if(S.stopStart!==null){
+        cancelAnimationFrame(S.stopRaf);S.stopRaf=null;S.stopStart=null;
+        const btnStop=document.getElementById('btnStop');
+        if(btnStop){btnStop.style.background='#2a0a0a';btnStop.style.color='var(--danger)';btnStop.textContent='🛑 STOP';}
+        document.getElementById('stopLiveDisp').style.display='none';
+      }
+      S.totalStopMs=0;S.stopCount=0;S.runStopMs=0;S.cycleStopMs=0;
+      if(db) db.ref(`assembly_line/${SESSION}/stations/${stKey}/stop_active`).set(false);
+      S.totalShortageMs=0;S.shortageCount=0;S.cycleShortageMs=0;
+      if(S.shortageStart!==null){cancelAnimationFrame(S.shortageRaf);S.shortageRaf=null;S.shortageStart=null;}
+      updateDowntimeDisplay();updateShortageDisplay();
+      S.topology=null;S.cornerSides={};
+      if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
+      // Re-enable Start button if order was exhausted
+      const btnSt=document.getElementById('btnStart');
+      if(btnSt&&STATION===1){btnSt.disabled=false;btnSt.textContent='▶ Start Cycle';}
+      updateWIPDisplay();updateStats();
+      document.getElementById('cycleCount').textContent='Cycles: 0';
+      document.getElementById('dbCOcount').textContent='0';
+      document.getElementById('dbCOtime').textContent='—';
+      initCycle();
+      setMsg('↺ Session reset by trainer','info');
+    }
+  });
+}
+
+// ── CHANGEOVER FUNCTIONS ───────────────────────────────
+
+// Metal colors for grid cells
+const CO_METAL={1:{fill:'#7a9bb5',stroke:'#3a6080',text:'#e8f4ff'},
+                2:{fill:'#a09070',stroke:'#705a30',text:'#fff4e0'},
+                3:{fill:'#6a7a6a',stroke:'#3a4a3a',text:'#e0ede0'},
+                4:{fill:'#8a85a8',stroke:'#504870',text:'#f0eeff'},
+                5:{fill:'#a87060',stroke:'#703020',text:'#fff0e8'},
+                6:{fill:'#70a870',stroke:'#306030',text:'#e8ffe8'}};
+
+let coGrid={cells:[], targetPositions:[], operatorPositions:[], painting:false};
+
+function startChangeover(profileName, profileData, coSignalTime){
+  const wasRunning = S.running; // capture avant de stopper
+  if(S.running){S.running=false;cancelAnimationFrame(S.raf);}
+  document.getElementById('btnStart').disabled=true;
+  document.getElementById('validateBanner').classList.remove('show');
+  document.getElementById('btnValidate').disabled=true;
+  // Reset the demand counter for the new run
+  S.runOutputStart=S.output;
+
+  // Reset timer
+  cancelAnimationFrame(S.coRaf);
+  S.coRaf=null;
+  document.getElementById('coTimer').textContent='0';
+  S.coStart=coSignalTime||Date.now();
+  S.coCount++;
+  S.coRunning=true;
+  S.coProfileLabel=profileName||`Config ${S.coCount}`;
+  document.getElementById('dbCOcount').textContent=S.coCount;
+
+  // Build reference grid (full layout) + operator grid
+  buildReferenceGrid(profileData);
+  buildCoGrid(profileData);
+
+  // Show overlay
+  document.getElementById('coOverlay').classList.add('show');
+
+  // Start timer
+  function tickCO(){
+    if(!S.coStart)return;
+    const e=Date.now()-S.coStart;
+    const s=Math.floor(e/1000);
+    document.getElementById('coTimer').textContent=String(s);
+    S.coRaf=requestAnimationFrame(tickCO);
+  }
+  S.coRaf=requestAnimationFrame(tickCO);
+
+  document.getElementById('coProfileName').textContent=
+    `New Stations Configuration: ${profileName} — Session ${SESSION.toUpperCase()}`;
+
+  // Apply profile to station
+  if(profileData){
+    applyProfile(profileData);
+    const myPos=STATION_POSITIONS[STATION]||[];
+    const segStart=(STATION-1)*4;
+    S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
+    // Reconstruire cornerComps/gamme/bufferDisplayOrder pour le nouveau profil
+    S.cornerComps=S.myPieces.map(p=>({...p}));
+    S.gamme=[...Array(S.myPieces.length).keys()];
+    S.bufferDisplayOrder=shuffle([...Array(S.myPieces.length).keys()]);
+    S.placedPositions={};
+    S.currentStep=0;
+    S.inheritedState={};
+    // Force shape regeneration for the new configuration
+    S.topology=null;
+    S.cornerSides={};
+  }
+  // ── Calculate Storage Area waste ──────────────────────────────────
+  const unplacedPieces = S.buffer ? S.buffer.filter(p=>!p.placed).length : 0;
+  const piecesPerSet   = S.myPieces ? S.myPieces.length : 1;
+  const wasteSets      = piecesPerSet > 0 ? Math.floor(unplacedPieces / piecesPerSet) : 0;
+  S.coWastePieces = unplacedPieces;
+  S.coWasteSets   = wasteSets;
+  S.coStorageCleared = (unplacedPieces === 0); // déjà vide = pas besoin d'action
+  S.coSfgCleared     = !wasRunning;            // pas de cycle en cours = pas de SFG
+
+  // Afficher dans l'overlay
+  const wasteValEl  = document.getElementById('coWasteVal');
+  const wasteSetsEl = document.getElementById('coWasteSets');
+  if(wasteValEl){
+    if(unplacedPieces > 0){
+      wasteValEl.textContent = `${unplacedPieces} part(s) lost`;
+      wasteValEl.className   = 'co-waste-val';
+      if(wasteSetsEl) wasteSetsEl.textContent = `= ${wasteSets} complete set(s) wasted`;
+    } else {
+      wasteValEl.textContent = '0 — Storage already empty';
+      wasteValEl.className   = 'co-waste-val co-waste-zero';
+      if(wasteSetsEl) wasteSetsEl.textContent = 'No waste';
+    }
+  }
+
+  // "Clear storage" button: disabled if already empty
+  const btnStorage = document.getElementById('btnCoStorage');
+  if(btnStorage){
+    if(unplacedPieces === 0){
+      btnStorage.disabled = true;
+      btnStorage.classList.add('done');
+      btnStorage.textContent = '✅ Storage area already empty';
+    } else {
+      btnStorage.disabled = false;
+      btnStorage.classList.remove('done');
+      btnStorage.textContent = `📦 Clear Storage Area (${unplacedPieces} parts / ${wasteSets} set(s))`;
+    }
+  }
+
+  // sfg_count = 1 only if a cycle was in progress when C/O was triggered
+  if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(wasRunning ? 1 : 0);
+  // Reset "Vider" button state
+  const btnClear = document.getElementById('btnCoClear');
+  if(btnClear){ btnClear.disabled=!wasRunning; btnClear.classList.remove('done'); btnClear.textContent= wasRunning ? '🗑 Clear my station (Semi-Finished Goods)' : '✅ Station already empty'; }
+
+  setMsg(`⚙️ Changeover — Read your Work Order and configure your grid`,'info');
+}
+
+// ── CLEAR STORAGE AREA (expired parts at C/O) ──
+function viderStorage(){
+  const btn = document.getElementById('btnCoStorage');
+  if(!btn || btn.disabled) return;
+  // Count lost pieces before clearing
+  const wasteP = S.coWastePieces || 0;
+  const wasteS = S.coWasteSets   || 0;
+  // Vider buffer local
+  if(S.buffer) S.buffer.forEach(p=>{ p.placed=true; });
+  S.bufferEmpty = true;
+  S.coStorageCleared = true;
+  // Firebase : cumulatif storage_waste
+  if(db && wasteP > 0){
+    const ref = db.ref(`assembly_line/${SESSION}/stations/s${STATION}`);
+    ref.child('storage_waste_pieces').transaction(v=>(v||0)+wasteP);
+    ref.child('storage_waste_sets').transaction(v=>(v||0)+wasteS);
+  }
+  btn.disabled = true;
+  btn.classList.add('done');
+  btn.textContent = `✅ Storage cleared — ${wasteP} part(s) / ${wasteS} set(s) removed`;
+  setMsg(`📦 Storage area cleared — ${wasteP} expired part(s) removed. C/O timer continues.`,'info');
+  checkCOReadiness();
+}
+
+// ── CLEAR STATION (operator responsibility during C/O) ──
+function viderStation(){
+  const btn = document.getElementById('btnCoClear');
+  if(!btn || btn.disabled) return;
+  S.placedPositions = {};
+  S.currentStep = 0;
+  S.coSfgCleared = true;
+  if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(0);
+  btn.disabled = true;
+  btn.classList.add('done');
+  btn.textContent = '✅ Station cleared — ready for changeover';
+  setMsg('✅ Station cleared — WIP reset to zero. C/O timer continues.','ok');
+  checkCOReadiness();
+}
+
+// ── Check if both clearing actions are complete ──
+function checkCOReadiness(){
+  if(S.coStorageCleared && S.coSfgCleared){
+    setMsg('✅ Station and storage cleared — Configure your grid and validate the C/O','ok');
+  }
+}
+
+
+
+function buildReferenceGrid(profileData){
+  // Update profile name display
+  const cols=profileData?profileData.cols||COLS:COLS;
+  const rows=profileData?profileData.rows||ROWS:ROWS;
+  const nbSt=NB_STATIONS||4;
+
+  // Build legend
+  const legend=document.getElementById('coRefLegend');
+  legend.innerHTML='';
+  for(let s=1;s<=nbSt;s++){
+    const c=CO_METAL[s]||CO_METAL[1];
+    const sp=document.createElement('span');
+    sp.style.cssText=`display:inline-flex;align-items:center;gap:5px;font-size:10px;
+      font-weight:700;letter-spacing:1px;color:${c.fill};`;
+    sp.innerHTML=`<span style="width:14px;height:14px;background:${c.fill};
+      border-radius:2px;display:inline-block;"></span>ASSY ${s}`;
+    if(s===STATION){
+      sp.style.cssText+=`text-shadow:0 0 8px ${c.fill};font-size:11px;`;
+      sp.innerHTML+=` <span style="color:var(--success);font-size:9px;">← YOUR STATION</span>`;
+    }
+    legend.appendChild(sp);
+  }
+
+  // Build full reference grid
+  const grid=document.getElementById('coRefGrid');
+  const sz=cols>=5?36:42;
+  grid.style.gridTemplateColumns=`repeat(${cols},${sz}px)`;
+  grid.style.gridTemplateRows=`repeat(${rows},${sz}px)`;
+  grid.innerHTML='';
+
+  // Build PIECE_MAP from profileData
+  const pmap=new Array(cols*rows).fill(0);
+  for(let s=1;s<=nbSt;s++){
+    const positions=profileData?profileData[s]||profileData[String(s)]||[]:[];
+    positions.forEach(idx=>{pmap[idx]=s;});
+  }
+
+  for(let i=0;i<cols*rows;i++){
+    const st=pmap[i];
+    const cell=document.createElement('div');
+    cell.style.cssText=`width:${sz}px;height:${sz}px;`;
+    if(st>0){
+      const c=CO_METAL[st]||CO_METAL[1];
+      cell.className='ref-cell';
+      cell.style.background=st===STATION?c.fill:'rgba('+hexToRgb(c.fill)+',0.35)';
+      cell.style.borderColor=st===STATION?c.stroke:'transparent';
+      cell.style.color=st===STATION?c.text:'rgba(255,255,255,0.3)';
+      // Highlight own station with border
+      if(st===STATION){
+        cell.style.boxShadow=`0 0 6px ${c.fill}88`;
+        cell.style.border=`2px solid ${c.stroke}`;
+      }
+      cell.textContent=st;
+    } else {
+      cell.className='ref-cell unassigned';
+    }
+    grid.appendChild(cell);
+  }
+
+  // Update hint
+  const myCount=(profileData&&(profileData[STATION]||profileData[String(STATION)])||[]).length;
+  const c=CO_METAL[STATION]||CO_METAL[1];
+  document.getElementById('coBomHint').innerHTML=
+    `Select <b style="color:${c.fill};">${myCount} cell(s)</b> that match `+
+    `<b style="color:${c.fill};">ASSY ${STATION}</b> on the reference grid.`;
+}
+
+// Helper: hex to rgb
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+function buildCoGrid(profileData){
+  const cols=profileData?profileData.cols||COLS:COLS;
+  const rows=profileData?profileData.rows||ROWS:ROWS;
+  // ← positions from NEW profileData, not old STATION_POSITIONS
+  const myPositions=(profileData&&(profileData[STATION]||profileData[String(STATION)]))||[];
+  coGrid.targetPositions=myPositions;
+  coGrid.operatorPositions=new Array(cols*rows).fill(false);
+
+  const grid=document.getElementById('coGrid');
+  const sz=cols>=5?36:42;
+  grid.style.gridTemplateColumns=`repeat(${cols},${sz}px)`;
+  grid.style.gridTemplateRows=`repeat(${rows},${sz}px)`;
+  grid.innerHTML='';
+  const c=CO_METAL[STATION]||CO_METAL[1];
+
+  for(let i=0;i<cols*rows;i++){
+    const cell=document.createElement('div');
+    cell.className='co-cell empty';
+    cell.style.cssText=`width:${sz}px;height:${sz}px;`;
+    cell.dataset.idx=i;
+    cell.addEventListener('mousedown',e=>{e.preventDefault();coGrid.painting=true;toggleCoCell(i);});
+    cell.addEventListener('mouseenter',()=>{if(coGrid.painting)toggleCoCell(i);});
+    grid.appendChild(cell);
+  }
+  document.addEventListener('mouseup',()=>{coGrid.painting=false;});
+
+  document.getElementById('coProgVal').textContent=`0 / ${myPositions.length}`;
+  document.getElementById('coProgBar').style.width='0%';
+  document.getElementById('coProgBar').className='co-prog-bar';
+  document.getElementById('coErrorMsg').textContent='';
+  document.getElementById('btnCoValidate').classList.remove('show');
+  updateCoProgress();
+}
+
+function toggleCoCell(idx){
+  const c=CO_METAL[STATION]||CO_METAL[1];
+  const cells=document.querySelectorAll('.co-cell');
+  const cell=cells[idx];
+  if(!cell)return;
+  coGrid.operatorPositions[idx]=!coGrid.operatorPositions[idx];
+  if(coGrid.operatorPositions[idx]){
+    cell.className='co-cell filled';
+    cell.style.background=c.fill;
+    cell.style.borderColor=c.stroke;
+    cell.style.color=c.text;
+    cell.textContent=STATION;
+  } else {
+    cell.className='co-cell empty';
+    cell.style.background='';
+    cell.style.borderColor='';
+    cell.style.color='';
+    cell.textContent='';
+  }
+  updateCoProgress();
+}
+
+function updateCoProgress(){
+  const target=coGrid.targetPositions;
+  const placed=coGrid.operatorPositions.filter(Boolean).length;
+  const needed=target.length;
+  const pct=needed>0?Math.round((placed/needed)*100):0;
+
+  document.getElementById('coProgVal').textContent=`${placed} / ${needed}`;
+  document.getElementById('coProgBar').style.width=pct+'%';
+
+  const complete=placed===needed;
+  document.getElementById('coProgBar').className='co-prog-bar'+(complete?' complete':'');
+
+  if(placed>needed){
+    document.getElementById('coErrorMsg').textContent=
+      `⚠ Too many cells selected (${placed-needed} extra)`;
+    document.getElementById('btnCoValidate').classList.remove('show');
+  } else {
+    document.getElementById('coErrorMsg').textContent='';
+    if(complete) document.getElementById('btnCoValidate').classList.add('show');
+    else document.getElementById('btnCoValidate').classList.remove('show');
+  }
+}
+
+function validateChangeover(){
+  // Check operator grid vs target
+  const target=new Set(coGrid.targetPositions);
+  const operator=new Set(
+    coGrid.operatorPositions.map((v,i)=>v?i:null).filter(i=>i!==null)
+  );
+  const cells=document.querySelectorAll('.co-cell');
+
+  let errors=0;
+  // Check each operator selection
+  operator.forEach(idx=>{
+    if(!target.has(idx)){
+      errors++;
+      cells[idx].classList.add('wrong');
+      setTimeout(()=>cells[idx].classList.remove('wrong'),500);
+    }
+  });
+  // Check each target
+  target.forEach(idx=>{
+    if(operator.has(idx)){
+      cells[idx].classList.add('correct');
+    } else {
+      errors++;
+    }
+  });
+
+  if(errors>0){
+    document.getElementById('coErrorMsg').textContent=
+      `❌ ${errors} error(s) — check your grid and retry`;
+    setTimeout(()=>{
+      document.querySelectorAll('.co-cell.correct').forEach(c=>c.classList.remove('correct'));
+    },800);
+    return;
+  }
+
+  // All correct — close overlay (C/O timer continues until 1st piece placed)
+  closeCoOverlay();
+  initBufferEmpty();  // new profile → storage starts empty, operator must request replenishment
+  initCycle();
+}
+
+// ── Close C/O overlay — timer CONTINUES until the first piece is placed ──
+function closeCoOverlay(){
+  cancelAnimationFrame(S.coRaf);
+  S.coRaf=null;
+  document.getElementById('coOverlay').classList.remove('show');
+  // C/O timer keeps running in the background
+  // Start a subtle animation on the status bar to signal C/O is not yet complete
+  setMsg('⚙️ Grid validated — Start cycle and place 1st part to finalize C/O','info');
+}
+
+// ── Finalize C/O at end of 1st complete cycle (SMED: signal → first good piece) ──
+function completeCO(){
+  if(!S.coStart)return;
+  const elapsed=Date.now()-S.coStart;
+  S.coStart=null;
+  S.coRunning=false;
+  S.coTotalMs+=elapsed;
+  const coSec=Math.round(elapsed/1000);
+
+  // Push C/O time to Firebase
+  if(db){
+    db.ref(`assembly_line/${SESSION}/stations/${stKey}/co_times`).push({
+      round:S.coCount,seconds:coSec,timestamp:Date.now()
+    });
+  }
+
+  // Update UI
+  const totalSec=Math.round(S.coTotalMs/1000);
+  const avgSec=Math.round(S.coTotalMs/S.coCount/1000);
+  document.getElementById('dbCOtime').textContent=`${totalSec}s total (avg ${avgSec}s)`;
+  document.getElementById('dbCOcount').textContent=S.coCount;
+  const dbCOel=document.getElementById('dbCO');
+  if(dbCOel){dbCOel.textContent=coSec+'s';dbCOel.className='db-val bad';}
+  const bbCOel=document.getElementById('bbCO');
+  if(bbCOel)bbCOel.textContent=coSec+'s';
+
+  // New production run after C/O
+  startRun(S.coProfileLabel);
+  if(S.currentRun)S.currentRun.coSec=coSec;
+  pushStats();
+  setMsg(`✅ C/O completed in ${coSec}s (config + dry run — SMED)`, 'ok');
+}
+
+// ── Force abort/reset C/O (session stop, reset formateur) ──
+function abortCO(){
+  S.coStart=null;
+  S.coRunning=false;
+  cancelAnimationFrame(S.coRaf);
+  S.coRaf=null;
+  document.getElementById('coOverlay').classList.remove('show');
+}
+
+function startRun(profileName){
+  // Close previous run if it exists
+  if(S.currentRun){
+    S.currentRun.endTime=Date.now();
+    S.runs.push({...S.currentRun});
+  }
+  S.runOutputStart=S.output; // base de calcul du demand pour ce run
+  S.currentRun={
+    num:S.runs.length+1,
+    label:profileName||`Run ${S.runs.length+1}`,
+    startTime:Date.now(),endTime:null,
+    cycles:0,output:0,errors:0,fty:0,coSec:null,waitTotalMs:0,
+    cyclesData:[],  // [{ct, waitMs, errors, passed}] — 1 entry per cycle
+  };
+  renderRunTable();
+}
+
+function updateCurrentRun(){
+  if(!S.currentRun)startRun('Initial');
+  const r=S.currentRun;
+  r.cycles=S.cycles;
+  r.output=S.output;
+  r.errors=S.errorCount;
+  r.fty=S.fty;
+  renderRunTable();
+}
+
+// ── Live idle counter (wipIn > 0, pas de cycle en cours, Send Downstream non actif) ──
+// ── Format HH:MM:SS ──────────────────────────────────────────────────────────
+function fmtHMS(ms){
+  const t=Math.floor(ms/1000);
+  const h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60;
+  return [h,m,s].map(x=>String(x).padStart(2,'0')).join(':');
+}
+function updateWaitTotal(){
+  const el=document.getElementById('waitTotalDisp');
+  if(el) el.textContent=fmtHMS(S.totalWaitMs);
+}
+// ── Start wait timer (wipIn > 0, cycle not started) ──────────────────────────
+function startWaitTimer(){
+  if(S.waitStart!==null)return;
+  S.waitStart=performance.now();
+  renderRunTable();
+  function tickWait(){
+    if(S.waitStart===null)return;
+    const currentMs=performance.now()-S.waitStart;
+    // Live idle row dans la table
+    const el=document.getElementById('idleLiveRow');
+    if(el) el.querySelector('td').textContent=`⏸  WAIT : ${fmtHMS(currentMs)}`;
+    // Wait Total Time — shows cumulative + current wait
+    const totalEl=document.getElementById('waitTotalDisp');
+    if(totalEl) totalEl.textContent=fmtHMS(S.totalWaitMs+currentMs);
+    S.waitRaf=requestAnimationFrame(tickWait);
+  }
+  S.waitRaf=requestAnimationFrame(tickWait);
+}
+function stopWaitTimer(){
+  if(S.waitRaf){cancelAnimationFrame(S.waitRaf);S.waitRaf=null;}
+  renderRunTable();
+}
+
+// ── DOWNTIME (manual STOP) ────────────────────────────────────────────────────
+function toggleStop(){
+  if(S.stopStart===null){
+    // --- Activate STOP ---
+    S.stopStart=performance.now();
+    S.stopCount++;
+    // Push stop state to Firebase so Formateur sees it
+    if(db) db.ref(`assembly_line/${SESSION}/stations/${stKey}/stop_active`).set(true);
+    // Pause wait timer while stopped
+    if(S.waitStart!==null){
+      S.totalWaitMs+=performance.now()-S.waitStart;
+      S.waitStart=null;
+      stopWaitTimer();
+    }
+    // Disable Start Cycle
+    const btnS=document.getElementById('btnStart');
+    if(btnS){btnS.disabled=true;}
+    // Update STOP button appearance
+    const btnStop=document.getElementById('btnStop');
+    if(btnStop){
+      btnStop.style.background='var(--danger)';
+      btnStop.style.color='#fff';
+      btnStop.textContent='▶ RESUME';
+    }
+    document.getElementById('stopLiveDisp').style.display='block';
+    startStopTimer();
+  } else {
+    // --- Resume ---
+    const elapsed=performance.now()-S.stopStart;
+    S.totalStopMs+=elapsed;
+    S.runStopMs+=elapsed;
+    S.cycleStopMs=(S.cycleStopMs||0)+elapsed;
+    S.stopStart=null;
+    // Push stop cleared to Firebase
+    if(db) db.ref(`assembly_line/${SESSION}/stations/${stKey}/stop_active`).set(false);
+    cancelAnimationFrame(S.stopRaf);S.stopRaf=null;
+    document.getElementById('stopLiveDisp').style.display='none';
+    // Restore STOP button
+    const btnStop=document.getElementById('btnStop');
+    if(btnStop){
+      btnStop.style.background='#2a0a0a';
+      btnStop.style.color='var(--danger)';
+      btnStop.textContent='🛑 STOP';
+    }
+    // Re-enable Start Cycle if conditions allow
+    updateStartBtn();
+    // Re-check wait timer
+    checkWaitTimer();
+    updateDowntimeDisplay();
+  }
+}
+
+function updateStartBtn(){
+  if(S.stopStart!==null)return; // still stopped
+  const btn=document.getElementById('btnStart');
+  if(!btn)return;
+  const batchBlocking=S.wipOut>0&&!(S.batchMode&&S.batchCount<S.batchSize);
+  if(S.running)return;
+  if(batchBlocking){btn.disabled=true;btn.textContent='⏳ Send Downstream First';}
+  else if(STATION===1||S.wipIn>0){btn.disabled=false;btn.textContent='▶ Start Cycle';}
+  else{btn.disabled=true;btn.textContent='⏳ Waiting for WIP';}
+}
+
+function startStopTimer(){
+  function tickStop(){
+    if(S.stopStart===null)return;
+    const ms=performance.now()-S.stopStart;
+    const el=document.getElementById('stopLiveTimer');
+    if(el){
+      const t=Math.floor(ms/1000);
+      el.textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+    }
+    updateDowntimeDisplay(ms);
+    S.stopRaf=requestAnimationFrame(tickStop);
+  }
+  S.stopRaf=requestAnimationFrame(tickStop);
+}
+
+function updateDowntimeDisplay(liveMs){
+  const total=S.totalStopMs+(liveMs||0);
+  const el=document.getElementById('downtimeTotalDisp');
+  if(el)el.textContent=fmtHMS(total);
+  const cnt=document.getElementById('downtimeCountDisp');
+  if(cnt)cnt.textContent=S.stopCount+' stop'+(S.stopCount!==1?'s':'');
+  // Red glow on chrono cell when active
+  const cell=document.getElementById('downtimeChronoCell');
+  if(cell)cell.style.background=S.stopStart!==null?'rgba(232,64,64,.12)':'';
+}
+
+// ── SHORTAGE TIMER (storage area empty, waiting for replenishment) ────────────
+function startShortageTimer(){
+  if(S.shortageStart!==null)return;
+  S.shortageStart=performance.now();
+  S.shortageCount++;
+  // Live row in run table
+  renderRunTable();
+  function tickShortage(){
+    if(S.shortageStart===null)return;
+    const currentMs=performance.now()-S.shortageStart;
+    updateShortageDisplay(currentMs);
+    // Live idle row
+    const el=document.getElementById('shortageLiveRow');
+    if(el) el.querySelector('td').textContent=`📦  SHORTAGE : ${fmtHMS(currentMs)}`;
+    S.shortageRaf=requestAnimationFrame(tickShortage);
+  }
+  S.shortageRaf=requestAnimationFrame(tickShortage);
+}
+function stopShortageTimer(){
+  if(S.shortageStart===null)return;
+  const elapsed=performance.now()-S.shortageStart;
+  S.totalShortageMs+=elapsed;
+  S.cycleShortageMs=(S.cycleShortageMs||0)+elapsed;
+  S.shortageStart=null;
+  if(S.shortageRaf){cancelAnimationFrame(S.shortageRaf);S.shortageRaf=null;}
+  updateShortageDisplay();
+  renderRunTable();
+}
+function updateShortageDisplay(liveMs){
+  const total=S.totalShortageMs+(liveMs||0);
+  const el=document.getElementById('shortageTotalDisp');
+  if(el)el.textContent=fmtHMS(total);
+  const cnt=document.getElementById('shortageCountDisp');
+  if(cnt)cnt.textContent=S.shortageCount+' rupture'+(S.shortageCount!==1?'s':'');
+  const cell=document.getElementById('shortageChronoCell');
+  if(cell)cell.style.background=S.shortageStart!==null?'rgba(240,165,0,.10)':'';
+}
+function checkWaitTimer(){
+  const shouldRun=!S.running&&(STATION===1||S.wipIn>0);
+  if(shouldRun&&S.waitStart===null) startWaitTimer();
+  else if(!shouldRun&&S.waitStart!==null&&!S.started){
+    // No more WIP and cycle not started → cancel wait
+    S.waitStart=null;stopWaitTimer();
+  }
+}
+
+function renderRunTable(){
+  const tbody=document.getElementById('runBody');
+  if(!tbody)return;
+  const allRuns=[...S.runs];
+  if(S.currentRun)allRuns.push(S.currentRun);
+  tbody.innerHTML='';
+
+  // ── Ligne wait live ──────────────────────────────────────────────────────────
+  const idleTr=document.createElement('tr');
+  idleTr.id='idleLiveRow';
+  const isWaiting=S.waitStart!==null&&!S.started;
+  idleTr.style.cssText='background:rgba(0,194,168,.06);display:'+(isWaiting?'':'none')+';';
+  const waitMs=isWaiting?performance.now()-S.waitStart:0;
+  idleTr.innerHTML=`<td colspan="7" style="font-size:11px;letter-spacing:2px;color:var(--cyan);text-align:center;padding:6px;font-family:'Share Tech Mono',monospace;">⏸  WAIT : ${fmtHMS(waitMs)}</td>`;
+  tbody.appendChild(idleTr);
+
+  // ── Ligne shortage live ───────────────────────────────────────────────────────
+  const shortageTr=document.createElement('tr');
+  shortageTr.id='shortageLiveRow';
+  const isShortage=S.shortageStart!==null;
+  shortageTr.style.cssText='background:rgba(240,165,0,.06);display:'+(isShortage?'':'none')+';';
+  const shortMs=isShortage?performance.now()-S.shortageStart:0;
+  shortageTr.innerHTML=`<td colspan="7" style="font-size:11px;letter-spacing:2px;color:var(--accent);text-align:center;padding:6px;font-family:'Share Tech Mono',monospace;">📦  SHORTAGE : ${fmtHMS(shortMs)}</td>`;
+  tbody.appendChild(shortageTr);
+
+  if(!allRuns.length){
+    const emptyTr=document.createElement('tr');
+    emptyTr.innerHTML=`<td colspan="7" style="color:#444;font-size:10px;padding:10px;text-align:center;">Start a cycle to begin tracking.</td>`;
+    tbody.appendChild(emptyTr);
+    return;
+  }
+
+  const taktMs=CFG.takt*1000;
+  allRuns.slice().reverse().forEach((r,ri)=>{
+    const isCurrent=!r.endTime;
+    const sepTr=document.createElement('tr');
+    sepTr.style.cssText='background:rgba(240,165,0,.07);';
+    const coLabel=r.coSec!==null?`⚙ C/O : ${r.coSec}s`:'⚙ Initial Run';
+    sepTr.innerHTML=`<td colspan="7" style="font-size:9px;letter-spacing:2px;color:var(--accent);text-align:left;padding:4px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;">${coLabel} — <span style="color:#555;">${r.label}</span>${isCurrent?' <span style="color:var(--success);">▶ IN PROGRESS</span>':''}</td>`;
+    tbody.appendChild(sepTr);
+    const cycles=r.cyclesData||[];
+    if(!cycles.length){
+      const emptyTr=document.createElement('tr');
+      emptyTr.innerHTML=`<td colspan="7" style="color:#333;font-size:10px;padding:6px;text-align:center;">No cycles</td>`;
+      tbody.appendChild(emptyTr);
+    } else {
+      cycles.slice().reverse().forEach((c,ci)=>{
+        const cycleNum=cycles.length-ci;
+        const ctMs=c.ct||0;
+        const ctOk=ctMs>0&&ctMs<=taktMs;
+        const dtMs=c.downtimeMs||0;
+        const stMs=c.shortageMs||0;
+        const tr=document.createElement('tr');
+        if(isCurrent&&ci===0)tr.className='run-current';
+        tr.innerHTML=`
+          <td style="color:#555;font-size:10px;padding:4px 8px;text-align:left;">  Cycle ${cycleNum}</td>
+          <td class="${ctMs>0?(ctOk?'good':'bad'):''}">${ctMs>0?Math.round(ctMs/1000)+'s':'—'}</td>
+          <td>${(c.waitMs||0)>500?Math.round(c.waitMs/1000)+'s':'—'}</td>
+          <td style="${stMs>500?'color:var(--accent);':''}">${stMs>500?Math.round(stMs/1000)+'s':'—'}</td>
+          <td class="${dtMs>0?'bad':''}" style="${dtMs>0?'color:var(--danger);':''}">${dtMs>500?Math.round(dtMs/1000)+'s':'—'}</td>
+          <td class="${(c.errors||0)>0?'bad':''}">${c.errors||0}</td>
+          <td class="${c.passed?'good':'bad'}">${c.passed?'✓':'✗'}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+  });
+}
+
+function pushStats(){
+  if(!db)return;
+  db.ref(`assembly_line/${SESSION}/stations/${stKey}`).update({cycles:S.cycles,output:S.output,scrap:S.scrap,wip_out:S.wipOut,ct_moy:S.history.length?Math.round(S.history.reduce((a,b)=>a+b,0)/S.history.length/1000):0,fty:S.output>0?Math.round((S.fty/S.output)*100):100,status:S.running?'running':'idle',co_count:S.coCount,co_avg_s:S.coCount>0?Math.round(S.coTotalMs/S.coCount/1000):0,name:`${ASSY_NAMES[STATION]} — Assembly`,last_updated:Date.now()});
+  pushBufferLevel();
+}
+
+function pushBufferLevel(){
+  if(!db) return;
+  const sets = setsRemaining();
+  db.ref(`assembly_line/${SESSION}/replenishment/bufferLevels/s${STATION}`).set(sets);
+}
+
+function captureVisual(){
+  const btn=document.getElementById('btnCapture');
+  btn.textContent='⏳ Génération...';
+  btn.disabled=true;
+
+  const target=document.getElementById('puzzleBoard');
+
+  html2canvas(target,{
+    backgroundColor:'#0b0e13',
+    scale:2,           // high resolution
+    useCORS:true,
+    logging:false,
+  }).then(puzzleCanvas=>{
+
+    // ── Build final image with KEEPLEAN header ──
+    const PAD=24, HEAD=90, FOOT=56;
+    const W=puzzleCanvas.width+PAD*2;
+    const H=puzzleCanvas.height+HEAD+FOOT+PAD;
+
+    const canvas=document.createElement('canvas');
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+
+    // Fond
+    ctx.fillStyle='#0b0e13';
+    ctx.fillRect(0,0,W,H);
+
+    // Bordure accent
+    ctx.strokeStyle='#f0a500';
+    ctx.lineWidth=3;
+    ctx.strokeRect(2,2,W-4,H-4);
+
+    // ── HEADER ──
+    // Bande accent top
+    ctx.fillStyle='#f0a500';
+    ctx.fillRect(2,2,W-4,3);
+
+    // Logo KEEPLEAN
+    ctx.font='bold 13px monospace';
+    ctx.fillStyle='#f0a500';
+    ctx.fillText('KEEPLEAN', PAD, 28);
+    ctx.font='13px monospace';
+    ctx.fillStyle='#ffffff';
+    ctx.fillText('— SimLean Assembly Line', PAD+90, 28);
+
+    // Badge station
+    const stColor=ST_COLOR[STATION]||'#f0a500';
+    ctx.fillStyle=stColor;
+    ctx.beginPath();
+    ctx.roundRect(W-PAD-110,10,105,24,12);
+    ctx.fill();
+    ctx.font='bold 12px monospace';
+    ctx.fillStyle=ST_TEXT[STATION]||'#000';
+    ctx.textAlign='center';
+    ctx.fillText(`ASSY ${STATION} — ${SESSION.toUpperCase()}`,W-PAD-57,26);
+    ctx.textAlign='left';
+
+    // Separator line
+    ctx.strokeStyle='#1e2538';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(PAD,36);ctx.lineTo(W-PAD,36);ctx.stroke();
+
+    // Titre "Visual de montage"
+    ctx.font='bold 18px sans-serif';
+    ctx.fillStyle='#dde1ed';
+    ctx.fillText('📋 Visual de Montage — Gamme d\'Assemblage',PAD,60);
+
+    // Date + cycle time
+    const now=new Date();
+    const dateStr=now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB');
+    const lastCT=S.history.length?Math.round(S.history[S.history.length-1]/1000)+'s':'—';
+    ctx.font='11px monospace';
+    ctx.fillStyle='#00c2a8';
+    ctx.fillText(`${dateStr}   |   Cycle: ${S.cycles}   |   C/T: ${lastCT}   |   FTY: ${S.output>0?Math.round((S.fty/S.output)*100)+'%':'—'}`,PAD,78);
+
+    // ── PUZZLE ──
+    ctx.drawImage(puzzleCanvas,PAD,HEAD);
+
+    // ── FOOTER ──
+    const fy=HEAD+puzzleCanvas.height+16;
+    ctx.strokeStyle='#1e2538';
+    ctx.beginPath();ctx.moveTo(PAD,fy-4);ctx.lineTo(W-PAD,fy-4);ctx.stroke();
+
+    // Station legend
+    let lx=PAD;
+    for(let s=1;s<=NB_STATIONS;s++){
+      ctx.fillStyle=METAL_FILL[s]||METAL_FILL[1];
+      ctx.fillRect(lx,fy+2,14,14);
+      ctx.strokeStyle=METAL_STROKE[s]||METAL_STROKE[1];
+      ctx.lineWidth=1;
+      ctx.strokeRect(lx,fy+2,14,14);
+      ctx.font='11px monospace';
+      ctx.fillStyle='#888';
+      ctx.fillText(`ASSY ${s}`,lx+18,fy+14);
+      lx+=70;
+    }
+
+    // Watermark KEEPLEAN
+    ctx.font='10px monospace';
+    ctx.fillStyle='#333';
+    ctx.textAlign='right';
+    ctx.fillText('keeplean.lu',W-PAD,fy+14);
+    ctx.textAlign='left';
+
+    // ── Download ──
+    const link=document.createElement('a');
+    const ts=now.toISOString().slice(0,19).replace(/:/g,'-');
+    link.download=`SimLean_ASSY${STATION}_${SESSION}_${ts}.png`;
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+
+    btn.textContent='✅ Capturé !';
+    setTimeout(()=>{btn.textContent='📸 Capture Visual';btn.disabled=false;},2500);
+  }).catch(e=>{
+    console.error('Capture error:',e);
+    btn.textContent='📸 Capture Visual';
+    btn.disabled=false;
+    setMsg('⚠ Capture impossible — faites une capture manuelle','err');
+  });
+}
+
+document.getElementById('btnStart').addEventListener('click',startCycle);
+document.getElementById('btnValidate').addEventListener('click',validatePiece);
+document.getElementById('btnReset').addEventListener('click',()=>{
+  S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.history=[];S.puzzleState={};
+  S.totalWaitMs=0;if(S.waitRaf){cancelAnimationFrame(S.waitRaf);S.waitRaf=null;}S.waitStart=null;
+  S.totalStopMs=0;S.stopCount=0;S.runStopMs=0;S.cycleStopMs=0;
+  if(S.stopStart!==null){cancelAnimationFrame(S.stopRaf);S.stopRaf=null;S.stopStart=null;
+    const btnStop=document.getElementById('btnStop');
+    if(btnStop){btnStop.style.background='#2a0a0a';btnStop.style.color='var(--danger)';btnStop.textContent='🛑 STOP';}
+    document.getElementById('stopLiveDisp').style.display='none';}
+  S.totalShortageMs=0;S.shortageCount=0;S.cycleShortageMs=0;
+  if(S.shortageStart!==null){cancelAnimationFrame(S.shortageRaf);S.shortageRaf=null;S.shortageStart=null;}
+  updateDowntimeDisplay();updateShortageDisplay();
+  updateWaitTotal();updateWIPDisplay();initCycle();setMsg('Session reset','info');
+});
+
+initStation();
+</script>
+</body>
+</html
