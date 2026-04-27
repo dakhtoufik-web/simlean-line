@@ -1021,6 +1021,7 @@ function startSessionTimer(){
   if(sessionStart)return;sessionStart=Date.now();
   setInterval(()=>{
     const e=Date.now()-sessionStart;
+    S.sessionMs = e; // persist for Excel export
     document.getElementById('sessionTimerDisp').textContent=[Math.floor(e/3600000),Math.floor((e%3600000)/60000),Math.floor((e%60000)/1000)].map(x=>String(x).padStart(2,'0')).join(':');
     const prod=S.history.reduce((a,b)=>a+b,0);
     const pct=Math.min(Math.round((prod/e)*100),100)||0;
@@ -2860,10 +2861,16 @@ function exportExcelReport(){
   const totalOutput = S.output;
   const totalErrors = S.errorCount;
   const ftyPct = totalOutput>0?Math.round((S.fty/totalOutput)*100):0;
-  const sessionSec = Math.round(S.sessionElapsed||0);
-  const waitSec = Math.round(S.totalWaitMs/1000);
-  const shortageSec = Math.round(S.totalShortageMs/1000);
-  const downtimeSec = Math.round(S.totalStopMs/1000);
+
+  // Capture live timers — may still be running at export time
+  const liveStopMs    = S.stopStart!==null     ? performance.now()-S.stopStart     : 0;
+  const liveShortMs   = S.shortageStart!==null ? performance.now()-S.shortageStart : 0;
+  const liveWaitMs    = S.waitStart!==null     ? performance.now()-S.waitStart     : 0;
+
+  const sessionSec   = Math.round((S.sessionMs||0)/1000);
+  const waitSec      = Math.round((S.totalWaitMs    + liveWaitMs)  /1000);
+  const shortageSec  = Math.round((S.totalShortageMs+ liveShortMs) /1000);
+  const downtimeSec  = Math.round((S.totalStopMs    + liveStopMs)  /1000);
   const activeSec = Math.max(0, sessionSec - waitSec - shortageSec - downtimeSec);
   const utilPct = sessionSec>0?Math.round((activeSec/sessionSec)*100):0;
   const avgCT = S.history.length>0?Math.round(S.history.reduce((a,b)=>a+b,0)/S.history.length/1000):0;
