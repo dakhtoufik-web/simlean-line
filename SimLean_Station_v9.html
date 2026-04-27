@@ -1048,9 +1048,9 @@ function initBufferEmpty(){
   S.bufferEmpty = true;
   updateReplenUI();
   pushBufferLevel();
-  // Immediately trigger shortage timer (we have WIP or are station 1)
-  if(S.shortageStart===null){
-    startShortageTimer();
+  // Only trigger shortage if station has WIP to process (station 1 always has supply)
+  if(STATION === 1 || S.wipIn > 0){
+    if(S.shortageStart===null) startShortageTimer();
   }
   // Disable start button — no parts to assemble
   const btn = document.getElementById('btnStart');
@@ -1187,14 +1187,17 @@ function checkBufferEmpty(){
     // Block start button
     const btn = document.getElementById('btnStart');
     if(btn){btn.disabled=true;btn.textContent='⏳ Waiting for Replenishment';}
-    // Stop wait timer if running (different cause) and start SHORTAGE timer
+    // Stop wait timer if running (different cause)
     if(S.waitStart!==null){
       S.totalWaitMs+=performance.now()-S.waitStart;
       S.waitStart=null;
       stopWaitTimer();
       updateWaitTotal();
     }
-    startShortageTimer();
+    // Only start shortage if station has WIP to process
+    if(STATION === 1 || S.wipIn > 0){
+      startShortageTimer();
+    }
     setMsg('📦 Storage Area empty — waiting for replenishment','err');
   }
 }
@@ -1910,6 +1913,15 @@ function listenWipIn(){
       S.wipIn=newVal;
       updateWIPDisplay();
       checkWaitTimer(); // start wait if wipIn>0 and cycle not started
+      // If buffer already empty and WIP just arrived → switch to shortage
+      if(S.bufferEmpty && newVal>0 && S.shortageStart===null && !S.running){
+        // Stop wait timer — this is now a shortage, not a wait
+        if(S.waitStart!==null){
+          S.totalWaitMs+=performance.now()-S.waitStart;
+          S.waitStart=null; stopWaitTimer(); updateWaitTotal();
+        }
+        startShortageTimer();
+      }
     }
   });
 }
