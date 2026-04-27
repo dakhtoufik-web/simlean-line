@@ -1947,6 +1947,7 @@ function listenSessionConfig(){
         document.getElementById('stopLiveDisp').style.display='none';
       }
       S.totalStopMs=0;S.stopCount=0;S.runStopMs=0;S.cycleStopMs=0;
+      if(db) db.ref(`assembly_line/${SESSION}/stations/${stKey}/stop_active`).set(false);
       updateDowntimeDisplay();
       S.topology=null;S.cornerSides={};
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
@@ -2439,6 +2440,8 @@ function toggleStop(){
     // --- Activate STOP ---
     S.stopStart=performance.now();
     S.stopCount++;
+    // Push stop state to Firebase so Formateur sees it
+    if(db) db.ref(`assembly_line/${SESSION}/stations/${stKey}/stop_active`).set(true);
     // Pause wait timer while stopped
     if(S.waitStart!==null){
       S.totalWaitMs+=performance.now()-S.waitStart;
@@ -2464,6 +2467,8 @@ function toggleStop(){
     S.runStopMs+=elapsed;
     S.cycleStopMs=(S.cycleStopMs||0)+elapsed;
     S.stopStart=null;
+    // Push stop cleared to Firebase
+    if(db) db.ref(`assembly_line/${SESSION}/stations/${stKey}/stop_active`).set(false);
     cancelAnimationFrame(S.stopRaf);S.stopRaf=null;
     document.getElementById('stopLiveDisp').style.display='none';
     // Restore STOP button
