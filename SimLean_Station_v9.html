@@ -516,6 +516,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 }
 
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -800,6 +801,12 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
 <div class="run-history">
   <div class="run-history-header">
     <span class="run-history-title">📊 Production Run Tracking</span>
+    <button onclick="exportExcelReport()"
+      style="background:rgba(0,194,168,.15);border:1px solid var(--cyan);color:var(--cyan);
+             font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
+             letter-spacing:1px;padding:4px 12px;cursor:pointer;border-radius:4px;margin-left:auto;">
+      📊 Export Excel
+    </button>
     <span style="font-size:9px;color:#555;letter-spacing:1px;">1 row = 1 configuration run (between changeovers)</span>
   </div>
   <table class="run-table" id="runTable">
@@ -2834,6 +2841,117 @@ document.getElementById('btnReset').addEventListener('click',()=>{
   updateDowntimeDisplay();updateShortageDisplay();
   updateWaitTotal();updateWIPDisplay();initCycle();setMsg('Session reset','info');
 });
+
+// ── EXCEL EXPORT ─────────────────────────────────────────────────────────────
+function exportExcelReport(){
+  const allRuns=[...S.runs];
+  if(S.currentRun) allRuns.push(S.currentRun);
+  if(!allRuns.length){alert('No data to export yet.');return;}
+
+  const wb = XLSX.utils.book_new();
+  const stationName = `ASSY ${STATION}`;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-GB');
+  const timeStr = now.toTimeString().slice(0,5);
+  const takt = CFG.takt;
+
+  // ── Sheet 1 : Session Summary ─────────────────────────────────────────────
+  const totalCycles = S.cycles;
+  const totalOutput = S.output;
+  const totalErrors = S.errorCount;
+  const ftyPct = totalOutput>0?Math.round((S.fty/totalOutput)*100):0;
+  const sessionSec = Math.round(S.sessionElapsed||0);
+  const waitSec = Math.round(S.totalWaitMs/1000);
+  const shortageSec = Math.round(S.totalShortageMs/1000);
+  const downtimeSec = Math.round(S.totalStopMs/1000);
+  const activeSec = Math.max(0, sessionSec - waitSec - shortageSec - downtimeSec);
+  const utilPct = sessionSec>0?Math.round((activeSec/sessionSec)*100):0;
+  const avgCT = S.history.length>0?Math.round(S.history.reduce((a,b)=>a+b,0)/S.history.length/1000):0;
+  const minCT = S.history.length>0?Math.round(Math.min(...S.history)/1000):0;
+
+  const summaryData = [
+    ['SIMLEAN — PRODUCTION REPORT', '', ''],
+    ['Station', stationName, ''],
+    ['Session Code', SESSION, ''],
+    ['Date', dateStr, ''],
+    ['Export Time', timeStr, ''],
+    ['', '', ''],
+    ['── SESSION KPIs ──', '', ''],
+    ['Takt Time (s)', takt, ''],
+    ['Total Cycles', totalCycles, ''],
+    ['Total Output', totalOutput, ''],
+    ['Total Errors', totalErrors, ''],
+    ['FTY %', ftyPct+'%', ''],
+    ['Avg Cycle Time (s)', avgCT, ''],
+    ['Min Cycle Time (s)', minCT, ''],
+    ['', '', ''],
+    ['── TIME ANALYSIS ──', '', ''],
+    ['Time on Station (s)', sessionSec, ''],
+    ['Active Time (s)', activeSec, ''],
+    ['Wait Time (s)', waitSec, ''],
+    ['Shortage Time (s)', shortageSec, ''],
+    ['Downtime (s)', downtimeSec, ''],
+    ['Utilization Rate %', utilPct+'%', ''],
+    ['', '', ''],
+    ['── CHANGEOVERS ──', '', ''],
+    ['C/O Count', S.coCount||0, ''],
+    ['C/O Total Time (s)', Math.round((S.coTotalMs||0)/1000), ''],
+    ['C/O Avg Time (s)', S.coCount>0?Math.round((S.coTotalMs||0)/S.coCount/1000):0, ''],
+  ];
+  const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
+  ws1['!cols'] = [{wch:28},{wch:18},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Session Summary');
+
+  // ── Sheet 2 : Run Summary ─────────────────────────────────────────────────
+  const runHeader = ['Run #','Configuration','C/O (s)','Cycles','Output','Errors','FTY %','Avg C/T (s)','Min C/T (s)','Wait (s)','Shortage (s)','Downtime (s)'];
+  const runRows = [runHeader];
+  allRuns.forEach(r=>{
+    const cycles = r.cyclesData||[];
+    const cts = cycles.map(c=>c.ct||0).filter(v=>v>0);
+    const avgCt = cts.length>0?Math.round(cts.reduce((a,b)=>a+b,0)/cts.length/1000):0;
+    const minCt = cts.length>0?Math.round(Math.min(...cts)/1000):0;
+    const waitS = Math.round(cycles.reduce((a,c)=>a+(c.waitMs||0),0)/1000);
+    const shortageS = Math.round(cycles.reduce((a,c)=>a+(c.shortageMs||0),0)/1000);
+    const downtimeS = Math.round(cycles.reduce((a,c)=>a+(c.downtimeMs||0),0)/1000);
+    const passed = cycles.filter(c=>c.passed).length;
+    const errors = cycles.reduce((a,c)=>a+(c.errors||0),0);
+    const fty = cycles.length>0?Math.round((passed/cycles.length)*100):0;
+    runRows.push([
+      r.num, r.label, r.coSec!==null?r.coSec:'—',
+      cycles.length, passed, errors, fty+'%',
+      avgCt, minCt, waitS, shortageS, downtimeS
+    ]);
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet(runRows);
+  ws2['!cols'] = [{wch:6},{wch:28},{wch:10},{wch:8},{wch:8},{wch:8},{wch:8},{wch:12},{wch:12},{wch:10},{wch:14},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Run Summary');
+
+  // ── Sheet 3 : Cycle Detail ────────────────────────────────────────────────
+  const cycleHeader = ['Run #','Configuration','Cycle #','C/T (s)','vs Takt','Wait (s)','Shortage (s)','Downtime (s)','Errors','Pass'];
+  const cycleRows = [cycleHeader];
+  allRuns.forEach(r=>{
+    (r.cyclesData||[]).forEach((c,i)=>{
+      const ct = c.ct>0?Math.round(c.ct/1000):null;
+      const vsTakt = ct!==null?(ct<=takt?'✓ OK':'✗ OVER'):'-';
+      cycleRows.push([
+        r.num, r.label, i+1,
+        ct||'—', vsTakt,
+        (c.waitMs||0)>500?Math.round(c.waitMs/1000):'—',
+        (c.shortageMs||0)>500?Math.round(c.shortageMs/1000):'—',
+        (c.downtimeMs||0)>500?Math.round(c.downtimeMs/1000):'—',
+        c.errors||0,
+        c.passed?'✓':'✗'
+      ]);
+    });
+  });
+  const ws3 = XLSX.utils.aoa_to_sheet(cycleRows);
+  ws3['!cols'] = [{wch:6},{wch:28},{wch:8},{wch:8},{wch:10},{wch:10},{wch:14},{wch:12},{wch:8},{wch:6}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Cycle Detail');
+
+  // ── Download ──────────────────────────────────────────────────────────────
+  const filename = `SimLean_${SESSION}_${stationName.replace(' ','')}_${dateStr.replace(/\//g,'-')}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
 
 initStation();
 </script>
