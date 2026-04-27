@@ -1158,17 +1158,17 @@ function listenReplenishment(){
 }
 
 function onDeliveryArrived(){
+  // Stop shortage timer BEFORE initBuffer resets S.bufferEmpty
+  if(S.bufferEmpty){
+    S.bufferEmpty = false;
+    stopShortageTimer();
+  }
   // Refill buffer with 4 fresh mixed sets
   initBuffer();
   S.replenStatus = 'idle';
   hideReplenStatus();
   showReplenStatus('arrived','✅ Delivery received!');
   setTimeout(hideReplenStatus, 3000);
-  // If buffer was empty and waiting, stop the SHORTAGE timer
-  if(S.bufferEmpty){
-    S.bufferEmpty = false;
-    stopShortageTimer();
-  }
   // Re-render buffer and re-enable start
   renderBuffer();
   updateReplenUI();
