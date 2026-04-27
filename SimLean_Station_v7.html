@@ -1042,6 +1042,22 @@ function initBuffer(){
   pushBufferLevel();
 }
 
+function initBufferEmpty(){
+  // Start with empty storage area — operator must request replenishment
+  S.buffer = [];
+  S.bufferEmpty = true;
+  updateReplenUI();
+  pushBufferLevel();
+  // Immediately trigger shortage timer (we have WIP or are station 1)
+  if(S.shortageStart===null){
+    startShortageTimer();
+  }
+  // Disable start button — no parts to assemble
+  const btn = document.getElementById('btnStart');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Waiting for Replenishment';}
+  setMsg('📦 Storage Area empty — request replenishment to begin','err');
+}
+
 function setsRemaining(){
   const N = S.myPieces.length || 4;
   const unplaced = S.buffer.filter(p=>!p.placed).length;
@@ -1062,7 +1078,7 @@ function updateReplenUI(){
     el.className = 'replen-sets' + (sets===0?' empty':sets<=1?' low':'');
   }
   const btn = document.getElementById('btnReplen');
-  // Button active when buffer low/empty AND not already in active delivery
+  // Button active when buffer empty or low AND not already in active delivery
   const canRequest = sets<=1 && (S.replenStatus==='idle'||S.replenStatus==='arrived');
   if(btn) btn.disabled = !canRequest;
 }
@@ -1194,7 +1210,7 @@ function initStation(){
   const myPositions=STATION_POSITIONS[STATION]||[0,1,2,3];
   const segStart=(STATION-1)*4;
   S.myPieces=myPositions.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
-  initBuffer();
+  initBufferEmpty();  // starts empty — operator must request replenishment
   initCycle();
   updateWIPDisplay();
   setConn('waiting','Connecting to Firebase...');
@@ -1937,8 +1953,8 @@ function listenSessionConfig(){
       const myPos=STATION_POSITIONS[STATION]||[];
       const segStart=(STATION-1)*4;
       S.myPieces=myPos.map((pos,i)=>({...COMPONENT_POOL[(segStart+i)%COMPONENT_POOL.length],targetPos:pos}));
-      // ← CRITICAL: re-init buffer with correct positions from actual profile
-      initBuffer();
+      // ← CRITICAL: re-init buffer with correct positions from actual profile — starts empty
+      initBufferEmpty();
       // Clear stale replenishment data from previous sessions
       S.replenStatus='idle';
       if(db) db.ref(`assembly_line/${SESSION}/replenishment/deliveries/s${STATION}`).remove();
@@ -1952,7 +1968,7 @@ function listenSessionConfig(){
       S.output=0;S.scrap=0;S.cycles=0;S.wipOut=0;S.wipIn=(STATION===1?999:0);S.batchCount=0;
       if(db) db.ref(`assembly_line/${SESSION}/stations/${stKey}/wip_in`).set(STATION===1?999:0);
       S.replenStatus='idle';cancelAnimationFrame(S.replenRaf);hideReplenStatus();
-      initBuffer();
+      initBufferEmpty();  // reset → starts empty again
       if(S.batchResetTimer){clearTimeout(S.batchResetTimer);S.batchResetTimer=null;}
       S.history=[];S.inheritedState={};S.fty=0;S.coCount=0;S.coTotalMs=0;S.totalWaitMs=0;
       if(S.waitRaf){cancelAnimationFrame(S.waitRaf);S.waitRaf=null;}
@@ -2052,7 +2068,7 @@ function startChangeover(profileName, profileData, coSignalTime){
     S.topology=null;
     S.cornerSides={};
   }
-  // ── Calcul du gaspillage Storage Area ─────────────────────────
+  // ── Calculate Storage Area waste ──────────────────────────────────
   const unplacedPieces = S.buffer ? S.buffer.filter(p=>!p.placed).length : 0;
   const piecesPerSet   = S.myPieces ? S.myPieces.length : 1;
   const wasteSets      = piecesPerSet > 0 ? Math.floor(unplacedPieces / piecesPerSet) : 0;
@@ -2066,13 +2082,13 @@ function startChangeover(profileName, profileData, coSignalTime){
   const wasteSetsEl = document.getElementById('coWasteSets');
   if(wasteValEl){
     if(unplacedPieces > 0){
-      wasteValEl.textContent = `${unplacedPieces} pièce(s) perdues`;
+      wasteValEl.textContent = `${unplacedPieces} part(s) lost`;
       wasteValEl.className   = 'co-waste-val';
-      if(wasteSetsEl) wasteSetsEl.textContent = `= ${wasteSets} set(s) complet(s) gaspillé(s)`;
+      if(wasteSetsEl) wasteSetsEl.textContent = `= ${wasteSets} complete set(s) wasted`;
     } else {
-      wasteValEl.textContent = '0 — Zone déjà vide';
+      wasteValEl.textContent = '0 — Storage already empty';
       wasteValEl.className   = 'co-waste-val co-waste-zero';
-      if(wasteSetsEl) wasteSetsEl.textContent = 'Aucun gaspillage';
+      if(wasteSetsEl) wasteSetsEl.textContent = 'No waste';
     }
   }
 
@@ -2082,11 +2098,11 @@ function startChangeover(profileName, profileData, coSignalTime){
     if(unplacedPieces === 0){
       btnStorage.disabled = true;
       btnStorage.classList.add('done');
-      btnStorage.textContent = '✅ Zone de stockage vide';
+      btnStorage.textContent = '✅ Storage area already empty';
     } else {
       btnStorage.disabled = false;
       btnStorage.classList.remove('done');
-      btnStorage.textContent = `📦 Vider zone de stockage (${unplacedPieces} pièces / ${wasteSets} set(s))`;
+      btnStorage.textContent = `📦 Clear Storage Area (${unplacedPieces} parts / ${wasteSets} set(s))`;
     }
   }
 
@@ -2094,7 +2110,7 @@ function startChangeover(profileName, profileData, coSignalTime){
   if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(wasRunning ? 1 : 0);
   // Reset "Vider" button state
   const btnClear = document.getElementById('btnCoClear');
-  if(btnClear){ btnClear.disabled=!wasRunning; btnClear.classList.remove('done'); btnClear.textContent= wasRunning ? '🗑 Vider ma station (Semi-Finished Goods)' : '✅ Station déjà vide'; }
+  if(btnClear){ btnClear.disabled=!wasRunning; btnClear.classList.remove('done'); btnClear.textContent= wasRunning ? '🗑 Clear my station (Semi-Finished Goods)' : '✅ Station already empty'; }
 
   setMsg(`⚙️ Changeover — Read your Work Order and configure your grid`,'info');
 }
@@ -2118,8 +2134,8 @@ function viderStorage(){
   }
   btn.disabled = true;
   btn.classList.add('done');
-  btn.textContent = `✅ Stockage vidé — ${wasteP} pièce(s) / ${wasteS} set(s) retirés`;
-  setMsg(`📦 Zone de stockage vidée — ${wasteP} pièce(s) périmée(s) retirées. Timer C/O continue.`,'info');
+  btn.textContent = `✅ Storage cleared — ${wasteP} part(s) / ${wasteS} set(s) removed`;
+  setMsg(`📦 Storage area cleared — ${wasteP} expired part(s) removed. C/O timer continues.`,'info');
   checkCOReadiness();
 }
 
@@ -2133,15 +2149,15 @@ function viderStation(){
   if(db) db.ref(`assembly_line/${SESSION}/stations/s${STATION}/sfg_count`).set(0);
   btn.disabled = true;
   btn.classList.add('done');
-  btn.textContent = '✅ Station vidée — prête pour le changeover';
-  setMsg('✅ Station vidée — WIP remis à zéro. Timer C/O continue.','ok');
+  btn.textContent = '✅ Station cleared — ready for changeover';
+  setMsg('✅ Station cleared — WIP reset to zero. C/O timer continues.','ok');
   checkCOReadiness();
 }
 
 // ── Check if both clearing actions are complete ──
 function checkCOReadiness(){
   if(S.coStorageCleared && S.coSfgCleared){
-    setMsg('✅ Station et stockage vidés — Configurez votre grille puis validez le C/O','ok');
+    setMsg('✅ Station and storage cleared — Configure your grid and validate the C/O','ok');
   }
 }
 
@@ -2338,6 +2354,7 @@ function validateChangeover(){
 
   // All correct — close overlay (C/O timer continues until 1st piece placed)
   closeCoOverlay();
+  initBufferEmpty();  // new profile → storage starts empty, operator must request replenishment
   initCycle();
 }
 
