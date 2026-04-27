@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimLean Assembly Line — Trainer v3</title>
+<title>SimLean Assembly Line — Planner</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap');
 
@@ -39,7 +39,7 @@ body {
 }
 .logo { font-size:13px; letter-spacing:4px; color:var(--accent); font-weight:700; }
 .logo span { color:var(--muted); }
-.badge-formateur {
+.badge-planner {
   background:var(--danger); color:#fff;
   border-radius:20px; padding:4px 16px;
   font-size:12px; font-weight:700; letter-spacing:3px;
@@ -308,13 +308,13 @@ body {
 
 <!-- TOP BAR -->
 <div class="top-bar">
-  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Trainer v2</span></div>
+  <div class="logo">KEEPLEAN <span>— SimLean Assembly Line · Planner</span></div>
   <div style="display:flex;gap:10px;align-items:center;">
     <span style="font-size:11px;color:#888;">
       <span class="conn-dot waiting" id="connDot"></span>
       <span id="connLabel">Not connected</span>
     </span>
-    <span class="badge-formateur">TRAINER</span>
+    <span class="badge-planner">PLANNER</span>
   </div>
 </div>
 
@@ -394,7 +394,7 @@ body {
     </div>
     <div class="setup-field">
       <label>&nbsp;</label>
-      <button class="btn btn-danger" id="btnStop" style="display:none;">⏹ Stop</button>
+      <button class="btn btn-danger" id="btnStop" style="display:none;">⏹ Stop Session</button>
     </div>
     <div class="setup-field">
       <label>&nbsp;</label>
@@ -457,7 +457,7 @@ body {
     <div style="flex:1;min-width:200px;">
       <div style="font-size:9px;letter-spacing:2px;color:#888;margin-bottom:6px;">DELIVERY QUEUE (FIFO — single worker)</div>
       <div class="replen-queue" id="replenQueueDisp">
-        <span style="color:#555;font-size:11px;">No requests</span>
+        <span style="color:#555;font-size:11px;">No pending requests</span>
       </div>
       <div style="margin-top:10px;display:flex;align-items:center;gap:12px;">
         <div id="replenWorkerStatus" style="font-size:11px;color:#888;letter-spacing:1px;">Worker: idle</div>
@@ -490,13 +490,13 @@ body {
 
   <!-- Preset chips -->
   <div style="font-size:10px;letter-spacing:2px;color:#888;margin-bottom:8px;text-transform:uppercase;">
-    📋 Load a preset as starting point, then customize
+    📋 Load a preset as a starting point, then customize
   </div>
   <div class="preset-chips" id="presetChips"></div>
 
   <!-- Brush selector -->
   <div style="font-size:10px;letter-spacing:2px;color:#888;margin-bottom:8px;text-transform:uppercase;">
-    🖌 Select station then paint cells on the grid
+    🖌 Select a station, then paint cells on the grid
   </div>
   <div class="brush-row" id="brushRow">
   </div>
@@ -651,10 +651,10 @@ function renderStationModes(){
         <option value="opf" ${prev.mode==='opf'?'selected':''}>One Piece Flow</option>
         <option value="batch" ${prev.mode==='batch'?'selected':''}>Batch</option>
       </select>
-      <span class="batch-label" style="font-size:10px;color:var(--muted);display:${prev.mode==='batch'?'inline':'none'};">Batch size :</span>
+      <span class="batch-label" style="font-size:10px;color:var(--muted);display:${prev.mode==='batch'?'inline':'none'};">Batch size:</span>
       <input class="batch-size" type="number" min="2" max="20" value="${prev.size||3}"
         style="width:50px;background:var(--bg);border:1px solid var(--accent);color:var(--accent);padding:4px 6px;font-size:12px;font-family:'Share Tech Mono',monospace;display:${prev.mode==='batch'?'inline':'none'};">
-      <span class="stop-mode-indicator" id="stopModeIndicator${i}">⛔ STOPPED — apply now</span>`;
+      <span class="stop-mode-indicator" id="stopModeIndicator${i}">⛔ STOPPED — configure now</span>`;
     container.appendChild(row);
   }
 }
@@ -859,7 +859,7 @@ document.getElementById('btnResetAll').addEventListener('click', ()=>{
   db.ref(`assembly_line/${F.sessionCode}/stations/s${F.nbStations}/client_output`).set(0);
   // Signal reset to all stations
   db.ref(`assembly_line/${F.sessionCode}/config/reset_signal`).set(Date.now());
-  setConn('online', `Session ${F.sessionCode} — Reset done ✓`);
+  setConn('online', `Session ${F.sessionCode} — Reset complete ✓`);
 });
 
 document.getElementById('btnStop').addEventListener('click', ()=>{
@@ -885,7 +885,7 @@ function renderFlux(){
   const container = document.getElementById('fluxContainer');
   container.innerHTML = '';
 
-  // Fournisseur
+  // Supplier node
   const supp = document.createElement('div');
   supp.className = 'station-card';
   supp.innerHTML = `<div class="sc-num">INPUT</div><div class="sc-name">SUPPLIER</div>
@@ -902,7 +902,7 @@ function renderFlux(){
       <div class="arrow-label">WIP</div>`;
     container.appendChild(arrow);
 
-    // Carte station
+    // Station card
     const card = document.createElement('div');
     card.className = `station-card ${st.status}`;
     card.id = `stCard${i}`;
@@ -921,7 +921,7 @@ function renderFlux(){
     container.appendChild(card);
   });
 
-  // Final arrow + Client
+  // Final arrow + Customer
   const arrowFinal = document.createElement('div');
   arrowFinal.className = 'flux-arrow';
   arrowFinal.innerHTML = `
@@ -946,7 +946,7 @@ function renderLinks(){
   tbody.innerHTML = '';
 
   const base = F.baseUrl || window.location.href.replace(/\/[^/]*(\?.*)?$/, '');
-  const stationFile = 'SimLean_Station_v7.html';
+  const stationFile = 'SimLean_Station_v9.html';
 
   F.stations.forEach((st, i)=>{
     const url = `${base}/${stationFile}?station=${st.num}&session=${F.sessionCode}`;
@@ -961,11 +961,11 @@ function renderLinks(){
     tbody.appendChild(tr);
   });
 
-  // Trainer link — hardcoded pour éviter toute confusion
+  // Planner link
   const trF = document.createElement('tr');
-  const urlF = `${base}/SimLean_Formateur_v3.html?session=${F.sessionCode}`;
+  const urlF = `${base}/SimLean_Planner_v1.html?session=${F.sessionCode}`;
   trF.innerHTML = `
-    <td><strong style="color:var(--danger);">Trainer</strong></td>
+    <td><strong style="color:var(--danger);">Planner</strong></td>
     <td style="color:#888;">Global View</td>
     <td><div class="link-url">${urlF}</div></td>
     <td><button class="btn-copy-link" onclick="copyLink(-1, '${urlF}')">📋 Copy</button></td>`;
@@ -1009,7 +1009,7 @@ function setConn(state, label){
 }
 
 // ═══════════════════════════════════════════════════════════
-// TODO: Firebase listeners — mise à jour des cartes stations
+// Firebase listeners — real-time station card updates
 // updateStationCard(idx, data) { ... }
 // ═══════════════════════════════════════════════════════════
 
@@ -1035,7 +1035,7 @@ function initFirebase(){
     setConn('online', 'Firebase connected');
   } catch(e){
     db = null;
-    setConn('offline', 'Firebase unavailable — local mode');
+    setConn('offline', 'Firebase unavailable — offline mode');
     console.warn('Firebase init:', e.message);
   }
 }
@@ -1054,7 +1054,7 @@ function pushFlowModeUpdate(){
   db.ref(`assembly_line/${F.sessionCode}/config/station_modes`).set(modes).then(()=>{
     const statusEl=document.getElementById('flowModeApplyStatus');
     statusEl.style.display='inline';
-    statusEl.textContent='✅ Applied to all stations';
+    statusEl.textContent='✅ Flow modes applied to all stations';
     setTimeout(()=>{statusEl.style.display='none';},3000);
     setConn('online',`Session ${F.sessionCode} — Flow modes updated ✓`);
   }).catch(e=>{
@@ -1085,7 +1085,7 @@ function pushSessionToFirebase(){
     status: 'running',
     created_at: Date.now()
   });
-  // Init WIP entrant : station 1 = ∞, stations 2-N = 0 (reset stale data)
+  // Init incoming WIP: station 1 = ∞, stations 2-N = 0 (reset stale data)
   db.ref(`assembly_line/${F.sessionCode}/stations/s1/wip_in`).set(999);
   for(let i=2; i<=F.nbStations; i++){
     db.ref(`assembly_line/${F.sessionCode}/stations/s${i}/wip_in`).set(0);
@@ -1096,7 +1096,7 @@ function pushSessionToFirebase(){
   listenAllStations();
 }
 
-// Listen to all stations en temps réel
+// Listen to all stations in real time
 function listenAllStations(){
   db.ref(`assembly_line/${F.sessionCode}/stations`).on('value', snap=>{
     const data = snap.val() || {};
@@ -1372,7 +1372,7 @@ function initGridEditor(){
 }
 
 function checkGridContiguity(){
-  // Check that each station pieces forment un bloc contigu (4-connectivité)
+  // Check that each station's pieces form a contiguous block (4-connectivity)
   const {cols,rows,grid}=coState;
   const nSt=F.nbStations||4;
   const errors=[];
@@ -1401,7 +1401,7 @@ function triggerChangeover(){
   const total=coState.cols*coState.rows;
   const assigned=coState.grid.filter(v=>v>0).length;
   if(assigned<total){alert(`All ${total} cells must be assigned (${total-assigned} remaining)`);return;}
-  if(coState.active){alert('Changeover already in progress');return;}
+  if(coState.active){alert('A changeover is already in progress');return;}
   // ── Contiguity validation ────────────────────────────────────────────────
   const badStations=checkGridContiguity();
   if(badStations.length){
@@ -1451,7 +1451,7 @@ function endChangeover(){
 }
 
 // ══════════════════════════════════════════════════════════
-// REPLENISHMENT MANAGER (Formateur side)
+// REPLENISHMENT MANAGER (Planner side)
 // ══════════════════════════════════════════════════════════
 let replenState = {
   queue: [],          // [{key, station, requested_at}] FIFO
@@ -1575,7 +1575,7 @@ function updateReplenQueueDisplay(){
   if(!disp) return;
   disp.innerHTML='';
   if(replenState.queue.length===0 && !replenState.delivering){
-    disp.innerHTML='<span style="color:#555;font-size:11px;">No requests</span>';
+    disp.innerHTML='<span style="color:#555;font-size:11px;">No pending requests</span>';
     return;
   }
   if(replenState.delivering){
@@ -1592,11 +1592,11 @@ function updateReplenQueueDisplay(){
   });
 }
 
-// Init options grille selon nb stations
+// Init grid options based on station count
 updateStationGridOptions();
-// Compute initial takt
+// Compute initial takt time
 calcTakt();
-// Init Firebase — wait for que tous les scripts externes soient chargés
+// Init Firebase — wait for external scripts to load
 function tryInitFirebase(attempt){
   if(typeof firebase !== 'undefined'){
     initFirebase();
@@ -1604,7 +1604,7 @@ function tryInitFirebase(attempt){
     setTimeout(()=>tryInitFirebase(attempt+1), 300);
   } else {
     console.warn('Firebase SDK not loaded after 3s — check network connection');
-    setConn('offline','Firebase unavailable — local mode');
+    setConn('offline','Firebase unavailable — offline mode');
   }
 }
 window.addEventListener('load', ()=>tryInitFirebase(0));
