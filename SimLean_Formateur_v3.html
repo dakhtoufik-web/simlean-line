@@ -94,6 +94,22 @@ body {
 .sc-sfg.zero{color:#555;}
 .sc-waste{font-size:10px;letter-spacing:1px;font-weight:700;margin-top:2px;color:var(--accent);display:flex;align-items:center;gap:4px;}
 .sc-waste.zero{color:#555;}
+.sc-stop-badge{
+  display:none;margin-top:4px;
+  background:rgba(232,64,64,.18);border:1px solid var(--danger);
+  border-radius:4px;padding:3px 8px;font-size:10px;font-weight:700;
+  letter-spacing:2px;color:var(--danger);text-align:center;
+  animation:pulse .8s infinite alternate;
+}
+.sc-stop-badge.show{display:block;}
+.station-card.stopped{border-color:var(--danger)!important;box-shadow:0 0 10px rgba(232,64,64,.3);}
+.stop-mode-indicator{
+  display:none;font-size:10px;font-weight:700;letter-spacing:2px;
+  color:var(--danger);padding:2px 8px;border:1px solid var(--danger);
+  border-radius:4px;background:rgba(232,64,64,.1);
+  animation:pulse .8s infinite alternate;
+}
+.stop-mode-indicator.show{display:inline-block;}
 .flux-container {
   display:flex; align-items:center; gap:0;
   overflow-x:auto; padding:10px 0; margin-bottom:20px;
@@ -637,7 +653,8 @@ function renderStationModes(){
       </select>
       <span class="batch-label" style="font-size:10px;color:var(--muted);display:${prev.mode==='batch'?'inline':'none'};">Batch size :</span>
       <input class="batch-size" type="number" min="2" max="20" value="${prev.size||3}"
-        style="width:50px;background:var(--bg);border:1px solid var(--accent);color:var(--accent);padding:4px 6px;font-size:12px;font-family:'Share Tech Mono',monospace;display:${prev.mode==='batch'?'inline':'none'};">`;
+        style="width:50px;background:var(--bg);border:1px solid var(--accent);color:var(--accent);padding:4px 6px;font-size:12px;font-family:'Share Tech Mono',monospace;display:${prev.mode==='batch'?'inline':'none'};">
+      <span class="stop-mode-indicator" id="stopModeIndicator${i}">⛔ STOPPED — apply now</span>`;
     container.appendChild(row);
   }
 }
@@ -892,6 +909,7 @@ function renderFlux(){
     card.innerHTML = `
       <div class="sc-num">ASSY ${st.num} <span style="color:var(--cyan);font-size:9px;letter-spacing:1px;">${F.gridSize}</span></div>
       <div class="sc-name" id="scName${i}">${st.name}</div>
+      <div class="sc-stop-badge" id="scStopBadge${i}">⛔ STOPPED</div>
       <div class="sc-status idle" id="scStatus${i}">Offline</div>
       <div class="sc-cycles" id="scCycles${i}">0</div>
       <div class="sc-wip-row">
@@ -1099,10 +1117,14 @@ function listenAllStations(){
       if(i > 0) totalWip += wipIn;  // exclude station 1 (wip_in=999 = infinite supply)
       totalCycles += cycles;
 
+      const stopActive = st.stop_active === true;
+
       // Update station card
       const card = document.getElementById(`stCard${i}`);
       if(card){
-        card.className = `station-card ${status==='running'?'active':status==='idle'?'idle':'waiting'}`;
+        let cls = `station-card ${status==='running'?'active':status==='idle'?'idle':'waiting'}`;
+        if(stopActive) cls += ' stopped';
+        card.className = cls;
       }
       const elStatus = document.getElementById(`scStatus${i}`);
       if(elStatus){
@@ -1110,6 +1132,12 @@ function listenAllStations(){
         elStatus.textContent = labels[status] || '—';
         elStatus.className = `sc-status ${status}`;
       }
+      // Stop badge on flux card
+      const stopBadge = document.getElementById(`scStopBadge${i}`);
+      if(stopBadge) stopBadge.className = `sc-stop-badge${stopActive?' show':''}`;
+      // Stop indicator on flow mode row
+      const stopModeInd = document.getElementById(`stopModeIndicator${i+1}`);
+      if(stopModeInd) stopModeInd.className = `stop-mode-indicator${stopActive?' show':''}`;
       const el = (id) => document.getElementById(id);
       if(el(`scCycles${i}`))  el(`scCycles${i}`).textContent  = cycles;
       if(el(`scWipIn${i}`))   el(`scWipIn${i}`).textContent   = wipIn === 999 ? '∞' : wipIn;
