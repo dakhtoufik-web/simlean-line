@@ -618,6 +618,11 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
     <div class="chrono-val" style="color:var(--danger);" id="downtimeTotalDisp">00:00:00</div>
     <div style="font-size:9px;color:#555;margin-top:2px;" id="downtimeCountDisp">0 stops</div>
   </div>
+  <div class="chrono-cell" id="shortageChronoCell" style="border-color:rgba(240,165,0,0.4);">
+    <div class="chrono-label" style="color:var(--accent);">📦 SHORTAGE Total</div>
+    <div class="chrono-val" style="color:var(--accent);" id="shortageTotalDisp">00:00:00</div>
+    <div style="font-size:9px;color:#555;margin-top:2px;" id="shortageCountDisp">0 ruptures</div>
+  </div>
   <div class="chrono-cell"><div class="chrono-label">📊 Utilization Rate</div><div class="chrono-val cv-occ" id="occDisp">—</div><div class="occ-bar-wrap"><div class="occ-bar-fill" id="occBar" style="width:0%"></div></div></div>
   <div class="chrono-cell"><div class="chrono-label">⏱ Takt Time</div><div class="chrono-val" style="color:var(--text);" id="taktDisp">—</div></div>
 </div>
@@ -803,6 +808,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-
         <th style="text-align:left;">RUN / CONFIG</th>
         <th>C/T</th>
         <th>WAIT</th>
+        <th>SHORTAGE</th>
         <th>DOWNTIME</th>
         <th>ERRORS</th>
         <th>PASS</th>
@@ -938,6 +944,11 @@ let S={
   stopCount:0,       // number of stop events
   runStopMs:0,       // downtime accrued in current run (between C/O)
   cycleStopMs:0,     // downtime in current cycle
+  shortageStart:null,  // timestamp when storage area went empty
+  shortageRaf:null,    // RAF for shortage live display
+  totalShortageMs:0,   // cumulative shortage time this session
+  shortageCount:0,     // number of shortage events
+  cycleShortageMs:0,   // shortage time in current cycle
   customerDemand:0,  // demand set by trainer (Station 1)
   runOutputStart:0,  // S.output at start of current run (pour calcul demand par run)
   coRunning:false,
@@ -1137,10 +1148,10 @@ function onDeliveryArrived(){
   hideReplenStatus();
   showReplenStatus('arrived','✅ Delivery received!');
   setTimeout(hideReplenStatus, 3000);
-  // If buffer was empty and waiting, stop the wait
+  // If buffer was empty and waiting, stop the SHORTAGE timer
   if(S.bufferEmpty){
     S.bufferEmpty = false;
-    stopWaitTimer();
+    stopShortageTimer();
   }
   // Re-render buffer and re-enable start
   renderBuffer();
@@ -1160,8 +1171,14 @@ function checkBufferEmpty(){
     // Block start button
     const btn = document.getElementById('btnStart');
     if(btn){btn.disabled=true;btn.textContent='⏳ Waiting for Replenishment';}
-    // Trigger wait timer
-    startWaitTimer();
+    // Stop wait timer if running (different cause) and start SHORTAGE timer
+    if(S.waitStart!==null){
+      S.totalWaitMs+=performance.now()-S.waitStart;
+      S.waitStart=null;
+      stopWaitTimer();
+      updateWaitTotal();
+    }
+    startShortageTimer();
     setMsg('📦 Storage Area empty — waiting for replenishment','err');
   }
 }
@@ -1220,7 +1237,7 @@ function initCycle(){
   S.placedPositions={};
   S.currentStep=0;
   S.running=false;S.started=false;S.startTime=null;S.errorCount=0;
-  S.cycleErrors=0;S.cycleWaitMs=0;S.cycleStopMs=0;
+  S.cycleErrors=0;S.cycleWaitMs=0;S.cycleStopMs=0;S.cycleShortageMs=0;
   // waitStart intentionally not reset — persiste si wipIn > 0
   const scrapEl=document.getElementById('dbScrap');
   if(scrapEl)scrapEl.textContent='0';
@@ -1589,6 +1606,7 @@ function finishCycle(ok){
     S.currentRun.cyclesData.push({
       ct: elapsed,
       waitMs: S.cycleWaitMs,
+      shortageMs: S.cycleShortageMs||0,
       downtimeMs: S.cycleStopMs||0,
       errors: S.cycleErrors,
       passed: ok
@@ -1948,7 +1966,9 @@ function listenSessionConfig(){
       }
       S.totalStopMs=0;S.stopCount=0;S.runStopMs=0;S.cycleStopMs=0;
       if(db) db.ref(`assembly_line/${SESSION}/stations/${stKey}/stop_active`).set(false);
-      updateDowntimeDisplay();
+      S.totalShortageMs=0;S.shortageCount=0;S.cycleShortageMs=0;
+      if(S.shortageStart!==null){cancelAnimationFrame(S.shortageRaf);S.shortageRaf=null;S.shortageStart=null;}
+      updateDowntimeDisplay();updateShortageDisplay();
       S.topology=null;S.cornerSides={};
       if(db)db.ref(`assembly_line/${SESSION}/puzzle_queue/s${STATION}`).remove();
       // Réactiver le bouton Start si commande était épuisée
@@ -2522,6 +2542,44 @@ function updateDowntimeDisplay(liveMs){
   const cell=document.getElementById('downtimeChronoCell');
   if(cell)cell.style.background=S.stopStart!==null?'rgba(232,64,64,.12)':'';
 }
+
+// ── SHORTAGE TIMER (storage area vide, attente réappro) ───────────────────────
+function startShortageTimer(){
+  if(S.shortageStart!==null)return;
+  S.shortageStart=performance.now();
+  S.shortageCount++;
+  // Live row in run table
+  renderRunTable();
+  function tickShortage(){
+    if(S.shortageStart===null)return;
+    const currentMs=performance.now()-S.shortageStart;
+    updateShortageDisplay(currentMs);
+    // Live idle row
+    const el=document.getElementById('shortageLiveRow');
+    if(el) el.querySelector('td').textContent=`📦  SHORTAGE : ${fmtHMS(currentMs)}`;
+    S.shortageRaf=requestAnimationFrame(tickShortage);
+  }
+  S.shortageRaf=requestAnimationFrame(tickShortage);
+}
+function stopShortageTimer(){
+  if(S.shortageStart===null)return;
+  const elapsed=performance.now()-S.shortageStart;
+  S.totalShortageMs+=elapsed;
+  S.cycleShortageMs=(S.cycleShortageMs||0)+elapsed;
+  S.shortageStart=null;
+  if(S.shortageRaf){cancelAnimationFrame(S.shortageRaf);S.shortageRaf=null;}
+  updateShortageDisplay();
+  renderRunTable();
+}
+function updateShortageDisplay(liveMs){
+  const total=S.totalShortageMs+(liveMs||0);
+  const el=document.getElementById('shortageTotalDisp');
+  if(el)el.textContent=fmtHMS(total);
+  const cnt=document.getElementById('shortageCountDisp');
+  if(cnt)cnt.textContent=S.shortageCount+' rupture'+(S.shortageCount!==1?'s':'');
+  const cell=document.getElementById('shortageChronoCell');
+  if(cell)cell.style.background=S.shortageStart!==null?'rgba(240,165,0,.10)':'';
+}
 function checkWaitTimer(){
   const shouldRun=!S.running&&(STATION===1||S.wipIn>0);
   if(shouldRun&&S.waitStart===null) startWaitTimer();
@@ -2538,37 +2596,43 @@ function renderRunTable(){
   if(S.currentRun)allRuns.push(S.currentRun);
   tbody.innerHTML='';
 
-  // ── Ligne wait live — visible quand waitStart actif ──────────────────────
+  // ── Ligne wait live ──────────────────────────────────────────────────────────
   const idleTr=document.createElement('tr');
   idleTr.id='idleLiveRow';
   const isWaiting=S.waitStart!==null&&!S.started;
   idleTr.style.cssText='background:rgba(0,194,168,.06);display:'+(isWaiting?'':'none')+';';
   const waitMs=isWaiting?performance.now()-S.waitStart:0;
-  idleTr.innerHTML=`<td colspan="6" style="font-size:11px;letter-spacing:2px;color:var(--cyan);text-align:center;padding:6px;font-family:'Share Tech Mono',monospace;">⏸  WAIT : ${fmtHMS(waitMs)}</td>`;
+  idleTr.innerHTML=`<td colspan="7" style="font-size:11px;letter-spacing:2px;color:var(--cyan);text-align:center;padding:6px;font-family:'Share Tech Mono',monospace;">⏸  WAIT : ${fmtHMS(waitMs)}</td>`;
   tbody.appendChild(idleTr);
+
+  // ── Ligne shortage live ───────────────────────────────────────────────────────
+  const shortageTr=document.createElement('tr');
+  shortageTr.id='shortageLiveRow';
+  const isShortage=S.shortageStart!==null;
+  shortageTr.style.cssText='background:rgba(240,165,0,.06);display:'+(isShortage?'':'none')+';';
+  const shortMs=isShortage?performance.now()-S.shortageStart:0;
+  shortageTr.innerHTML=`<td colspan="7" style="font-size:11px;letter-spacing:2px;color:var(--accent);text-align:center;padding:6px;font-family:'Share Tech Mono',monospace;">📦  SHORTAGE : ${fmtHMS(shortMs)}</td>`;
+  tbody.appendChild(shortageTr);
 
   if(!allRuns.length){
     const emptyTr=document.createElement('tr');
-    emptyTr.innerHTML=`<td colspan="6" style="color:#444;font-size:10px;padding:10px;text-align:center;">Start a cycle to begin tracking.</td>`;
+    emptyTr.innerHTML=`<td colspan="7" style="color:#444;font-size:10px;padding:10px;text-align:center;">Start a cycle to begin tracking.</td>`;
     tbody.appendChild(emptyTr);
     return;
   }
 
   const taktMs=CFG.takt*1000;
-  // Afficher du plus récent au plus ancien
   allRuns.slice().reverse().forEach((r,ri)=>{
     const isCurrent=!r.endTime;
-    // ── Séparateur C/O ─────────────────────────────────────────────────────
     const sepTr=document.createElement('tr');
     sepTr.style.cssText='background:rgba(240,165,0,.07);';
     const coLabel=r.coSec!==null?`⚙ C/O : ${r.coSec}s`:'⚙ Initial Run';
-    sepTr.innerHTML=`<td colspan="6" style="font-size:9px;letter-spacing:2px;color:var(--accent);text-align:left;padding:4px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;">${coLabel} — <span style="color:#555;">${r.label}</span>${isCurrent?' <span style="color:var(--success);">▶ IN PROGRESS</span>':''}</td>`;
+    sepTr.innerHTML=`<td colspan="7" style="font-size:9px;letter-spacing:2px;color:var(--accent);text-align:left;padding:4px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;">${coLabel} — <span style="color:#555;">${r.label}</span>${isCurrent?' <span style="color:var(--success);">▶ IN PROGRESS</span>':''}</td>`;
     tbody.appendChild(sepTr);
-    // ── 1 ligne par cycle ───────────────────────────────────────────────────
     const cycles=r.cyclesData||[];
     if(!cycles.length){
       const emptyTr=document.createElement('tr');
-      emptyTr.innerHTML=`<td colspan="6" style="color:#333;font-size:10px;padding:6px;text-align:center;">No cycles</td>`;
+      emptyTr.innerHTML=`<td colspan="7" style="color:#333;font-size:10px;padding:6px;text-align:center;">No cycles</td>`;
       tbody.appendChild(emptyTr);
     } else {
       cycles.slice().reverse().forEach((c,ci)=>{
@@ -2576,12 +2640,14 @@ function renderRunTable(){
         const ctMs=c.ct||0;
         const ctOk=ctMs>0&&ctMs<=taktMs;
         const dtMs=c.downtimeMs||0;
+        const stMs=c.shortageMs||0;
         const tr=document.createElement('tr');
         if(isCurrent&&ci===0)tr.className='run-current';
         tr.innerHTML=`
           <td style="color:#555;font-size:10px;padding:4px 8px;text-align:left;">  Cycle ${cycleNum}</td>
           <td class="${ctMs>0?(ctOk?'good':'bad'):''}">${ctMs>0?Math.round(ctMs/1000)+'s':'—'}</td>
           <td>${(c.waitMs||0)>500?Math.round(c.waitMs/1000)+'s':'—'}</td>
+          <td style="${stMs>500?'color:var(--accent);':''}">${stMs>500?Math.round(stMs/1000)+'s':'—'}</td>
           <td class="${dtMs>0?'bad':''}" style="${dtMs>0?'color:var(--danger);':''}">${dtMs>500?Math.round(dtMs/1000)+'s':'—'}</td>
           <td class="${(c.errors||0)>0?'bad':''}">${c.errors||0}</td>
           <td class="${c.passed?'good':'bad'}">${c.passed?'✓':'✗'}</td>`;
@@ -2734,7 +2800,9 @@ document.getElementById('btnReset').addEventListener('click',()=>{
     const btnStop=document.getElementById('btnStop');
     if(btnStop){btnStop.style.background='#2a0a0a';btnStop.style.color='var(--danger)';btnStop.textContent='🛑 STOP';}
     document.getElementById('stopLiveDisp').style.display='none';}
-  updateDowntimeDisplay();
+  S.totalShortageMs=0;S.shortageCount=0;S.cycleShortageMs=0;
+  if(S.shortageStart!==null){cancelAnimationFrame(S.shortageRaf);S.shortageRaf=null;S.shortageStart=null;}
+  updateDowntimeDisplay();updateShortageDisplay();
   updateWaitTotal();updateWIPDisplay();initCycle();setMsg('Session reset','info');
 });
 
