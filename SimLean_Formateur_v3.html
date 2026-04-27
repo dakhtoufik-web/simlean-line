@@ -362,7 +362,14 @@ body {
 
     <!-- FLOW MODE PAR STATION -->
     <div style="width:100%;margin-top:10px;background:var(--panel2);border:1px solid var(--accent);padding:14px 16px;">
-      <div style="font-size:10px;letter-spacing:2px;color:var(--accent);font-weight:700;margin-bottom:12px;text-transform:uppercase;">⚙ Flow Mode — per station</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div style="font-size:10px;letter-spacing:2px;color:var(--accent);font-weight:700;text-transform:uppercase;">⚙ Flow Mode — per station</div>
+        <button id="btnApplyFlowMode" class="btn" onclick="pushFlowModeUpdate()"
+          style="display:none;background:var(--accent);color:#000;font-size:11px;padding:6px 14px;letter-spacing:1px;">
+          🔄 Apply Flow Modes
+        </button>
+        <div id="flowModeApplyStatus" style="display:none;font-size:10px;letter-spacing:1px;color:var(--success);font-weight:700;"></div>
+      </div>
       <div id="stationModeRows" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
     <div class="setup-field">
@@ -813,6 +820,7 @@ document.getElementById('btnCreate').addEventListener('click', ()=>{
   initGridEditor();
   document.getElementById('coPanel').style.display = 'block';
   document.getElementById('replenPanel').style.display = 'block';
+  document.getElementById('btnApplyFlowMode').style.display = 'inline-block';
   initReplenStation();
   setConn('online', `Session ${F.sessionCode} active`);
   pushSessionToFirebase();
@@ -847,6 +855,8 @@ document.getElementById('btnStop').addEventListener('click', ()=>{
   document.getElementById('btnCreate').style.display    = 'inline-block';
   document.getElementById('coPanel').style.display      = 'none';
   document.getElementById('replenPanel').style.display   = 'none';
+  document.getElementById('btnApplyFlowMode').style.display = 'none';
+  document.getElementById('flowModeApplyStatus').style.display = 'none';
   setConn('offline', 'Session ended');
   stopSessionFirebase();
 });
@@ -1018,6 +1028,20 @@ function pushDemandUpdate(){
   const demand=parseFloat(document.getElementById('cfgDemand').value)||1;
   F.demand=demand;
   db.ref(`assembly_line/${F.sessionCode}/config/customer_demand`).set(demand);
+}
+
+function pushFlowModeUpdate(){
+  if(!db||!F.sessionCode){alert('No active session.');return;}
+  const modes=getStationModes();
+  db.ref(`assembly_line/${F.sessionCode}/config/station_modes`).set(modes).then(()=>{
+    const statusEl=document.getElementById('flowModeApplyStatus');
+    statusEl.style.display='inline';
+    statusEl.textContent='✅ Applied to all stations';
+    setTimeout(()=>{statusEl.style.display='none';},3000);
+    setConn('online',`Session ${F.sessionCode} — Flow modes updated ✓`);
+  }).catch(e=>{
+    alert('Firebase error: '+e.message);
+  });
 }
 function generateTopology(cols,rows){
   const h=[],v=[];
